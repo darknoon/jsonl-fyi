@@ -10,19 +10,56 @@ import {
   Circle,
   type Icon,
 } from "@phosphor-icons/react"
+import type { KnownToolUse } from "./toolTypes"
 
-const PAST: Record<string, string> = {
+// Type-driven alignment: PAST and ICONS must contain an entry for every
+// tool name in the `KnownToolUse` discriminated union. If you add a tool
+// to toolTypes.ts, TypeScript will refuse to compile until you add its
+// label/icon here too.
+type KnownToolName = KnownToolUse["name"]
+
+const PAST: Record<KnownToolName, string> = {
+  Bash: "Ran command",
   Read: "Read",
-  Write: "Wrote",
   Edit: "Edited",
   MultiEdit: "Edited",
-  Bash: "Ran command",
+  Write: "Wrote",
   Glob: "Searched files",
   Grep: "Searched code",
   WebFetch: "Fetched",
   WebSearch: "Searched",
   Task: "Ran task",
+  Agent: "Ran agent",
   TodoWrite: "Updated todos",
+  ExitPlanMode: "Exited plan mode",
+  EnterPlanMode: "Entered plan mode",
+  NotebookEdit: "Edited notebook",
+  ToolSearch: "Searched tools",
+  Skill: "Loaded skill",
+}
+
+const ICONS: Record<KnownToolName, { Icon: Icon; color: string }> = {
+  Bash: { Icon: Terminal, color: "tool-muted" },
+  Read: { Icon: FileIcon, color: "tool-blue" },
+  Edit: { Icon: PencilSimple, color: "tool-amber" },
+  MultiEdit: { Icon: PencilSimple, color: "tool-amber" },
+  Write: { Icon: PencilSimple, color: "tool-amber" },
+  Glob: { Icon: MagnifyingGlass, color: "tool-green" },
+  Grep: { Icon: MagnifyingGlass, color: "tool-green" },
+  WebFetch: { Icon: Paperclip, color: "tool-violet" },
+  WebSearch: { Icon: MagnifyingGlass, color: "tool-green" },
+  Task: { Icon: GitDiff, color: "tool-violet" },
+  Agent: { Icon: GitDiff, color: "tool-violet" },
+  TodoWrite: { Icon: PencilSimple, color: "tool-amber" },
+  ExitPlanMode: { Icon: Circle, color: "tool-muted" },
+  EnterPlanMode: { Icon: Circle, color: "tool-muted" },
+  NotebookEdit: { Icon: PencilSimple, color: "tool-amber" },
+  ToolSearch: { Icon: MagnifyingGlass, color: "tool-green" },
+  Skill: { Icon: Paperclip, color: "tool-violet" },
+}
+
+function isKnownTool(name: string): name is KnownToolName {
+  return name in ICONS
 }
 
 export function shortPath(p: string): string {
@@ -33,35 +70,56 @@ export function shortPath(p: string): string {
 
 export function toolLabel(name: string, title: string): string {
   if (name === "Bash") return title ? shortPath(title) : "Done"
-  const verb = PAST[name] ?? `Ran ${name}`
+  const verb = isKnownTool(name) ? PAST[name] : `Ran ${name}`
   return title ? `${verb} ${shortPath(title)}` : verb
 }
 
-export function toolTitle(input: Record<string, unknown>): string {
-  const v =
-    (input?.file_path as string | undefined) ??
-    (input?.command as string | undefined) ??
-    (input?.pattern as string | undefined) ??
-    (input?.script as string | undefined) ??
-    ""
+function asString(input: Record<string, unknown>, key: string): string {
+  const v = input[key]
   return typeof v === "string" ? v : ""
 }
 
-const ICONS: Record<string, { Icon: Icon; color: string }> = {
-  Read: { Icon: FileIcon, color: "tool-blue" },
-  Write: { Icon: PencilSimple, color: "tool-amber" },
-  Edit: { Icon: PencilSimple, color: "tool-amber" },
-  MultiEdit: { Icon: PencilSimple, color: "tool-amber" },
-  Bash: { Icon: Terminal, color: "tool-muted" },
-  Glob: { Icon: MagnifyingGlass, color: "tool-green" },
-  Grep: { Icon: MagnifyingGlass, color: "tool-green" },
-  WebFetch: { Icon: Paperclip, color: "tool-violet" },
-  WebSearch: { Icon: MagnifyingGlass, color: "tool-green" },
-  Task: { Icon: GitDiff, color: "tool-violet" },
+// Per-tool title extraction. Keys come from the typed input shapes in
+// `toolTypes.ts` — no casts. Unknown tool names get an empty title.
+export function toolTitle({
+  name,
+  input,
+}: {
+  name: string
+  input: Record<string, unknown>
+}): string {
+  switch (name) {
+    case "Bash":
+      return asString(input, "command")
+    case "Read":
+    case "Edit":
+    case "MultiEdit":
+    case "Write":
+      return asString(input, "file_path")
+    case "Glob":
+    case "Grep":
+      return asString(input, "pattern")
+    case "WebFetch":
+      return asString(input, "url")
+    case "WebSearch":
+    case "ToolSearch":
+      return asString(input, "query")
+    case "Task":
+    case "Agent":
+      return asString(input, "description")
+    case "NotebookEdit":
+      return asString(input, "notebook_path")
+    case "Skill":
+      return asString(input, "skill")
+    default:
+      return ""
+  }
 }
 
 export function iconFor(name: string): { Icon: Icon; color: string } {
-  return ICONS[name] ?? { Icon: Terminal, color: "tool-muted" }
+  return isKnownTool(name)
+    ? ICONS[name]
+    : { Icon: Terminal, color: "tool-muted" }
 }
 
 export const Icons = { Brain, Robot, Circle }

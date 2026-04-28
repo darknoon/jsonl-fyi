@@ -33,7 +33,10 @@ function renderEntry(entry: { type: string; message?: { role?: string; content?:
         case "image":
           return `[image]`
         case "tool_use": {
-          const title = toolTitle((block.input as Record<string, unknown>) ?? {})
+          const title = toolTitle({
+            name: String(block.name),
+            input: (block.input as Record<string, unknown>) ?? {},
+          })
           const display = title ? shortPath(title) : ""
           return `${String(block.name)}(${truncate(display, 60)})`
         }
@@ -79,11 +82,11 @@ test("parseJsonl renders the fixture as a Claude-style script", async () => {
     [image]
     user: Can you fix this issue where the markdown toolbar shows up …
     thinking: Let me understand the issue from the screenshot: there's an…
-    ToolSearch()
+    ToolSearch(select:mcp__project__RenameChat)
     ↳ result
     mcp__project__RenameChat()
     ↳ result
-    Agent()
+    Agent(Find markdown toolbar code)
     ↳ result
     Read(REDACTED_TOKEN.tsx)
     ↳ result

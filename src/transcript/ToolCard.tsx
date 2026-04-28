@@ -6,26 +6,22 @@ import { ImageBlock } from "./ImageBlock"
 export function ToolCard({
   block,
   result,
+  extraBody,
 }: {
   block: ToolUseBlock
   result: ToolResult
+  extraBody?: string
 }) {
   const [expanded, setExpanded] = useState(false)
   const { Icon, color } = iconFor(block.name)
-  const title = toolTitle(block.input)
+  const title = toolTitle(block)
   const label = toolLabel(block.name, title)
   const input = block.input ?? {}
   const output = result.text
 
   let body: ReactNode = null
   if (block.name === "Bash") {
-    const cmd = (input.command as string) ?? ""
-    body = (
-      <>
-        {cmd && <pre className="cmd">$ {cmd}</pre>}
-        {output && <pre className="output">{output}</pre>}
-      </>
-    )
+    body = output ? <pre className="output">{output}</pre> : null
   } else if (block.name === "Edit") {
     const oldS = (input.old_string as string) ?? ""
     const newS = (input.new_string as string) ?? ""
@@ -71,7 +67,9 @@ export function ToolCard({
   }
 
   const images = result.images
-  const hasBody = body !== null || images.length > 0
+  const toolRefs = result.toolRefs
+  const hasBody =
+    body !== null || images.length > 0 || toolRefs.length > 0 || !!extraBody
 
   return (
     <div className="tool-card">
@@ -85,9 +83,20 @@ export function ToolCard({
       {expanded && hasBody && (
         <div className="tool-body">
           {body}
+          {toolRefs.length > 0 && (
+            <div className="tool-refs">
+              <div className="tool-refs-label">Loaded tools</div>
+              <ul>
+                {toolRefs.map((name, i) => (
+                  <li key={i}>{name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {images.map((src, i) => (
             <ImageBlock key={i} source={src} />
           ))}
+          {extraBody && <pre className="output">{extraBody}</pre>}
         </div>
       )}
     </div>

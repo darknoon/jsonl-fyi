@@ -16,7 +16,10 @@ test("toolLabel covers known tools and falls back for unknown ones", () => {
     ["mcp__custom__SomeTool", { title: "x" }],
   ]
   const summary = cases
-    .map(([name, input]) => `${name}\t${toolLabel(name, toolTitle(input))}`)
+    .map(
+      ([name, input]) =>
+        `${name}\t${toolLabel(name, toolTitle({ name, input }))}`,
+    )
     .join("\n")
   expect(summary).toMatchInlineSnapshot(`
     "Read	Read .../foo/bar.ts
@@ -27,7 +30,7 @@ test("toolLabel covers known tools and falls back for unknown ones", () => {
     Bash	Done
     Grep	Searched code TODO
     Glob	Searched files **/*.ts
-    WebFetch	Fetched
+    WebFetch	Fetched ...//example.com
     TodoWrite	Updated todos
     mcp__custom__SomeTool	Ran mcp__custom__SomeTool"
   `)

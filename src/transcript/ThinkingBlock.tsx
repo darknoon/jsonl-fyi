@@ -1,13 +1,18 @@
 import { useState } from "react"
-import { Icons } from "./toolMeta"
+import { Robot } from "@phosphor-icons/react"
 
 export function ThinkingBlock({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false)
-  if (!text.trim()) return null
+  const trimmed = text.trim()
+  if (!trimmed) return null
   return (
-    <button className="thinking" onClick={() => setExpanded(!expanded)}>
-      <Icons.Brain size={16} className="icon-muted" />
-      <span className={expanded ? "" : "clamp-1"}>{text}</span>
+    <button
+      className={`thinking ${expanded ? "thinking-expanded" : ""}`}
+      onClick={() => setExpanded(!expanded)}
+      aria-label="Thinking"
+    >
+      <Robot size={16} className="thinking-icon" />
+      <span className="thinking-content">{trimmed}</span>
     </button>
   )
 }

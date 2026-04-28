@@ -8,14 +8,16 @@ import type {
 
 export function extractResult(block: ToolResultBlock): ToolResult {
   const c = block.content
-  if (typeof c === "string") return { text: c, images: [] }
+  if (typeof c === "string") return { text: c, images: [], toolRefs: [] }
   const text: string[] = []
   const images: ImageSource[] = []
+  const toolRefs: string[] = []
   for (const item of c) {
     if (item.type === "text") text.push(item.text)
     else if (item.type === "image") images.push(item.source)
+    else if (item.type === "tool_reference") toolRefs.push(item.tool_name)
   }
-  return { text: text.join("\n"), images }
+  return { text: text.join("\n"), images, toolRefs }
 }
 
 export function getBlocks(entry: Entry): Block[] {

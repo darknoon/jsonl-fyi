@@ -14,6 +14,7 @@ export type ToolUseBlock = {
 export type ToolResultContentItem =
   | { type: "text"; text: string }
   | { type: "image"; source: ImageSource }
+  | { type: "tool_reference"; tool_name: string }
 export type ToolResultBlock = {
   type: "tool_result"
   tool_use_id: string
@@ -36,4 +37,8 @@ export type Entry = {
   message?: { role?: string; content?: Block[] | string }
 }
 
-export type ToolResult = { text: string; images: ImageSource[] }
+export type ToolResult = {
+  text: string
+  images: ImageSource[]
+  toolRefs: string[]
+}
