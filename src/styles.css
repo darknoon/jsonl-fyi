@@ -112,3 +112,39 @@ body,
   border-radius: 4px;
   display: block;
 }
+
+.tool-card { display: flex; flex-direction: column; }
+.tool-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 6px; border-radius: 4px; width: 100%;
+  text-align: left; background: none; border: none;
+  color: inherit; font: inherit;
+}
+.tool-row.clickable { cursor: pointer; }
+.tool-row.clickable:hover { background: var(--card); }
+.tool-row .icon { flex-shrink: 0; }
+.icon.tool-blue { color: #7ab7ff; }
+.icon.tool-amber { color: #f5b870; }
+.icon.tool-green { color: #74d99f; }
+.icon.tool-violet { color: #c79bf3; }
+.icon.tool-muted { color: var(--muted); }
+.tool-body {
+  margin: 4px 0 8px 24px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.cmd, .output {
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 0;
+  max-height: 480px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cmd { color: var(--muted); }
+.diff-del { background: rgba(255, 100, 100, 0.08); }
+.diff-add { background: rgba(100, 200, 100, 0.08); }
+.multi-edit { display: flex; flex-direction: column; gap: 8px; }
