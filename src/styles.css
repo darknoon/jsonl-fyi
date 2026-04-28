@@ -150,3 +150,19 @@ body,
 .multi-edit { display: flex; flex-direction: column; gap: 8px; }
 
 .transcript { display: flex; flex-direction: column; gap: 4px; }
+
+.app-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; margin-bottom: 16px;
+}
+.meta {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: var(--muted);
+}
+.meta .filename { color: var(--fg); font-family: ui-monospace, monospace; }
+.meta .reset {
+  color: var(--muted); text-decoration: underline; cursor: pointer;
+  background: none; border: none; padding: 0; font: inherit;
+}
+.drop-zone-sub { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.drop-zone.drag-over { border-color: var(--fg); background: var(--card); }
