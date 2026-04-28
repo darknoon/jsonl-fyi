@@ -98,7 +98,7 @@ git commit -m "chore: initial scaffold"
 1. Replace any absolute path containing `/Users/andrew` or `/Users/<name>` with `/Users/example`.
 2. Replace any cwd or path mentioning `Developer/Web/Dave` (or similar private project names) with `Developer/example/project`.
 3. Replace `gitBranch` values that aren't `main`/`master` with `main`.
-4. For any `image` block with a `base64` source, replace `data` with the literal `"REDACTED_BASE64"` and keep `media_type` as-is. (Tests only need a recognizable image-shaped payload, not real bytes.)
+4. For any `image` block with a `base64` source, replace `data` with a tiny valid 1×1 transparent PNG (`iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=`) and keep `media_type` as-is. The placeholder must be valid base64 so the same fixture stays renderable when downstream `<ImageBlock>` tests are added later.
 5. Replace any email-like substring not ending in `example.com` with `user@example.com`.
 6. Replace any 32+-char hex/base64 token that is clearly an API key or auth header with `REDACTED_TOKEN`.
 
