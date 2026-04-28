@@ -1,70 +1,107 @@
 import { test, expect } from "bun:test"
 import { parseJsonl } from "./parse"
+import { toolTitle, shortPath } from "./transcript/toolMeta"
 
-test("parseJsonl summarizes a real session correctly", async () => {
+// Render the fixture in a Claude-Code-style script form: tool calls as
+// `ToolName(short title)`, tool results as `↳ result`, and user/assistant
+// text/thinking/image as `<role|none> <type>`. Tool calls drop the role
+// because tool_use is always assistant-driven; tool_result drops it because
+// it's always paired with the call above. This mirrors the way Claude Code
+// itself surfaces a transcript and makes regression diffs read naturally.
+function renderEntry(entry: { type: string; message?: { role?: string; content?: unknown } }): string {
+  const role = entry.message?.role ?? entry.type
+  const c = entry.message?.content
+  if (!c) return `${role}:-`
+  if (typeof c === "string") {
+    const snippet = c.replace(/\s+/g, " ").trim()
+    return `${role}: ${truncate(snippet, 60)}`
+  }
+  if (!Array.isArray(c)) return `${role}:?`
+  return c
+    .map(b => {
+      if (!b || typeof b !== "object") return `${role}:?`
+      const block = b as Record<string, unknown>
+      switch (block.type) {
+        case "text": {
+          const t = String(block.text ?? "").replace(/\s+/g, " ").trim()
+          return `${role}: ${truncate(t, 60)}`
+        }
+        case "thinking": {
+          const t = String(block.thinking ?? "").replace(/\s+/g, " ").trim()
+          return `thinking: ${truncate(t, 60)}`
+        }
+        case "image":
+          return `[image]`
+        case "tool_use": {
+          const title = toolTitle((block.input as Record<string, unknown>) ?? {})
+          const display = title ? shortPath(title) : ""
+          return `${String(block.name)}(${truncate(display, 60)})`
+        }
+        case "tool_result":
+          return `↳ result`
+        default:
+          return `${role}:?${String(block.type)}`
+      }
+    })
+    .join("\n")
+}
+
+function truncate(s: string, n: number) {
+  return s.length > n ? s.slice(0, n - 1) + "…" : s
+}
+
+test("parseJsonl renders the fixture as a Claude-style script", async () => {
   const text = await Bun.file(
     new URL("./__fixtures__/sample.jsonl", import.meta.url),
   ).text()
   const { entries, skipped } = parseJsonl(text)
 
-  // Build a single concise summary string covering: total kept, skipped count,
-  // top-level types (sorted), and the sequence of block types per entry.
   const typeCounts = new Map<string, number>()
   for (const e of entries) typeCounts.set(e.type, (typeCounts.get(e.type) ?? 0) + 1)
   const types = [...typeCounts.entries()]
-    .sort()
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([k, v]) => `${k}=${v}`)
     .join(" ")
 
-  const blockSeq = entries
-    .map(e => {
-      const c = e.message?.content
-      if (!c) return `${e.type}:-`
-      if (typeof c === "string") return `${e.type}:str`
-      const blocks = c.map(b => {
-        if (b.type === "tool_use") return `tool_use(${b.name})`
-        if (b.type === "tool_result") return `tool_result`
-        return b.type
-      })
-      return `${e.type}:[${blocks.join(",")}]`
-    })
-    .join("\n")
+  const script = entries.map(renderEntry).join("\n")
 
   const summary = [
     `entries=${entries.length} skipped=${skipped}`,
     `types: ${types}`,
-    `blocks:\n${blockSeq}`,
+    `---`,
+    script,
   ].join("\n")
 
   expect(summary).toMatchInlineSnapshot(`
     "entries=25 skipped=0
     types: assistant=15 user=10
-    blocks:
-    user:[image,text]
-    assistant:[thinking]
-    assistant:[tool_use(ToolSearch)]
-    user:[tool_result]
-    assistant:[tool_use(mcp__project__RenameChat)]
-    user:[tool_result]
-    assistant:[tool_use(Agent)]
-    user:[tool_result]
-    assistant:[tool_use(Read)]
-    user:[tool_result]
-    assistant:[tool_use(Read)]
-    user:[tool_result]
-    assistant:[thinking]
-    assistant:[text]
-    assistant:[tool_use(Edit)]
-    user:[tool_result]
-    assistant:[tool_use(Edit)]
-    user:[tool_result]
-    assistant:[text]
-    assistant:[tool_use(Edit)]
-    user:[tool_result]
-    assistant:[text]
-    assistant:[tool_use(Read)]
-    user:[tool_result]
-    assistant:[text]"
+    ---
+    [image]
+    user: Can you fix this issue where the markdown toolbar shows up …
+    thinking: Let me understand the issue from the screenshot: there's an…
+    ToolSearch()
+    ↳ result
+    mcp__project__RenameChat()
+    ↳ result
+    Agent()
+    ↳ result
+    Read(REDACTED_TOKEN.tsx)
+    ↳ result
+    Read(REDACTED_TOKEN.tsx)
+    ↳ result
+    thinking: Now I understand the issue. The \`EditorToolbar\` always uses…
+    assistant: The toolbar is always \`fixed\` to the viewport bottom. For t…
+    Edit(REDACTED_TOKEN.tsx)
+    ↳ result
+    Edit(REDACTED_TOKEN.tsx)
+    ↳ result
+    assistant: Now pass \`inline\` from \`InlineMarkdownEditor\`:
+    Edit(REDACTED_TOKEN.tsx)
+    ↳ result
+    assistant: Let me verify the final state of both files:
+    Read(REDACTED_TOKEN.tsx)
+    ↳ result
+    assistant: The changes are: 1. **\`EditorToolbar.tsx\`** - Added an \`inl…"
   `)
 })
 
