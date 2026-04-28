@@ -148,3 +148,5 @@ body,
 .diff-del { background: rgba(255, 100, 100, 0.08); }
 .diff-add { background: rgba(100, 200, 100, 0.08); }
 .multi-edit { display: flex; flex-direction: column; gap: 8px; }
+
+.transcript { display: flex; flex-direction: column; gap: 4px; }
