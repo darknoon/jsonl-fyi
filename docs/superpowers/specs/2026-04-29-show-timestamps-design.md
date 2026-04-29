@@ -137,14 +137,11 @@ assistant entry to decide whether to emit a `<TurnSeparator>` after it.
 
 ## Fixture
 
-Replace `src/__fixtures__/sample.jsonl` with a copy of the real session
-`~/.claude/projects/-Users-andrew-Developer-Prefix-jsonl-fyi/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl`.
-
-That session contains `turn_duration`, `away_summary`, real tool use, and
-realistic message volume — what's needed to exercise the new code paths and
-catch regressions in the rest of the renderer.
-
-Update `parse.test.ts` assertions if they reference the old fixture's shape.
+Depends on the fixture swap landed in
+`2026-04-29-samples-and-fixture-design.md`. The new fixture exercises
+`turn_duration`, `away_summary`, and realistic tool use — what's needed to
+develop and verify the timestamp surfaces in this spec. That spec ships first;
+this one builds on it.
 
 ## Out of scope (for follow-ups)
 
