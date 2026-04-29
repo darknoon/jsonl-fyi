@@ -407,22 +407,6 @@ body,
   margin-top: 8px;
   color: var(--muted);
 }
-.demo-row {
-  text-align: center;
-  margin-top: 12px;
-}
-.demo-link {
-  color: var(--muted);
-  text-decoration: underline;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
-}
-.demo-link:hover {
-  color: var(--fg);
-}
 .drop-zone.drag-over {
   border-color: var(--fg);
   background: var(--card);
@@ -433,4 +417,50 @@ body,
   padding: 16px 0;
   text-align: center;
   color: var(--muted);
+}
+.examples {
+  margin-top: 32px;
+}
+.examples-header {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.examples-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+.examples-list li {
+  border-bottom: 1px solid var(--border);
+}
+.example-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.example-row:hover {
+  background: var(--card);
+}
+.example-row-title {
+  font-weight: 500;
+  color: var(--fg);
+}
+.example-row-meta {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
