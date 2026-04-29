@@ -4,9 +4,6 @@ import { iconFor, toolLabel, toolTitle } from "./toolMeta"
 import { ImageBlock } from "./ImageBlock"
 import { EditDiff } from "./EditDiff"
 
-const EDIT_RESULT_NOISE =
-  /^The file .* has been updated successfully\.?\s*$|^File created successfully at: .*$/
-
 export function ToolCard({
   block,
   result,
@@ -30,20 +27,18 @@ export function ToolCard({
     const filePath = (input.file_path as string) ?? ""
     const oldS = (input.old_string as string) ?? ""
     const newS = (input.new_string as string) ?? ""
-    const showOutput = output && !EDIT_RESULT_NOISE.test(output)
     body = (
       <>
         {(oldS || newS) && (
           <EditDiff filePath={filePath} oldString={oldS} newString={newS} />
         )}
-        {showOutput && <pre className="output">{output}</pre>}
+        {output && <pre className="output">{output}</pre>}
       </>
     )
   } else if (block.name === "MultiEdit") {
     const filePath = (input.file_path as string) ?? ""
     const edits =
       (input.edits as Array<{ old_string?: string; new_string?: string }>) ?? []
-    const showOutput = output && !EDIT_RESULT_NOISE.test(output)
     body = (
       <div className="multi-edit">
         {edits.map((e, i) => (
@@ -54,7 +49,7 @@ export function ToolCard({
             newString={e.new_string ?? ""}
           />
         ))}
-        {showOutput && <pre className="output">{output}</pre>}
+        {output && <pre className="output">{output}</pre>}
       </div>
     )
   } else if (block.name === "Write") {
