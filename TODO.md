@@ -2,5 +2,11 @@
   - [ ] Viewing subagent .jsonl
 - [x] Connect skill message w/ Skill tool call
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
-- [ ] Syntax-highlight Write tool calls?
 - [ ] Render limited agent markdown
+- [ ] Show timestamps
+- [ ] View modes
+  - [x] **Compact** tool calls are hidden, click to expand
+  - [ ] **Normal** shows a snippet of code changes, a concise output, mimics claude code
+  - [ ] **Expanded** shows all content
+  - [ ] **Raw** shows the json for each message, with some minor pretty-printing
+- [ ] Syntax-highlight Write tool calls?

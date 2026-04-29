@@ -272,7 +272,7 @@ function Grep({ input, output }: CardProps<GrepInput>) {
     <ToolCard.Root hasContent={hasContent}>
       <ToolCard.Trigger>
         <Header icon={MagnifyingGlass} color="tool-green">
-          Searched code{pattern ? ` ${shortPath(pattern)}` : ""}
+          Grep `{pattern}`
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -298,7 +298,7 @@ function WebFetch({ input, output }: CardProps<WebFetchInput>) {
     <ToolCard.Root hasContent={hasContent}>
       <ToolCard.Trigger>
         <Header icon={Paperclip} color="tool-violet">
-          Fetched{url ? ` ${shortPath(url)}` : ""}
+          WebFetch {url}
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>

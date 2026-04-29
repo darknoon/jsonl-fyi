@@ -5,6 +5,7 @@ import sampleJsonl from "./__fixtures__/sample.jsonl" with { type: "text" }
 import { parseJsonl } from "./parse"
 import type { Entry } from "./types"
 import { Transcript } from "./transcript/claude/Transcript"
+import { GearIcon, XIcon } from "@phosphor-icons/react"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
 // gets tree-shaken out of production builds. The conditional below is a
@@ -82,14 +83,31 @@ export function App() {
       <header className="app-header">
         <div className="app-header-inner">
           <h1>jsonl.fyi</h1>
-          {entries && (
-            <div className="meta">
+          {entries ? (
+            <div className="filename-group">
               <span className="filename">{fileName}</span>
-              <span className="count">{entries.length} entries</span>
-              {skipped > 0 && <span className="skipped">{skipped} malformed</span>}
-              <button className="reset" onClick={reset}>Clear</button>
+              <button
+                className="icon-btn"
+                onClick={reset}
+                aria-label="Close file"
+                title="Close file"
+              >
+                <XIcon size={14} weight="bold" />
+              </button>
+              {skipped > 0 && (
+                <span className="skipped">{skipped} malformed</span>
+              )}
             </div>
+          ) : (
+            <span />
           )}
+          <button
+            className="icon-btn settings-btn"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <GearIcon size={16} />
+          </button>
         </div>
       </header>
       <div className="app">
@@ -131,6 +149,10 @@ export function App() {
               Load sample
             </button>
           </div>
+          <p className="drop-zone-hint">
+            Claude Code stores sessions at{" "}
+            <code>~/.claude/projects/&lt;project&gt;/&lt;session&gt;.jsonl</code>
+          </p>
         </>
       )}
 
