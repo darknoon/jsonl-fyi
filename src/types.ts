@@ -28,14 +28,38 @@ export type Block =
   | ToolUseBlock
   | ToolResultBlock
 
-export type Entry = {
+export type MessageEntry = {
+  type: "user" | "assistant"
   uuid?: string
   parentUuid?: string | null
   isSidechain?: boolean
   timestamp?: string
-  type: string
   message?: { role?: string; content?: Block[] | string }
 }
+
+export type TurnDurationEntry = {
+  type: "system"
+  subtype: "turn_duration"
+  durationMs: number
+  messageCount?: number
+  parentUuid: string
+  uuid?: string
+  timestamp?: string
+  isSidechain?: boolean
+}
+
+export type UnknownSystemEntry = {
+  type: "system"
+  subtype: string
+  uuid?: string
+  parentUuid?: string | null
+  timestamp?: string
+  isSidechain?: boolean
+}
+
+export type SystemEntry = TurnDurationEntry | UnknownSystemEntry
+
+export type Entry = MessageEntry | SystemEntry
 
 export type ToolResult = {
   text: string

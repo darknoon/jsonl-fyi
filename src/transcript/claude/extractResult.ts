@@ -21,6 +21,7 @@ export function extractResult(block: ToolResultBlock): ToolResult {
 }
 
 export function getBlocks(entry: Entry): Block[] {
+  if (entry.type === "system") return []
   const c = entry.message?.content
   if (!c) return []
   if (typeof c === "string") return [{ type: "text", text: c }]

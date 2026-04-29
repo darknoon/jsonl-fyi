@@ -30,6 +30,7 @@ export function Transcript({ entries }: { entries: Entry[] }) {
   let pendingSkillId: string | null = null
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i]
+    if (entry.type === "system") continue
     const role = entry.message?.role ?? entry.type
     const blocks = getBlocks(entry)
     for (let j = 0; j < blocks.length; j++) {
@@ -58,6 +59,7 @@ export function Transcript({ entries }: { entries: Entry[] }) {
   let key = 0
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i]
+    if (entry.type === "system") continue
     const role = entry.message?.role ?? entry.type
     const blocks = getBlocks(entry)
     for (let j = 0; j < blocks.length; j++) {
