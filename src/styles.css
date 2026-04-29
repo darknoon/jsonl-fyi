@@ -464,3 +464,20 @@ body,
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+.transcript-header {
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  padding: 16px 0 12px;
+}
+
+.turn-separator {
+  display: flex;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding: 12px 0;
+  letter-spacing: 0.02em;
+}
