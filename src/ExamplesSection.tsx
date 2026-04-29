@@ -21,7 +21,7 @@ export function Examples({ onSelect }: Props) {
               >
                 <span className="example-row-title">{example.name}</span>
                 <span className="example-row-meta">
-                  ({turns} turns, {formatBytes(sizeBytes)})
+                  {turns} turns • {formatBytes(sizeBytes)}
                 </span>
               </button>
             </li>

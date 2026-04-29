@@ -426,17 +426,14 @@ body,
   font-weight: 500;
   color: var(--muted);
   margin: 0 0 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 .examples-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--border);
-}
-.examples-list li {
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .example-row {
   display: flex;
@@ -444,16 +441,17 @@ body,
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 12px 8px;
-  background: none;
+  padding: 14px 16px;
+  background: var(--card);
   border: none;
+  border-radius: 10px;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 .example-row:hover {
-  background: var(--card);
+  background: var(--border);
 }
 .example-row-title {
   font-weight: 500;
