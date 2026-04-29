@@ -1,5 +1,11 @@
 {
   "buildCommand": "bun run build",
   "outputDirectory": "dist",
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/examples/:path*",
+      "destination": "/index.html"
+    }
+  ]
 }

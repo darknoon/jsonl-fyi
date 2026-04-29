@@ -1,5 +1,10 @@
 import { test, expect } from "bun:test"
-import { exampleStats, formatBytes } from "./examples"
+import {
+  exampleHref,
+  exampleStats,
+  findExampleByPath,
+  formatBytes,
+} from "./examples"
 
 test("formatBytes uses bytes / KB / MB with one decimal", () => {
   expect(formatBytes(0)).toBe("0 B")
@@ -45,4 +50,19 @@ test("exampleStats ignores malformed lines", () => {
     ``,
   ].join("\n")
   expect(exampleStats(content).turns).toBe(1)
+})
+
+test("exampleHref maps an example to a stable jsonl route", () => {
+  expect(exampleHref({ name: "demo", fileName: "sample.jsonl", content: "" }))
+    .toBe("/examples/sample.jsonl")
+})
+
+test("findExampleByPath returns bundled examples for example routes", () => {
+  expect(findExampleByPath("/examples/sample.jsonl")?.fileName)
+    .toBe("sample.jsonl")
+})
+
+test("findExampleByPath ignores non-example and unknown example routes", () => {
+  expect(findExampleByPath("/")).toBeNull()
+  expect(findExampleByPath("/examples/missing.jsonl")).toBeNull()
 })

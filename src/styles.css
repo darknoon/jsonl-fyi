@@ -445,10 +445,11 @@ body,
   padding: 14px 16px;
   background: var(--card);
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   color: inherit;
   font: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 .example-row:hover {

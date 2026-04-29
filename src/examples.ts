@@ -16,6 +16,27 @@ export const EXAMPLES: Example[] = [
   },
 ]
 
+export function exampleHref(example: Example): string {
+  return `/examples/${encodeURIComponent(example.fileName)}`
+}
+
+export function findExampleByPath(pathname: string): Example | null {
+  const prefix = "/examples/"
+  if (!pathname.startsWith(prefix)) return null
+
+  const encodedFileName = pathname.slice(prefix.length)
+  if (!encodedFileName) return null
+
+  let fileName: string
+  try {
+    fileName = decodeURIComponent(encodedFileName)
+  } catch {
+    return null
+  }
+
+  return EXAMPLES.find(example => example.fileName === fileName) ?? null
+}
+
 export type ExampleStats = {
   turns: number
   sizeBytes: number

@@ -4,7 +4,8 @@ import type { Entry } from "./types"
 import { Transcript } from "./transcript/claude/Transcript"
 import { GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
 import { Examples } from "./ExamplesSection"
-import { EXAMPLES } from "./examples"
+import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
+import type { Example } from "./examples"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
 // gets tree-shaken out of production builds. The conditional below is a
@@ -48,11 +49,14 @@ export function App() {
     loadText(text, file.name)
   }
 
-  function reset() {
+  function reset(clearUrl = false) {
     setEntries(null)
     setFileName(null)
     setSkipped(0)
     if (inputRef.current) inputRef.current.value = ""
+    if (clearUrl && window.location.pathname !== "/") {
+      window.history.pushState(null, "", "/")
+    }
     try {
       sessionStorage.removeItem(STORAGE_KEY)
     } catch {
@@ -60,22 +64,47 @@ export function App() {
     }
   }
 
+  function loadExample(example: Example, updateHistory = true) {
+    if (updateHistory) {
+      window.history.pushState(null, "", exampleHref(example))
+    }
+    loadText(example.content, example.fileName, false)
+  }
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.has("demo") && EXAMPLES.length > 0) {
-      const first = EXAMPLES[0]
-      loadText(first.content, first.fileName, false)
-      return
-    }
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const { name, text } = JSON.parse(raw) as { name: string; text: string }
-        loadText(text, name, false)
+    function loadCurrentLocation(restoreSession: boolean) {
+      const routeExample = findExampleByPath(window.location.pathname)
+      if (routeExample) {
+        loadExample(routeExample, false)
+        return
       }
-    } catch {
-      // ignore parse/storage errors; user can re-drop the file
+
+      if (!restoreSession) {
+        reset(false)
+        return
+      }
+
+      const params = new URLSearchParams(window.location.search)
+      if (params.has("demo") && EXAMPLES.length > 0) {
+        const first = EXAMPLES[0]
+        loadText(first.content, first.fileName, false)
+        return
+      }
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY)
+        if (raw) {
+          const { name, text } = JSON.parse(raw) as { name: string; text: string }
+          loadText(text, name, false)
+        }
+      } catch {
+        // ignore parse/storage errors; user can re-drop the file
+      }
     }
+
+    loadCurrentLocation(true)
+    const handlePopState = () => loadCurrentLocation(false)
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
   }, [])
 
   return (
@@ -88,7 +117,7 @@ export function App() {
               <span className="filename">{fileName}</span>
               <button
                 className="icon-btn"
-                onClick={reset}
+                onClick={() => reset(true)}
                 aria-label="Close file"
                 title="Close file"
               >
@@ -146,7 +175,7 @@ export function App() {
             <code>~/.claude/projects/&lt;project-slug&gt;/&lt;session&gt;.jsonl</code>
             The project slug is the absolute path to the project directory, with <code>/</code> replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
           </p>
-          <Examples onSelect={loadText} />
+          <Examples onSelect={loadExample} />
         </>
       )}
 

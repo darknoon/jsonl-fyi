@@ -1,7 +1,8 @@
-import { EXAMPLES, exampleStats, formatBytes } from "./examples"
+import { EXAMPLES, exampleHref, exampleStats, formatBytes } from "./examples"
+import type { Example } from "./examples"
 
 type Props = {
-  onSelect: (content: string, fileName: string, persist?: boolean) => void
+  onSelect: (example: Example) => void
 }
 
 export function Examples({ onSelect }: Props) {
@@ -14,16 +15,19 @@ export function Examples({ onSelect }: Props) {
           const { turns, sizeBytes } = exampleStats(example.content)
           return (
             <li key={example.fileName}>
-              <button
-                type="button"
+              <a
+                href={exampleHref(example)}
                 className="example-row"
-                onClick={() => onSelect(example.content, example.fileName, false)}
+                onClick={event => {
+                  event.preventDefault()
+                  onSelect(example)
+                }}
               >
                 <span className="example-row-title">{example.name}</span>
                 <span className="example-row-meta">
                   {turns} turns • {formatBytes(sizeBytes)}
                 </span>
-              </button>
+              </a>
             </li>
           )
         })}
