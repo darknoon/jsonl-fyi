@@ -4,9 +4,9 @@
 
 **Depends on:** `2026-04-29-examples-and-fixture.md` must land first (this plan tests against the new fixture and assumes the snapshot test reshape from that plan is committed).
 
-**Goal:** Show a relative chat-start timestamp at the top of the transcript and render a small per-turn duration label between turns. Use the harness's `system`/`turn_duration` rows when present; fall back to a wall-clock delta otherwise.
+**Goal:** Show a relative chat-start timestamp at the top of the transcript and render a small per-turn duration label between turns, sourced from `system`/`turn_duration` rows. (A scan of all 950 local Claude transcripts on 2026-04-29 found `turn_duration` in every one, so no fallback is needed.)
 
-**Architecture:** Pure helpers (`formatChatStart`, `formatDuration`, `buildTurnDurations`) in a new `src/transcript/timing.ts`, fully unit-tested. Two thin presentational components (`TranscriptHeader`, `TurnSeparator`) consume those helpers. `Transcript.tsx` is extended to render the header at the top and to inject a separator after the last block of any assistant entry that ends a turn. `Entry` becomes a discriminated union so `system` rows can be modeled and pre-passed cleanly. `parse.ts` stops filtering `system` rows so `turn_duration` survives to the renderer.
+**Architecture:** One pure function `buildTranscriptItems(entries)` decides the render order: it returns a flat list of `RenderItem`s — `{ kind: "header", chatStartIso }`, `{ kind: "entry", entry }`, `{ kind: "separator", afterUuid, durationMs }`. Items carry the actual entry object so the renderer is a flat `items.map(switch on kind)` with no lookups. Tests stay readable via a `summarize()` helper that projects each item to one line and only reads `item.entry.uuid`. Format helpers (`formatChatStart`, `formatDuration`) live alongside as pure functions. `Transcript.tsx` becomes a deterministic mapping from items to JSX, looking entries up by uuid. Two thin presentational components (`TranscriptHeader`, `TurnSeparator`) consume the format helpers. `Entry` becomes a discriminated union so `system` rows can be modeled and pre-passed cleanly. `parse.ts` stops filtering `system` rows so `turn_duration` survives to `buildTranscriptItems`.
 
 **Tech Stack:** React 19, TypeScript, Bun (`bun:test`), `Intl.DateTimeFormat`, CSS variables. No new dependencies.
 
@@ -17,8 +17,8 @@
 - **Modify** `src/types.ts` — discriminated `Entry = MessageEntry | SystemEntry`
 - **Modify** `src/parse.ts` — remove `"system"` from `SKIP_TYPES`
 - **Modify** `src/parse.test.ts` — update inline snapshot (system entries now flow through)
-- **Create** `src/transcript/timing.ts` — `formatChatStart`, `formatDuration`, `buildTurnDurations`
-- **Create** `src/transcript/timing.test.ts` — unit tests for the three helpers
+- **Create** `src/transcript/timing.ts` — `formatChatStart`, `formatDuration`, `buildTranscriptItems`, `RenderItem`
+- **Create** `src/transcript/timing.test.ts` — focused unit tests for format helpers + scenario snapshots for `buildTranscriptItems`
 - **Create** `src/transcript/TranscriptHeader.tsx` — chat-start label component
 - **Create** `src/transcript/TurnSeparator.tsx` — turn-footer label component (slot-extensible)
 - **Modify** `src/transcript/claude/Transcript.tsx` — render header + inject separators
@@ -69,16 +69,6 @@ export type TurnDurationEntry = {
   isSidechain?: boolean
 }
 
-export type AwaySummaryEntry = {
-  type: "system"
-  subtype: "away_summary"
-  content: string
-  uuid?: string
-  parentUuid?: string
-  timestamp?: string
-  isSidechain?: boolean
-}
-
 export type UnknownSystemEntry = {
   type: "system"
   subtype: string
@@ -88,10 +78,7 @@ export type UnknownSystemEntry = {
   isSidechain?: boolean
 }
 
-export type SystemEntry =
-  | TurnDurationEntry
-  | AwaySummaryEntry
-  | UnknownSystemEntry
+export type SystemEntry = TurnDurationEntry | UnknownSystemEntry
 
 export type Entry = MessageEntry | SystemEntry
 ```
@@ -201,9 +188,28 @@ import { test, expect } from "bun:test"
 import {
   formatChatStart,
   formatDuration,
-  buildTurnDurations,
+  buildTranscriptItems,
+  type RenderItem,
 } from "./timing"
 import type { Entry } from "../types"
+
+// Render the item list as a one-line-per-item string so inline snapshots stay
+// readable and focused on what `buildTranscriptItems` actually decides
+// (ordering, anchoring, filtering) rather than dumping entry payloads.
+function summarize(items: RenderItem[]): string {
+  return items
+    .map(i => {
+      switch (i.kind) {
+        case "header":
+          return `header  ${i.chatStartIso}`
+        case "entry":
+          return `entry   ${i.entry.uuid}`
+        case "separator":
+          return `sep     after=${i.afterUuid} ${i.durationMs}ms`
+      }
+    })
+    .join("\n")
+}
 
 // All `formatChatStart` tests force `en-US` and a fixed timezone so output is
 // stable across machines. The function itself uses the runtime locale; the
@@ -268,7 +274,11 @@ test("formatChatStart: prior years include the year", () => {
   ).toBe("April 16, 2024, 2:15 PM")
 })
 
-test("buildTurnDurations: prefers system.turn_duration when present", () => {
+test("buildTranscriptItems: empty input → empty list", () => {
+  expect(buildTranscriptItems([])).toEqual([])
+})
+
+test("buildTranscriptItems: prefers system.turn_duration when present", () => {
   const entries: Entry[] = [
     {
       type: "user",
@@ -290,12 +300,11 @@ test("buildTurnDurations: prefers system.turn_duration when present", () => {
       timestamp: "2026-04-29T20:00:05.500Z",
     },
   ]
-  const map = buildTurnDurations(entries)
-  expect(map.get("a1")).toBe(4321)
-  expect(map.size).toBe(1)
+  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot()
 })
 
-test("buildTurnDurations: falls back to wall-clock when turn_duration is absent", () => {
+test("buildTranscriptItems: assistant turn with no turn_duration row has no separator", () => {
+  // No system row → no separator (we don't fall back to wall clock).
   const entries: Entry[] = [
     {
       type: "user",
@@ -306,30 +315,14 @@ test("buildTurnDurations: falls back to wall-clock when turn_duration is absent"
     {
       type: "assistant",
       uuid: "a1",
-      timestamp: "2026-04-29T20:00:03Z",
-      message: { role: "assistant", content: [{ type: "tool_use", id: "x", name: "Read", input: {} }] },
-    },
-    {
-      type: "user",
-      uuid: "u2",
-      timestamp: "2026-04-29T20:00:04Z",
-      message: { role: "user", content: [{ type: "tool_result", tool_use_id: "x", content: "ok" }] },
-    },
-    {
-      type: "assistant",
-      uuid: "a2",
-      timestamp: "2026-04-29T20:00:08Z",
-      message: { role: "assistant", content: [{ type: "text", text: "done" }] },
+      timestamp: "2026-04-29T20:00:05Z",
+      message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
     },
   ]
-  const map = buildTurnDurations(entries)
-  // Last assistant before next user-typed message is a2; user-typed start was u1.
-  expect(map.get("a2")).toBe(8000)
-  // a1 is not a turn end — it's followed by a tool_result before the next assistant.
-  expect(map.get("a1")).toBeUndefined()
+  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot()
 })
 
-test("buildTurnDurations: skips turns with no terminating assistant entry", () => {
+test("buildTranscriptItems: in-progress turn has no separator", () => {
   const entries: Entry[] = [
     {
       type: "user",
@@ -337,12 +330,12 @@ test("buildTurnDurations: skips turns with no terminating assistant entry", () =
       timestamp: "2026-04-29T20:00:00Z",
       message: { role: "user", content: "hi" },
     },
-    // no assistant entry yet (in-progress turn)
+    // no assistant entry yet
   ]
-  expect(buildTurnDurations(entries).size).toBe(0)
+  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot()
 })
 
-test("buildTurnDurations: ignores sidechain entries", () => {
+test("buildTranscriptItems: ignores sidechain entries", () => {
   const entries: Entry[] = [
     {
       type: "user",
@@ -363,12 +356,44 @@ test("buildTurnDurations: ignores sidechain entries", () => {
       timestamp: "2026-04-29T20:00:05Z",
       message: { role: "assistant", content: [{ type: "text", text: "main reply" }] },
     },
+    {
+      type: "system",
+      subtype: "turn_duration",
+      parentUuid: "a1",
+      durationMs: 5000,
+      timestamp: "2026-04-29T20:00:05.500Z",
+    },
   ]
-  const map = buildTurnDurations(entries)
-  expect(map.get("a1")).toBe(5000)
-  expect(map.get("side")).toBeUndefined()
+  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot()
 })
 ```
+
+Snapshots are intentionally left empty (`toMatchInlineSnapshot()`) so they're recorded by the implementation step. Expected after `bun test -u`:
+
+```
+// prefers system.turn_duration:
+header  2026-04-29T20:00:00Z
+entry   u1
+entry   a1
+sep     after=a1 4321ms
+
+// no turn_duration row → no separator:
+header  2026-04-29T20:00:00Z
+entry   u1
+entry   a1
+
+// in-progress:
+header  2026-04-29T20:00:00Z
+entry   u1
+
+// sidechain ignored:
+header  2026-04-29T20:00:00Z
+entry   u1
+entry   a1
+sep     after=a1 5000ms
+```
+
+If any snapshot diverges from the expected text above, that's a real bug — fix the implementation, not the expectation.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -432,63 +457,49 @@ export function formatDuration(ms: number): string {
   return `${m}m ${s}s`
 }
 
-export function buildTurnDurations(entries: Entry[]): Map<string, number> {
-  const out = new Map<string, number>()
+export type RenderItem =
+  | { kind: "header"; chatStartIso: string }
+  | { kind: "entry"; entry: MessageEntry }
+  | { kind: "separator"; afterUuid: string; durationMs: number }
 
-  // First pass: pick up any explicit turn_duration system entries.
+export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
+  if (entries.length === 0) return []
+
+  // Pass 1: index turn durations from system rows by the assistant uuid they
+  // reference (parentUuid).
+  const durations = new Map<string, number>()
   for (const entry of entries) {
     if (entry.type === "system" && entry.subtype === "turn_duration") {
       const td = entry as TurnDurationEntry
       if (td.parentUuid && typeof td.durationMs === "number") {
-        out.set(td.parentUuid, td.durationMs)
+        durations.set(td.parentUuid, td.durationMs)
       }
     }
   }
 
-  // Second pass: wall-clock fallback for assistant turn-ends not already covered.
-  // A turn = (triggering user-typed message) → ... → (last assistant entry before next user-typed message).
-  let pendingUserTs: string | null = null
-  let lastAssistantInTurn: MessageEntry | null = null
-
-  function flush() {
-    if (
-      pendingUserTs &&
-      lastAssistantInTurn &&
-      lastAssistantInTurn.uuid &&
-      lastAssistantInTurn.timestamp &&
-      !out.has(lastAssistantInTurn.uuid)
-    ) {
-      const ms = Date.parse(lastAssistantInTurn.timestamp) - Date.parse(pendingUserTs)
-      if (Number.isFinite(ms) && ms >= 0) {
-        out.set(lastAssistantInTurn.uuid, ms)
-      }
-    }
-    lastAssistantInTurn = null
+  // Pass 2: emit items in source order, with header at the top and a separator
+  // after each assistant entry whose uuid has a duration.
+  const items: RenderItem[] = []
+  const startTimestamp = entries.find(e => e.timestamp)?.timestamp
+  if (startTimestamp) {
+    items.push({ kind: "header", chatStartIso: startTimestamp })
   }
 
   for (const entry of entries) {
-    if (entry.type !== "user" && entry.type !== "assistant") continue
+    if (entry.type === "system") continue
     if (entry.isSidechain) continue
+    if (entry.type !== "user" && entry.type !== "assistant") continue
     const m = entry as MessageEntry
-    if (m.type === "user" && isUserTyped(m)) {
-      flush()
-      pendingUserTs = m.timestamp ?? null
-      continue
-    }
-    if (m.type === "assistant") {
-      lastAssistantInTurn = m
+    items.push({ kind: "entry", entry: m })
+    if (m.type === "assistant" && m.uuid) {
+      const ms = durations.get(m.uuid)
+      if (ms != null) {
+        items.push({ kind: "separator", afterUuid: m.uuid, durationMs: ms })
+      }
     }
   }
-  flush()
 
-  return out
-}
-
-function isUserTyped(entry: MessageEntry): boolean {
-  const c = entry.message?.content
-  if (typeof c === "string") return true
-  if (!Array.isArray(c)) return false
-  return !c.some(b => b && typeof b === "object" && (b as { type?: unknown }).type === "tool_result")
+  return items
 }
 
 function calendarDayDelta(date: Date, now: Date, timeZone?: string): number {
@@ -522,11 +533,11 @@ function daysBetween(from: Ymd, to: Ymd): number {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 4: Record snapshots and run tests**
 
-Run: `bun test src/transcript/timing.test.ts`
+Run: `bun test src/transcript/timing.test.ts -u` once to record the inline snapshots, then `bun test src/transcript/timing.test.ts` to verify.
 
-Expected: 11 pass, 0 fail.
+Expected: 13 pass, 0 fail (3 `formatDuration` + 5 `formatChatStart` + 5 `buildTranscriptItems`). Compare each recorded snapshot against the expected text in the test file's comment block — if any diverge, fix the implementation, not the snapshot.
 
 If any `formatChatStart` test fails because of locale-specific output (e.g., a CI runner's `Intl` returns `"7:15 PM"` vs `"7:15 PM"` with a non-breaking space), normalize the output in the function (`.replace(/ /g, " ")`) and re-run. Don't change the test expectations.
 
@@ -626,97 +637,119 @@ git commit -m "feat: TranscriptHeader component"
 
 ---
 
-## Task 6: Wire header + separators into `Transcript.tsx`
+## Task 6: Render `RenderItem`s in `Transcript.tsx`
+
+**Goal:** the Transcript body becomes `items.map(item => <Switch on item.kind>)` with no inline loops or lookups. Per-entry block rendering moves into a small `EntryView` component.
 
 **Files:**
 - Modify: `src/transcript/claude/Transcript.tsx`
+- Create: `src/transcript/claude/EntryView.tsx`
 - Modify: `src/transcript/claude/extractResult.ts` (only if `getBlocks` doesn't already return `[]` for system entries)
 
 - [ ] **Step 1: Confirm `getBlocks` is safe for system entries**
 
-Open `src/transcript/claude/extractResult.ts` and check the `getBlocks` implementation. It almost certainly indexes `entry.message?.content` and returns `[]` when missing — which is exactly right for system entries (they have no `message`). If it's already that simple, no change. If it does anything that would crash on `system`, add an early `if (entry.type === "system") return []`.
+Open `src/transcript/claude/extractResult.ts` and check `getBlocks`. It almost certainly indexes `entry.message?.content` and returns `[]` when missing — which is right for system entries. If it does anything that would crash on `system`, add an early `if (entry.type === "system") return []`.
 
-- [ ] **Step 2: Modify `Transcript.tsx`**
+- [ ] **Step 2: Switch the skill-absorption set to uuid-based keys**
 
-Open `src/transcript/claude/Transcript.tsx`.
+The existing Pass 1b uses entry index `i` to build `skipKeys` like `${i}:${j}`. Once the renderer is driven by `RenderItem`s, source-array indices are no longer the right addressing. Rekey to `${entry.uuid}:${j}`.
 
-Add imports near the top:
+In `Transcript.tsx` Pass 1b, change `skipKeys.add(\`${i}:${j}\`)` to `skipKeys.add(\`${entry.uuid}:${j}\`)`. Skip entries with no `uuid` (defensive — they shouldn't reach absorption logic but bail rather than mis-key).
+
+- [ ] **Step 3: Extract `EntryView`**
+
+Create `src/transcript/claude/EntryView.tsx`:
+
+```tsx
+import type { ReactNode } from "react"
+import type { MessageEntry, ToolResult } from "../../types"
+import { getBlocks } from "./extractResult"
+import { TextBlock } from "./TextBlock"
+import { ThinkingBlock } from "../ThinkingBlock"
+import { ImageBlock } from "../ImageBlock"
+import { Tool } from "./Tool"
+import { narrowToolUse } from "./toolTypes"
+
+const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [] }
+
+type Props = {
+  entry: MessageEntry
+  results: Map<string, ToolResult>
+  skipKeys: Set<string>
+}
+
+export function EntryView({ entry, results, skipKeys }: Props) {
+  const role = entry.message?.role ?? entry.type
+  const blocks = getBlocks(entry)
+  const nodes: ReactNode[] = []
+  for (let j = 0; j < blocks.length; j++) {
+    const block = blocks[j]
+    if (skipKeys.has(`${entry.uuid}:${j}`)) continue
+    if (block.type === "text") {
+      nodes.push(<TextBlock key={j} text={block.text} role={role} />)
+    } else if (block.type === "thinking") {
+      nodes.push(<ThinkingBlock key={j} text={block.thinking} />)
+    } else if (block.type === "image") {
+      nodes.push(<ImageBlock key={j} source={block.source} role={role} />)
+    } else if (block.type === "tool_use") {
+      const use = narrowToolUse(block)
+      const output = results.get(block.id) ?? EMPTY_RESULT
+      nodes.push(<Tool key={j} use={use} output={output} />)
+    }
+  }
+  return <>{nodes}</>
+}
+```
+
+- [ ] **Step 4: Reduce `Transcript.tsx` to a flat map**
+
+Replace the Pass 2 loop (lines ~57–79 in the current file) with:
+
+```tsx
+  const items = buildTranscriptItems(entries)
+  return (
+    <div className="transcript">
+      {items.map((item, idx) => {
+        switch (item.kind) {
+          case "header":
+            return (
+              <TranscriptHeader
+                key={`hdr-${idx}`}
+                startTimestamp={item.chatStartIso}
+              />
+            )
+          case "separator":
+            return (
+              <TurnSeparator
+                key={`sep-${item.afterUuid}`}
+                durationMs={item.durationMs}
+              />
+            )
+          case "entry":
+            return (
+              <EntryView
+                key={item.entry.uuid ?? `entry-${idx}`}
+                entry={item.entry}
+                results={results}
+                skipKeys={skipKeys}
+              />
+            )
+        }
+      })}
+    </div>
+  )
+```
+
+Add imports:
 
 ```tsx
 import { TranscriptHeader } from "../TranscriptHeader"
 import { TurnSeparator } from "../TurnSeparator"
-import { buildTurnDurations } from "../timing"
+import { buildTranscriptItems } from "../timing"
+import { EntryView } from "./EntryView"
 ```
 
-After the existing Pass 1b loop and before `// Pass 2: render in order`, build the duration map and pick the start timestamp:
-
-```tsx
-  // Pass 1c: index turn durations (turn_duration entries + wall-clock fallback)
-  // by the uuid of the assistant entry that ends the turn.
-  const turnDurations = buildTurnDurations(entries)
-
-  // Header timestamp: first entry that has one.
-  const startTimestamp = entries.find(e => e.timestamp)?.timestamp
-```
-
-In the Pass 2 loop, skip system entries entirely (they were retained for `buildTurnDurations` but don't render):
-
-Find the start of the Pass 2 loop:
-
-```tsx
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i]
-    const role = entry.message?.role ?? entry.type
-    const blocks = getBlocks(entry)
-    for (let j = 0; j < blocks.length; j++) {
-```
-
-Insert this guard immediately after `const entry = entries[i]`:
-
-```tsx
-    if (entry.type === "system") continue
-```
-
-After the inner `for (j ...)` loop closes (i.e., right after we've rendered all blocks for this entry but before the outer loop increments `i`), inject the separator if this assistant entry ended a turn:
-
-Find:
-
-```tsx
-      } else if (block.type === "tool_use") {
-        const use = narrowToolUse(block)
-        const output = results.get(block.id) ?? EMPTY_RESULT
-        nodes.push(<Tool key={k} use={use} output={output} />)
-      }
-    }
-  }
-
-  return <div className="transcript">{nodes}</div>
-```
-
-Insert the separator right after the inner loop closes:
-
-```tsx
-      } else if (block.type === "tool_use") {
-        const use = narrowToolUse(block)
-        const output = results.get(block.id) ?? EMPTY_RESULT
-        nodes.push(<Tool key={k} use={use} output={output} />)
-      }
-    }
-    if (entry.type === "assistant" && entry.uuid) {
-      const ms = turnDurations.get(entry.uuid)
-      if (ms != null) {
-        nodes.push(<TurnSeparator key={`sep-${entry.uuid}`} durationMs={ms} />)
-      }
-    }
-  }
-
-  return (
-    <div className="transcript">
-      {startTimestamp && <TranscriptHeader startTimestamp={startTimestamp} />}
-      {nodes}
-    </div>
-  )
-```
+Remove the now-unused imports (`TextBlock`, `ThinkingBlock`, `ImageBlock`, `Tool`, `narrowToolUse`, `EMPTY_RESULT`) from `Transcript.tsx` — they live in `EntryView` now. Pass 1 (results) and Pass 1b (skill absorption) stay in `Transcript.tsx` unchanged except for the uuid-based `skipKeys`.
 
 - [ ] **Step 3: Type-check**
 
@@ -780,13 +813,9 @@ git commit -m "style: transcript header and turn separator"
 
 **Files:** none
 
-- [ ] **Step 1: Kill any prior dev server**
+- [ ] **Step 1: Confirm dev server is running**
 
-If you launched `bun index.html` earlier in this session, kill its PID. If not, skip.
-
-- [ ] **Step 2: Start the dev server**
-
-Run: `bun index.html` and note the PID and URL.
+The user typically has `bun index.html` already running on `http://localhost:3000/`. Do NOT kill it, and do NOT start a second instance. If nothing is responding on `:3000`, ask the user to start it rather than launching one yourself. Hit the URL with `curl -sI http://localhost:3000/` to confirm.
 
 - [ ] **Step 3: Verify the header**
 
@@ -800,9 +829,6 @@ Scroll through the transcript. Between turns, you should see small muted centere
 
 Spot-check at least one separator value against the fixture: `grep -m1 '"subtype":"turn_duration"' src/__fixtures__/sample.jsonl` and confirm one of the displayed values matches `durationMs / 1000` formatted by the rules (`<1s` → ms, `<60s` → `Xs`, ≥60s → `Xm Ys`).
 
-- [ ] **Step 5: Verify wall-clock fallback (optional, skip if all turns have turn_duration)**
-
-If all turns in the fixture have `turn_duration`, skip this. Otherwise: confirm that turns lacking `turn_duration` still show a separator; the value should match the wall-clock delta between the user's message timestamp and the final assistant message of the chain.
 
 - [ ] **Step 6: Run the full check one more time**
 
@@ -813,11 +839,7 @@ bun run check
 
 Expected: all green.
 
-- [ ] **Step 7: Kill the dev server**
-
-Kill the PID from Step 2.
-
-- [ ] **Step 8: Final commit if any tweaks were needed**
+- [ ] **Step 7: Final commit if any tweaks were needed**
 
 If verification surfaced issues, fix and commit.
 
@@ -829,11 +851,9 @@ When all tasks above land:
 
 - Transcript shows a relative chat-start label at the top.
 - Each turn shows a small muted duration label between turns.
-- Wall-clock fallback fills in for transcripts that predate `turn_duration`.
 - Tests pass; type-check passes.
 
 Future follow-ups (called out in spec, not in this plan):
 
 - Add token usage to `TurnSeparator` via the existing `children` slot.
-- Render `away_summary` entries.
 - Hover tooltip with the absolute ISO timestamp.

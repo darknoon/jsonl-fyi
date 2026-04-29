@@ -3,7 +3,8 @@
 - [x] Connect skill message w/ Skill tool call
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [ ] Render limited agent markdown
-- [ ] Show timestamps
+- [ ] Show model used!
+- [ ] *Show timestamps* wip
 - [ ] Show tokens used?
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
