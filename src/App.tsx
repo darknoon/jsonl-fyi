@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
-// eslint-disable-next-line
-// @ts-ignore — Bun handles `with { type: "text" }` at bundle time
-import sampleJsonl from "./__fixtures__/sample.jsonl" with { type: "text" }
 import { parseJsonl } from "./parse"
 import type { Entry } from "./types"
 import { Transcript } from "./transcript/claude/Transcript"
 import { GearIcon, XIcon } from "@phosphor-icons/react"
+import { Examples } from "./ExamplesSection"
+import { EXAMPLES } from "./examples"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
 // gets tree-shaken out of production builds. The conditional below is a
@@ -63,8 +62,9 @@ export function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.has("demo")) {
-      loadText(sampleJsonl, "sample.jsonl", false)
+    if (params.has("demo") && EXAMPLES.length > 0) {
+      const first = EXAMPLES[0]
+      loadText(first.content, first.fileName, false)
       return
     }
     try {
@@ -141,18 +141,11 @@ export function App() {
               }}
             />
           </div>
-          <div className="demo-row">
-            <button
-              className="demo-link"
-              onClick={() => loadText(sampleJsonl, "sample.jsonl", false)}
-            >
-              Load sample
-            </button>
-          </div>
           <p className="drop-zone-hint">
             Claude Code stores sessions at{" "}
             <code>~/.claude/projects/&lt;project&gt;/&lt;session&gt;.jsonl</code>
           </p>
+          <Examples onSelect={loadText} />
         </>
       )}
 
