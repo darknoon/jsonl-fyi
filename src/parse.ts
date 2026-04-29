@@ -6,7 +6,6 @@ const SKIP_TYPES = new Set([
   "permission-mode",
   "last-prompt",
   "attachment",
-  "system",
 ])
 
 export function parseJsonl(text: string): { entries: Entry[]; skipped: number } {

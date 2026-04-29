@@ -20,8 +20,8 @@ test("parseJsonl filters and counts entries from the real fixture", async () => 
   ].join("\n")
 
   expect(summary).toMatchInlineSnapshot(`
-    "entries=126 skipped=0
-    types: assistant=71 user=55"
+    "entries=138 skipped=0
+    types: assistant=71 system=12 user=55"
   `)
 })
 
