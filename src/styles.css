@@ -69,8 +69,6 @@ body,
 }
 .drop-zone-hint {
   margin: 24px 0 0;
-  text-align: center;
-  font-size: var(--fs-sm);
   color: var(--muted);
 }
 .drop-zone-hint code {
@@ -415,7 +413,10 @@ body,
 .app-footer {
   margin-top: 48px;
   padding: 16px 0;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   color: var(--muted);
 }
 .examples {

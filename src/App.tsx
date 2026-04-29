@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { parseJsonl } from "./parse"
 import type { Entry } from "./types"
 import { Transcript } from "./transcript/claude/Transcript"
-import { GearIcon, XIcon } from "@phosphor-icons/react"
+import { GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
 import { Examples } from "./ExamplesSection"
 import { EXAMPLES } from "./examples"
 
@@ -151,6 +151,7 @@ export function App() {
 
       {entries && <Transcript entries={entries} />}
       <footer className="app-footer">
+        <LockIcon size={13} weight="regular" />
         Your data is processed locally in the browser
       </footer>
       </div>
