@@ -59,10 +59,30 @@ the assistant entry that ended the turn. Render the separator immediately
 - `< 60s` → `3.4s` (one decimal)
 - `≥ 60s` → `1m 23s`
 
-### Missing data
+### Missing data — wall-clock fallback
 
-If `turn_duration` is absent for a turn (older transcripts, in-progress
-sessions), render nothing. We never fabricate or estimate the number.
+If `turn_duration` is absent for a turn (older transcripts), fall back to a
+wall-clock duration computed from entry timestamps:
+
+> last assistant entry of the turn `.timestamp` − triggering user-typed
+> message `.timestamp`
+
+Definitions:
+
+- **Triggering user-typed message**: a user-role entry whose content is *not*
+  a `tool_result` (i.e. the human typed it), bounded by the previous
+  user-typed message.
+- **Last assistant entry of the turn**: the final `assistant` entry whose
+  position in the file is before the next user-typed message (or end of
+  file). Sidechain entries (`isSidechain: true`) are ignored.
+
+The fallback number is rendered identically to the `turn_duration` value
+(no tilde, no marker). Both represent "wall-clock from your message to the
+end of the response"; the tiny difference (server-reported turn time vs.
+file-write timestamps) isn't worth surfacing in the UI.
+
+If the turn has no terminating assistant entry yet (in-progress / streaming
+session), render nothing for that turn.
 
 ## Types
 
@@ -138,7 +158,7 @@ assistant entry to decide whether to emit a `<TurnSeparator>` after it.
 ## Fixture
 
 Depends on the fixture swap landed in
-`2026-04-29-samples-and-fixture-design.md`. The new fixture exercises
+`2026-04-29-examples-and-fixture-design.md`. The new fixture exercises
 `turn_duration`, `away_summary`, and realistic tool use — what's needed to
 develop and verify the timestamp surfaces in this spec. That spec ships first;
 this one builds on it.
@@ -150,6 +170,5 @@ this one builds on it.
   `output_tokens`. Same component, new slot.
 - **Rendering `away_summary`** — distinct concept (a recap message), worth its
   own brainstorm.
-- **Wall-clock fallback** when `turn_duration` is missing.
 - **Absolute-timestamp tooltip** on individual messages (hover to see exact
   ISO timestamp).
