@@ -151,7 +151,7 @@ export function App() {
 
       {entries && <Transcript entries={entries} />}
       <footer className="app-footer">
-        <LockIcon size={13} weight="regular" />
+        <LockIcon size={14} weight="bold" />
         Your data is processed locally in the browser
       </footer>
       </div>
