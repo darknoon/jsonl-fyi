@@ -2,6 +2,10 @@ import { useState, type ReactNode } from "react"
 import type { ToolUseBlock, ToolResult } from "../types"
 import { iconFor, toolLabel, toolTitle } from "./toolMeta"
 import { ImageBlock } from "./ImageBlock"
+import { EditDiff } from "./EditDiff"
+
+const EDIT_RESULT_NOISE =
+  /^The file .* has been updated successfully\.?\s*$|^File created successfully at: .*$/
 
 export function ToolCard({
   block,
@@ -23,35 +27,34 @@ export function ToolCard({
   if (block.name === "Bash") {
     body = output ? <pre className="output">{output}</pre> : null
   } else if (block.name === "Edit") {
+    const filePath = (input.file_path as string) ?? ""
     const oldS = (input.old_string as string) ?? ""
     const newS = (input.new_string as string) ?? ""
+    const showOutput = output && !EDIT_RESULT_NOISE.test(output)
     body = (
       <>
-        {oldS && <pre className="output diff-del">- {oldS.replace(/\n/g, "\n- ")}</pre>}
-        {newS && <pre className="output diff-add">+ {newS.replace(/\n/g, "\n+ ")}</pre>}
-        {output && <pre className="output">{output}</pre>}
+        {(oldS || newS) && (
+          <EditDiff filePath={filePath} oldString={oldS} newString={newS} />
+        )}
+        {showOutput && <pre className="output">{output}</pre>}
       </>
     )
   } else if (block.name === "MultiEdit") {
+    const filePath = (input.file_path as string) ?? ""
     const edits =
       (input.edits as Array<{ old_string?: string; new_string?: string }>) ?? []
+    const showOutput = output && !EDIT_RESULT_NOISE.test(output)
     body = (
       <div className="multi-edit">
         {edits.map((e, i) => (
-          <div key={i}>
-            {e.old_string && (
-              <pre className="output diff-del">
-                - {e.old_string.replace(/\n/g, "\n- ")}
-              </pre>
-            )}
-            {e.new_string && (
-              <pre className="output diff-add">
-                + {e.new_string.replace(/\n/g, "\n+ ")}
-              </pre>
-            )}
-          </div>
+          <EditDiff
+            key={i}
+            filePath={filePath}
+            oldString={e.old_string ?? ""}
+            newString={e.new_string ?? ""}
+          />
         ))}
-        {output && <pre className="output">{output}</pre>}
+        {showOutput && <pre className="output">{output}</pre>}
       </div>
     )
   } else if (block.name === "Write") {

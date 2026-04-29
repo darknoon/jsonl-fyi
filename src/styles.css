@@ -207,16 +207,18 @@ body,
 .cmd {
   color: var(--muted);
 }
-.diff-del {
-  background: rgba(255, 100, 100, 0.08);
-}
-.diff-add {
-  background: rgba(100, 200, 100, 0.08);
-}
 .multi-edit {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.edit-diff {
+  display: block;
+  font-size: 12px;
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  overflow: hidden;
+  max-height: 480px;
 }
 
 .tool-refs {
