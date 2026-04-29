@@ -143,7 +143,8 @@ export function App() {
           </div>
           <p className="drop-zone-hint">
             Claude Code stores sessions at{" "}
-            <code>~/.claude/projects/&lt;project&gt;/&lt;session&gt;.jsonl</code>
+            <code>~/.claude/projects/&lt;project-slug&gt;/&lt;session&gt;.jsonl</code>
+            The project slug is the absolute path to the project directory, with <code>/</code> replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
           </p>
           <Examples onSelect={loadText} />
         </>

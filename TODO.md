@@ -4,9 +4,12 @@
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [ ] Render limited agent markdown
 - [ ] Show timestamps
+- [ ] Show tokens used?
+- [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
   - [x] **Compact** tool calls are hidden, click to expand
   - [ ] **Normal** shows a snippet of code changes, a concise output, mimics claude code
   - [ ] **Expanded** shows all content
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
 - [ ] Syntax-highlight Write tool calls?
+- [ ] Some way of sharing / upload to cdn from cli? or curl / skill?
