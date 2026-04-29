@@ -177,3 +177,41 @@ export type UnknownToolUse = {
 }
 
 export type ToolUse = KnownToolUse | UnknownToolUse
+
+const KNOWN_NAMES = new Set<KnownToolUse["name"]>([
+  "Bash",
+  "Read",
+  "Edit",
+  "MultiEdit",
+  "Write",
+  "Glob",
+  "Grep",
+  "WebFetch",
+  "WebSearch",
+  "Task",
+  "Agent",
+  "TodoWrite",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "NotebookEdit",
+  "ToolSearch",
+  "Skill",
+])
+
+// Narrow an untyped tool_use block (raw from JSONL) into the discriminated
+// union. We trust `name` to discriminate `input`; if Claude Code ever ships
+// a known tool with a different shape, it'll surface as a runtime error in
+// the body component, which is the right place to notice.
+export function narrowToolUse(block: {
+  name: string
+  input: Record<string, unknown>
+}): ToolUse {
+  if (KNOWN_NAMES.has(block.name as KnownToolUse["name"])) {
+    return block as KnownToolUse
+  }
+  return block as UnknownToolUse
+}
+
+export function isKnownToolUse(use: ToolUse): use is KnownToolUse {
+  return KNOWN_NAMES.has(use.name as KnownToolUse["name"])
+}

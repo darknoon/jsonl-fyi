@@ -170,6 +170,73 @@ body,
 .tool-row .icon {
   flex-shrink: 0;
 }
+.tool-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-row > span.tool-label-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+}
+.tool-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 12px;
+  row-gap: 2px;
+  margin: 0;
+  font-size: 12px;
+}
+.tool-field {
+  display: contents;
+}
+.tool-field dt {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.tool-field dd {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tool-field dd code {
+  background: none;
+  padding: 0;
+}
+.tool-field-inline {
+  font-size: 12px;
+  color: var(--muted);
+}
+.tool-field-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.todo {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.todo-status {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  min-width: 88px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.todo-completed span:last-child {
+  text-decoration: line-through;
+  color: var(--muted);
+}
 .icon.tool-blue {
   color: #7ab7ff;
 }

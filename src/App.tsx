@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import sampleJsonl from "./__fixtures__/sample.jsonl" with { type: "text" }
 import { parseJsonl } from "./parse"
 import type { Entry } from "./types"
-import { Transcript } from "./transcript/Transcript"
+import { Transcript } from "./transcript/claude/Transcript"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
 // gets tree-shaken out of production builds. The conditional below is a

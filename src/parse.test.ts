@@ -1,6 +1,46 @@
 import { test, expect } from "bun:test"
 import { parseJsonl } from "./parse"
-import { toolTitle, shortPath } from "./transcript/toolMeta"
+import { shortPath } from "./transcript/claude/toolMeta"
+import {
+  narrowToolUse,
+  isKnownToolUse,
+  type ToolUse,
+} from "./transcript/claude/toolTypes"
+
+// Pull a short representative string out of any tool_use input — used only
+// here to render the fixture as a one-line-per-call script. Real UI labels
+// live on each tool's component.
+function toolTitle(use: ToolUse): string {
+  if (!isKnownToolUse(use)) return ""
+  switch (use.name) {
+    case "Bash":
+      return use.input.command
+    case "Read":
+    case "Edit":
+    case "MultiEdit":
+    case "Write":
+      return use.input.file_path
+    case "Glob":
+    case "Grep":
+      return use.input.pattern
+    case "WebFetch":
+      return use.input.url
+    case "WebSearch":
+    case "ToolSearch":
+      return use.input.query
+    case "Task":
+    case "Agent":
+      return use.input.description
+    case "NotebookEdit":
+      return use.input.notebook_path
+    case "Skill":
+      return use.input.skill
+    case "TodoWrite":
+    case "EnterPlanMode":
+    case "ExitPlanMode":
+      return ""
+  }
+}
 
 // Render the fixture in a Claude-Code-style script form: tool calls as
 // `ToolName(short title)`, tool results as `↳ result`, and user/assistant
@@ -33,10 +73,12 @@ function renderEntry(entry: { type: string; message?: { role?: string; content?:
         case "image":
           return `[image]`
         case "tool_use": {
-          const title = toolTitle({
-            name: String(block.name),
-            input: (block.input as Record<string, unknown>) ?? {},
-          })
+          const title = toolTitle(
+            narrowToolUse({
+              name: String(block.name),
+              input: (block.input as Record<string, unknown>) ?? {},
+            }),
+          )
           const display = title ? shortPath(title) : ""
           return `${String(block.name)}(${truncate(display, 60)})`
         }

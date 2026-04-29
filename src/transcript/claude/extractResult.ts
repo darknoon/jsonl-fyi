@@ -4,7 +4,7 @@ import type {
   ImageSource,
   ToolResult,
   ToolResultBlock,
-} from "../types"
+} from "../../types"
 
 export function extractResult(block: ToolResultBlock): ToolResult {
   const c = block.content

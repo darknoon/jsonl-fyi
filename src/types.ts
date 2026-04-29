@@ -41,4 +41,8 @@ export type ToolResult = {
   text: string
   images: ImageSource[]
   toolRefs: string[]
+  // Text the harness emits as a sibling user message right after the
+  // tool_result, related to this tool call. Today only the Skill tool uses
+  // it (the injected skill markdown body); see Transcript.tsx pre-pass.
+  injectedText?: string
 }

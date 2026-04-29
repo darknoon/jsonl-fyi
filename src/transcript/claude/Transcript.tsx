@@ -1,11 +1,12 @@
 import type { ReactNode } from "react"
-import type { Entry, ToolResult } from "../types"
+import type { Entry, ToolResult } from "../../types"
 import { extractResult, getBlocks } from "./extractResult"
 import { detectSkill } from "./detectSkill"
 import { TextBlock } from "./TextBlock"
-import { ThinkingBlock } from "./ThinkingBlock"
-import { ImageBlock } from "./ImageBlock"
-import { ToolCard } from "./ToolCard"
+import { ThinkingBlock } from "../ThinkingBlock"
+import { ImageBlock } from "../ImageBlock"
+import { Tool } from "./Tool"
+import { narrowToolUse } from "./toolTypes"
 
 const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [] }
 
@@ -20,11 +21,11 @@ export function Transcript({ entries }: { entries: Entry[] }) {
     }
   }
 
-  // Pass 1b: absorb skill bodies into their Skill tool calls. Claude's Skill
-  // tool emits a tool_use → tool_result, then the very next user-text block
-  // is the full skill markdown injected by the harness. Group it under the
-  // tool card instead of rendering it as a separate (huge) bubble.
-  const skillBodies = new Map<string, string>()
+  // Pass 1b: absorb skill bodies into their Skill tool result as
+  // `injectedText`. Claude's Skill tool emits a tool_use → tool_result, then
+  // the very next user-text block is the full skill markdown injected by the
+  // harness. Group it under the tool card instead of rendering it as a
+  // separate (huge) bubble.
   const skipKeys = new Set<string>()
   let pendingSkillId: string | null = null
   for (let i = 0; i < entries.length; i++) {
@@ -41,7 +42,8 @@ export function Transcript({ entries }: { entries: Entry[] }) {
       if (pendingSkillId && role === "user" && block.type === "text") {
         const skill = detectSkill(block.text)
         if (skill) {
-          skillBodies.set(pendingSkillId, skill.body)
+          const r = results.get(pendingSkillId) ?? { ...EMPTY_RESULT }
+          results.set(pendingSkillId, { ...r, injectedText: skill.body })
           skipKeys.add(`${i}:${j}`)
         }
         pendingSkillId = null
@@ -69,14 +71,9 @@ export function Transcript({ entries }: { entries: Entry[] }) {
       } else if (block.type === "image") {
         nodes.push(<ImageBlock key={k} source={block.source} role={role} />)
       } else if (block.type === "tool_use") {
-        nodes.push(
-          <ToolCard
-            key={k}
-            block={block}
-            result={results.get(block.id) ?? EMPTY_RESULT}
-            extraBody={skillBodies.get(block.id)}
-          />,
-        )
+        const use = narrowToolUse(block)
+        const output = results.get(block.id) ?? EMPTY_RESULT
+        nodes.push(<Tool key={k} use={use} output={output} />)
       }
     }
   }

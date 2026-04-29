@@ -1,10 +1,10 @@
 import { test, expect } from "bun:test"
-import { parseJsonl } from "../parse"
+import { parseJsonl } from "../../parse"
 import { extractResult, getBlocks } from "./extractResult"
 
 test("extractResult on every tool_result in the fixture", async () => {
   const text = await Bun.file(
-    new URL("../__fixtures__/sample.jsonl", import.meta.url),
+    new URL("../../__fixtures__/sample.jsonl", import.meta.url),
   ).text()
   const { entries } = parseJsonl(text)
 
