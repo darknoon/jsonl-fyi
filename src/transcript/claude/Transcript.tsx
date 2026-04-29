@@ -1,12 +1,10 @@
-import type { ReactNode } from "react"
 import type { Entry, ToolResult } from "../../types"
 import { extractResult, getBlocks } from "./extractResult"
 import { detectSkill } from "./detectSkill"
-import { TextBlock } from "./TextBlock"
-import { ThinkingBlock } from "../ThinkingBlock"
-import { ImageBlock } from "../ImageBlock"
-import { Tool } from "./Tool"
-import { narrowToolUse } from "./toolTypes"
+import { TranscriptHeader } from "../TranscriptHeader"
+import { TurnSeparator } from "../TurnSeparator"
+import { buildTranscriptItems } from "../timing"
+import { EntryView } from "./EntryView"
 
 const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [] }
 
@@ -28,9 +26,9 @@ export function Transcript({ entries }: { entries: Entry[] }) {
   // separate (huge) bubble.
   const skipKeys = new Set<string>()
   let pendingSkillId: string | null = null
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i]
+  for (const entry of entries) {
     if (entry.type === "system") continue
+    if (!entry.uuid) continue
     const role = entry.message?.role ?? entry.type
     const blocks = getBlocks(entry)
     for (let j = 0; j < blocks.length; j++) {
@@ -45,7 +43,7 @@ export function Transcript({ entries }: { entries: Entry[] }) {
         if (skill) {
           const r = results.get(pendingSkillId) ?? { ...EMPTY_RESULT }
           results.set(pendingSkillId, { ...r, injectedText: skill.body })
-          skipKeys.add(`${i}:${j}`)
+          skipKeys.add(`${entry.uuid}:${j}`)
         }
         pendingSkillId = null
         continue
@@ -54,31 +52,36 @@ export function Transcript({ entries }: { entries: Entry[] }) {
     }
   }
 
-  // Pass 2: render in order, skipping absorbed skill bodies.
-  const nodes: ReactNode[] = []
-  let key = 0
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i]
-    if (entry.type === "system") continue
-    const role = entry.message?.role ?? entry.type
-    const blocks = getBlocks(entry)
-    for (let j = 0; j < blocks.length; j++) {
-      const block = blocks[j]
-      const k = key++
-      if (skipKeys.has(`${i}:${j}`)) continue
-      if (block.type === "text") {
-        nodes.push(<TextBlock key={k} text={block.text} role={role} />)
-      } else if (block.type === "thinking") {
-        nodes.push(<ThinkingBlock key={k} text={block.thinking} />)
-      } else if (block.type === "image") {
-        nodes.push(<ImageBlock key={k} source={block.source} role={role} />)
-      } else if (block.type === "tool_use") {
-        const use = narrowToolUse(block)
-        const output = results.get(block.id) ?? EMPTY_RESULT
-        nodes.push(<Tool key={k} use={use} output={output} />)
-      }
-    }
-  }
-
-  return <div className="transcript">{nodes}</div>
+  const items = buildTranscriptItems(entries)
+  return (
+    <div className="transcript">
+      {items.map((item, idx) => {
+        switch (item.kind) {
+          case "header":
+            return (
+              <TranscriptHeader
+                key={`hdr-${idx}`}
+                startTimestamp={item.chatStartIso}
+              />
+            )
+          case "separator":
+            return (
+              <TurnSeparator
+                key={`sep-${item.afterUuid}`}
+                durationMs={item.durationMs}
+              />
+            )
+          case "entry":
+            return (
+              <EntryView
+                key={item.entry.uuid ?? `entry-${idx}`}
+                entry={item.entry}
+                results={results}
+                skipKeys={skipKeys}
+              />
+            )
+        }
+      })}
+    </div>
+  )
 }
