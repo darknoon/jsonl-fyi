@@ -1,0 +1,6 @@
+- [x] Drag in Claude Code .jsonl transcripts
+  - [ ] Viewing subagent .jsonl
+- [x] Connect skill message w/ Skill tool call
+- [x] Render Edit tool calls with [diffs](https://diffs.com/)
+- [ ] Syntax-highlight Write tool calls?
+- [ ] Render limited agent markdown
