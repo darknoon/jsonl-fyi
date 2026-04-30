@@ -7,21 +7,25 @@
   --code-bg: #0b0d12;
   --code-border: rgba(255, 255, 255, 0.1);
   --user-bubble: #2a2f3d;
+  --bullet-size: 7.5px;
+  --bullet-gap: 8px;
+  --bullet-neutral: var(--muted);
 
-  --fs-base: 15px;
-  --fs-sm: 13px;
+  --fs-base: 16px;
+  --fs-sm: 13.5px;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #ffffff;
     --fg: #1a1a1a;
-    --muted: #6a7280;
+    --muted: #81868f;
     --border: #e3e6eb;
     --card: #f7f8fa;
     --code-bg: #f4f5f7;
     --code-border: rgba(0, 0, 0, 0.12);
     --user-bubble: #f2f4f6;
+    --bullet-neutral: #b5bbc5;
   }
 }
 
@@ -100,18 +104,36 @@ body,
   margin: 8px 0;
 }
 .assistant-text {
+  display: grid;
+  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
+  column-gap: var(--bullet-gap);
+  align-items: start;
   white-space: pre-wrap;
-  padding: 4px 0;
+  padding: 4px 6px;
 }
-.icon-muted {
-  color: var(--muted);
-  flex-shrink: 0;
-  margin-top: 2px;
+.assistant-text::before,
+.thinking::before,
+.tool-row::before,
+.image-block:not(.image-block-user)::before {
+  content: "";
+  width: var(--bullet-size);
+  height: var(--bullet-size);
+  border-radius: 50%;
+  background: var(--bullet-neutral);
+  justify-self: start;
+  margin-top: 0.6em;
+}
+.tool-card-success .tool-row::before {
+  background: #2f9e44;
+}
+.tool-card-error .tool-row::before {
+  background: #e02b2b;
 }
 .thinking {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
+  column-gap: var(--bullet-gap);
+  align-items: start;
   text-align: left;
   color: var(--muted);
   font-style: italic;
@@ -124,12 +146,7 @@ body,
 .thinking:not(.thinking-expanded) {
   max-width: 50%;
 }
-.thinking-icon {
-  color: var(--muted);
-  flex-shrink: 0;
-}
 .thinking-content {
-  flex: 1;
   min-width: 0;
   font-style: italic;
 }
@@ -144,15 +161,16 @@ body,
 .thinking-expanded .thinking-content {
   white-space: pre-wrap;
 }
-.thinking-expanded .thinking-icon {
-  margin-top: 2px;
-}
 .image-block {
-  display: inline-block;
+  display: inline-grid;
+  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
+  column-gap: var(--bullet-gap);
+  align-items: start;
   margin: 4px 0;
 }
 .image-block-user {
   align-self: flex-end;
+  display: inline-block;
 }
 .image-block img {
   max-width: 100%;
@@ -167,9 +185,10 @@ body,
   flex-direction: column;
 }
 .tool-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
+  column-gap: var(--bullet-gap);
+  align-items: start;
   padding: 4px 6px;
   border-radius: 4px;
   width: 100%;
@@ -185,18 +204,17 @@ body,
 .tool-row.clickable:hover {
   background: var(--card);
 }
-.tool-row .icon {
-  flex-shrink: 0;
-}
 .tool-row > span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tool-row > span.tool-label-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.92em;
+.tool-title {
+  font-weight: 400;
+}
+.tool-title-name {
+  font-weight: 600;
 }
 .tool-fields {
   display: grid;
@@ -253,21 +271,6 @@ body,
 }
 .todo-completed span:last-child {
   text-decoration: line-through;
-  color: var(--muted);
-}
-.icon.tool-blue {
-  color: #7ab7ff;
-}
-.icon.tool-amber {
-  color: #f5b870;
-}
-.icon.tool-green {
-  color: #74d99f;
-}
-.icon.tool-violet {
-  color: #c79bf3;
-}
-.icon.tool-muted {
   color: var(--muted);
 }
 .tool-body {
@@ -364,7 +367,6 @@ body,
 }
 .filename-group .filename {
   color: var(--fg);
-  font-family: ui-monospace, monospace;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -473,8 +475,28 @@ body,
 }
 
 .turn-separator {
+  display: grid;
+  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
+  column-gap: var(--bullet-gap);
+  align-items: start;
   font-size: var(--fs-sm);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  padding: 12px 0;
+  padding: 4px 6px;
+}
+.turn-separator-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bullet-size);
+  justify-self: start;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 0.22em;
+}
+.turn-separator-label {
+  min-width: 0;
+  font-weight: 600;
 }

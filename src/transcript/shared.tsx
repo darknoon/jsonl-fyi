@@ -1,5 +1,4 @@
 import type { ReactNode } from "react"
-import type { Icon } from "@phosphor-icons/react"
 import type { ToolResult } from "../types"
 import { ImageBlock } from "./ImageBlock"
 
@@ -18,20 +17,11 @@ export type CardProps<I> = {
 }
 
 export function Header({
-  icon: Icon,
-  color,
   children,
 }: {
-  icon: Icon
-  color: string
   children: ReactNode
 }) {
-  return (
-    <>
-      <Icon size={16} className={`icon ${color}`} />
-      <span>{children}</span>
-    </>
-  )
+  return <span className="tool-title">{children}</span>
 }
 
 export function Field({

@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Robot } from "@phosphor-icons/react"
 
 export function ThinkingBlock({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -11,7 +10,6 @@ export function ThinkingBlock({ text }: { text: string }) {
       onClick={() => setExpanded(!expanded)}
       aria-label="Thinking"
     >
-      <Robot size={16} className="thinking-icon" />
       <span className="thinking-content">{trimmed}</span>
     </button>
   )

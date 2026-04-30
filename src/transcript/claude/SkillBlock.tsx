@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Paperclip } from "@phosphor-icons/react"
 
 export function SkillBlock({ name, body }: { name: string; body: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -9,8 +8,7 @@ export function SkillBlock({ name, body }: { name: string; body: string }) {
         className="tool-row clickable"
         onClick={() => setExpanded(!expanded)}
       >
-        <Paperclip size={16} className="icon tool-violet" />
-        <span>Loaded /{name}</span>
+        <span>Skill (/{name})</span>
       </button>
       {expanded && (
         <div className="tool-body">

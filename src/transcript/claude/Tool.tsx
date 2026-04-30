@@ -20,15 +20,6 @@ import type {
   ToolSearchInput,
   SkillInput,
 } from "./toolTypes"
-import {
-  Terminal,
-  File as FileIcon,
-  PencilSimple,
-  MagnifyingGlass,
-  Paperclip,
-  GitDiff,
-  Circle,
-} from "@phosphor-icons/react"
 import { EditDiff } from "../EditDiff"
 import { ToolCard } from "../ToolCard"
 import { shortPath } from "./toolMeta"
@@ -46,6 +37,27 @@ import {
 // Per-tool components — each destructures every input field; `assertExhaustive`
 // guarantees no field is silently dropped if the input type grows.
 // ---------------------------------------------------------------------------
+
+function ToolTitle({
+  name,
+  detail,
+}: {
+  name: string
+  detail?: ReactNode
+}) {
+  return (
+    <>
+      <strong className="tool-title-name">{name}</strong>
+      {detail != null && (
+        <>
+          (
+          <span>{detail}</span>
+          )
+        </>
+      )}
+    </>
+  )
+}
 
 function Bash({ input, output }: CardProps<BashInput>) {
   const {
@@ -65,10 +77,13 @@ function Bash({ input, output }: CardProps<BashInput>) {
     dangerouslyDisableSandbox != null ||
     hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Terminal} color="tool-muted">
-          <span className="tool-label-mono">{command || "Done"}</span>
+        <Header>
+          <ToolTitle
+            name="Bash"
+            detail={command || "Done"}
+          />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -102,10 +117,10 @@ function Read({ input, output }: CardProps<ReadInput>) {
     !!pages ||
     hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={FileIcon} color="tool-blue">
-          Read{file_path ? ` ${shortPath(file_path)}` : ""}
+        <Header>
+          <ToolTitle name="Read" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -129,10 +144,10 @@ function Edit({ input, output }: CardProps<EditInput>) {
   const hasDiff = !!old_string || !!new_string
   const hasContent = hasDiff || replace_all || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={PencilSimple} color="tool-amber">
-          Edited{file_path ? ` ${shortPath(file_path)}` : ""}
+        <Header>
+          <ToolTitle name="Edit" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -160,10 +175,10 @@ function MultiEdit({ input, output }: CardProps<MultiEditInput>) {
   assertExhaustive(rest)
   const hasContent = edits.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={PencilSimple} color="tool-amber">
-          Edited{file_path ? ` ${shortPath(file_path)}` : ""}
+        <Header>
+          <ToolTitle name="MultiEdit" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -199,10 +214,10 @@ function Write({ input, output }: CardProps<WriteInput>) {
   assertExhaustive(rest)
   const hasContent = !!content || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={PencilSimple} color="tool-amber">
-          Wrote{file_path ? ` ${shortPath(file_path)}` : ""}
+        <Header>
+          <ToolTitle name="Write" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -219,10 +234,10 @@ function Glob({ input, output }: CardProps<GlobInput>) {
   assertExhaustive(rest)
   const hasContent = !!path || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={MagnifyingGlass} color="tool-green">
-          Searched files{pattern ? ` ${shortPath(pattern)}` : ""}
+        <Header>
+          <ToolTitle name="Glob" detail={pattern && shortPath(pattern)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -269,10 +284,10 @@ function Grep({ input, output }: CardProps<GrepInput>) {
   if (multiline) opts.push(["multiline", "true"])
   const hasContent = opts.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={MagnifyingGlass} color="tool-green">
-          Grep `{pattern}`
+        <Header>
+          <ToolTitle name="Grep" detail={pattern && shortPath(pattern)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -295,10 +310,10 @@ function WebFetch({ input, output }: CardProps<WebFetchInput>) {
   assertExhaustive(rest)
   const hasContent = !!prompt || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Paperclip} color="tool-violet">
-          WebFetch {url}
+        <Header>
+          <ToolTitle name="WebFetch" detail={url && shortPath(url)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -322,10 +337,10 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
     (blocked_domains && blocked_domains.length > 0) ||
     hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={MagnifyingGlass} color="tool-green">
-          Searched{query ? ` ${shortPath(query)}` : ""}
+        <Header>
+          <ToolTitle name="WebSearch" detail={query && shortPath(query)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -375,11 +390,10 @@ function Agent({
   if (run_in_background) opts.push(["run_in_background", "true"])
   const hasContent = !!prompt || opts.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={GitDiff} color="tool-violet">
-          {name === "Task" ? "Ran task" : "Ran agent"}
-          {description ? ` ${shortPath(description)}` : ""}
+        <Header>
+          <ToolTitle name={name} detail={description && shortPath(description)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -402,10 +416,10 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
   const { todos, ...rest } = input
   assertExhaustive(rest)
   return (
-    <ToolCard.Root hasContent={todos.length > 0 || hasOutput(output)}>
+    <ToolCard.Root hasContent={todos.length > 0 || hasOutput(output)} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={PencilSimple} color="tool-amber">
-          Updated todos
+        <Header>
+          <ToolTitle name="TodoWrite" />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -435,10 +449,10 @@ function EnterPlanMode({
   const rest: Record<string, never> = input
   assertExhaustive(rest)
   return (
-    <ToolCard.Root hasContent={hasOutput(output)}>
+    <ToolCard.Root hasContent={hasOutput(output)} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Circle} color="tool-muted">
-          Entered plan mode
+        <Header>
+          <ToolTitle name="EnterPlanMode" />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -457,10 +471,10 @@ function ExitPlanMode({
   assertExhaustive(rest)
   const hasContent = !!plan || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Circle} color="tool-muted">
-          Exited plan mode
+        <Header>
+          <ToolTitle name="ExitPlanMode" />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -486,10 +500,13 @@ function NotebookEdit({
   const hasContent =
     !!new_source || opts.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={PencilSimple} color="tool-amber">
-          Edited notebook{notebook_path ? ` ${shortPath(notebook_path)}` : ""}
+        <Header>
+          <ToolTitle
+            name="NotebookEdit"
+            detail={notebook_path && shortPath(notebook_path)}
+          />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -513,10 +530,10 @@ function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
   assertExhaustive(rest)
   const hasContent = max_results != null || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={MagnifyingGlass} color="tool-green">
-          Searched tools{query ? ` ${shortPath(query)}` : ""}
+        <Header>
+          <ToolTitle name="ToolSearch" detail={query && shortPath(query)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -537,10 +554,10 @@ function Skill({ input, output }: CardProps<SkillInput>) {
   assertExhaustive(rest)
   const hasContent = !!args || !!output.injectedText || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Paperclip} color="tool-violet">
-          Loaded skill{skill ? ` ${shortPath(skill)}` : ""}
+        <Header>
+          <ToolTitle name="Skill" detail={skill && shortPath(skill)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -570,10 +587,10 @@ function UnknownTool({
   const keys = Object.keys(use.input)
   const hasContent = keys.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Terminal} color="tool-muted">
-          Ran {use.name}
+        <Header>
+          <ToolTitle name={use.name} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>

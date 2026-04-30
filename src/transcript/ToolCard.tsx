@@ -21,17 +21,20 @@ function useCard(): CardCtx {
 
 function Root({
   hasContent = true,
+  status,
   children,
 }: {
   hasContent?: boolean
+  status?: "success" | "error"
   children: ReactNode
 }) {
   const [expanded, setExpanded] = useState(false)
+  const statusClass = status ? ` tool-card-${status}` : ""
   return (
     <Ctx.Provider
       value={{ expanded, toggle: () => setExpanded(e => !e), hasContent }}
     >
-      <div className="tool-card">{children}</div>
+      <div className={`tool-card${statusClass}`}>{children}</div>
     </Ctx.Provider>
   )
 }
