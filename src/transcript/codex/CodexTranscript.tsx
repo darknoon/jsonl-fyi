@@ -7,6 +7,7 @@ import { TurnSeparator } from "../TurnSeparator"
 import { TranscriptHeader } from "../TranscriptHeader"
 import { extractCodexTurnUsage } from "../usage"
 import type { TurnUsage } from "../usage"
+import { buildCodexModelLabels } from "./modelLabeling"
 
 // Codex doesn't emit a `turn_duration` row like Claude. Derive per-turn
 // duration from response_item timestamps: a turn runs from a user-authored
@@ -127,10 +128,14 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
   }
 
   const usages = buildCodexTurnUsage(entries, durations.keys())
+  const sepIndexSet = new Set(durations.keys())
+  const modelLabels = buildCodexModelLabels(entries, sepIndexSet)
 
   return (
     <div className="transcript">
-      {startTimestamp && <TranscriptHeader startTimestamp={startTimestamp} />}
+      {startTimestamp && (
+        <TranscriptHeader startTimestamp={startTimestamp} models={modelLabels.models} />
+      )}
       {entries.map((entry, i) => {
         let node: React.ReactNode = null
         if (entry.type === "session_meta") node = null
@@ -143,7 +148,13 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
         return (
           <React.Fragment key={`row-${i}`}>
             {node}
-            {ms != null && <TurnSeparator durationMs={ms} usage={usages.get(i) ?? null} />}
+            {ms != null && (
+              <TurnSeparator
+                durationMs={ms}
+                usage={usages.get(i) ?? null}
+                model={modelLabels.byIndex.get(i) ?? null}
+              />
+            )}
           </React.Fragment>
         )
       })}
