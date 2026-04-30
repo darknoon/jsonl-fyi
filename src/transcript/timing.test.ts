@@ -197,3 +197,50 @@ test("buildTranscriptItems: ignores sidechain entries", () => {
     sep     after=a1 5000ms"
   `)
 })
+
+test("buildTranscriptItems: attaches usage from the duration-anchor assistant row", () => {
+  const entries: Entry[] = [
+    {
+      type: "assistant",
+      uuid: "a1",
+      timestamp: "2026-04-29T20:00:00.000Z",
+      message: {
+        role: "assistant",
+        content: [],
+        usage: {
+          input_tokens: 6,
+          cache_read_input_tokens: 28960,
+          output_tokens: 165,
+        },
+      },
+    },
+    {
+      type: "system",
+      subtype: "turn_duration",
+      durationMs: 1234,
+      parentUuid: "a1",
+    } as Entry,
+  ]
+  const items = buildTranscriptItems(entries)
+  const sep = items.find(i => i.kind === "separator")
+  expect(sep).toBeDefined()
+  if (sep?.kind !== "separator") throw new Error("expected separator")
+  expect(sep.durationMs).toBe(1234)
+  expect(sep.usage).toEqual({ input: 6, output: 165, cacheRead: 28960 })
+})
+
+test("buildTranscriptItems: separator usage is null when assistant entry has no usage", () => {
+  const entries: Entry[] = [
+    { type: "assistant", uuid: "a1", message: { role: "assistant", content: [] } },
+    {
+      type: "system",
+      subtype: "turn_duration",
+      durationMs: 500,
+      parentUuid: "a1",
+    } as Entry,
+  ]
+  const items = buildTranscriptItems(entries)
+  const sep = items.find(i => i.kind === "separator")
+  if (sep?.kind !== "separator") throw new Error("expected separator")
+  expect(sep.usage).toBeNull()
+})

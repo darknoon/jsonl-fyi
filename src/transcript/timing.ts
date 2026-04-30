@@ -1,4 +1,5 @@
 import type { Entry, MessageEntry, TurnDurationEntry } from "../types"
+import { extractClaudeTurnUsage, type TurnUsage } from "./usage"
 
 export type FormatChatStartOptions = {
   now?: Date
@@ -54,7 +55,12 @@ export function formatDuration(ms: number): string {
 export type RenderItem =
   | { kind: "header"; chatStartIso: string }
   | { kind: "entry"; entry: MessageEntry }
-  | { kind: "separator"; afterUuid: string; durationMs: number }
+  | {
+      kind: "separator"
+      afterUuid: string
+      durationMs: number
+      usage: TurnUsage | null
+    }
 
 export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
   if (entries.length === 0) return []
@@ -87,7 +93,12 @@ export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
     if (entry.type === "assistant" && entry.uuid) {
       const ms = durations.get(entry.uuid)
       if (ms != null) {
-        items.push({ kind: "separator", afterUuid: entry.uuid, durationMs: ms })
+        items.push({
+          kind: "separator",
+          afterUuid: entry.uuid,
+          durationMs: ms,
+          usage: extractClaudeTurnUsage(entry),
+        })
       }
     }
   }
