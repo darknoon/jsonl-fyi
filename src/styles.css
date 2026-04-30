@@ -645,7 +645,11 @@ body,
 /* ---------- Markdown content ---------- */
 
 .md-content {
-  /* Inherit text color/size from parent (assistant-text, tool body, etc.) */
+  /* Inherit text color/size from parent (assistant-text, tool body, etc.).
+     Reset white-space because the parent (e.g. .assistant-text) may set
+     pre-wrap for raw-text fallback; markdown output is structural HTML and
+     should collapse whitespace normally. */
+  white-space: normal;
 }
 
 .md-content > :first-child {
