@@ -1,12 +1,13 @@
 - [x] Drag in Claude Code .jsonl transcripts
   - [ ] Viewing subagent .jsonl
+- [x] Drag in Codex .jsonl transcripts
+  - [ ] Research how subagents work here?
 - [x] Connect skill message w/ Skill tool call
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [x] Show timestamps
-- [x] Drag in Codex .jsonl transcripts
 - [x] Render limited agent markdown
 - [x] Show tokens used? (per-turn only; session totals deferred)
-- [ ] Show model used!
+- [ ] *Show model used!* [spec](docs/superpowers/specs/2026-04-30-per-turn-model-display-design.md)
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
   - [x] **Compact** tool calls are hidden, click to expand
