@@ -7,7 +7,8 @@ import type { Entry } from "./types"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import type { CodexEntry } from "./transcript/codex/types"
-import { ArrowLeftIcon, GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
+import { ArrowLeftIcon, CheckIcon, CopyIcon, GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
+import { SettingsPopover, SETTINGS_POPOVER_ID } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
 import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
 import type { Example } from "./examples"
@@ -20,6 +21,32 @@ const AgentationDev =
   process.env.NODE_ENV !== "production"
     ? lazy(() => import("./AgentationDev"))
     : null
+
+function TerminalCommand({ command }: { command: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="terminal-cmd">
+      <span className="terminal-cmd-prompt" aria-hidden="true">$</span>
+      <code className="terminal-cmd-text">{command}</code>
+      <button
+        className="terminal-cmd-copy"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(command)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1200)
+          } catch {
+            // ignore
+          }
+        }}
+        aria-label="Copy command"
+        title="Copy command"
+      >
+        {copied ? <CheckIcon size={14} weight="bold" /> : <CopyIcon size={14} />}
+      </button>
+    </div>
+  )
+}
 
 const STORAGE_KEY = "jsonl-fyi:last"
 const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
@@ -175,9 +202,11 @@ export function App() {
             className="icon-btn settings-btn"
             aria-label="Settings"
             title="Settings"
+            popoverTarget={SETTINGS_POPOVER_ID}
           >
             <GearIcon size={16} />
           </button>
+          <SettingsPopover />
         </div>
       </header>
       <div className="app">
@@ -211,15 +240,16 @@ export function App() {
               }}
             />
           </div>
-          <p className="drop-zone-hint">
-            Claude Code stores sessions at{" "}
-            <code>~/.claude/projects/&lt;project-slug&gt;/&lt;session&gt;.jsonl</code>
-            The project slug is the absolute path to the project directory, with <code>/</code> replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
-          </p>
-          <p className="drop-zone-hint">
-            Codex stores sessions at{" "}
-            <code>~/.codex/sessions/&lt;YYYY&gt;/&lt;MM&gt;/&lt;DD&gt;/rollout-*.jsonl</code>
-          </p>
+          <details className="drop-zone-defined">
+            <summary>How do I find the .jsonl on my computer?</summary>
+            <p className="drop-zone-hint">Claude Code stores sessions in <code>~/.claude/projects/</code>:</p>
+            <TerminalCommand command="open ~/.claude/projects/" />
+            <p className="drop-zone-hint">
+              The project slug is the absolute path to the project directory, with <code>/</code> replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
+            </p>
+            <p className="drop-zone-hint">Codex stores sessions in <code>~/.codex/sessions/</code>:</p>
+            <TerminalCommand command="open ~/.codex/sessions/" />
+          </details>
           <Examples onSelect={loadExample} />
         </>
       )}
