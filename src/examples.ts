@@ -1,20 +1,10 @@
 // Examples load asynchronously so JSONL fixture text isn't shipped in the
-// initial JS bundle. Each `import ... with { type: "file" }` makes Bun copy
-// the fixture into the build output as a static asset and replaces the
-// import with the asset's URL string. The asset is fetched only when the
-// user clicks the row.
-//
-// We previously used `import(..., { with: { type: "text" } })` which works
-// in dev but emits a native dynamic import in production — browsers don't
-// support `type: "text"` natively, so the live site failed with
-// `TypeError: "text" is not a valid module type`.
-
-// eslint-disable-next-line
-// @ts-ignore — Bun handles `with { type: "file" }` at bundle time
-import sampleUrl from "./__fixtures__/sample.jsonl" with { type: "file" }
-// eslint-disable-next-line
-// @ts-ignore — Bun handles `with { type: "file" }` at bundle time
-import codexSampleUrl from "./__fixtures__/codex-sample.jsonl" with { type: "file" }
+// initial JS bundle. The `?url` suffix tells Vite to copy the fixture into
+// the build output as a static asset and replace the import with the
+// asset's URL string. The asset is fetched only when the user clicks the
+// row.
+import sampleUrl from "./__fixtures__/sample.jsonl?url"
+import codexSampleUrl from "./__fixtures__/codex-sample.jsonl?url"
 
 export type Example = {
   name: string
@@ -38,7 +28,7 @@ export const EXAMPLES: Example[] = [
     format: "claude",
     turns: 8,
     sizeBytes: 437659,
-    load: () => fetchText(sampleUrl as string),
+    load: () => fetchText(sampleUrl),
   },
   {
     name: "Implementing the header alignment fixes",
@@ -46,7 +36,7 @@ export const EXAMPLES: Example[] = [
     format: "codex",
     turns: 20,
     sizeBytes: 776298,
-    load: () => fetchText(codexSampleUrl as string),
+    load: () => fetchText(codexSampleUrl),
   },
 ]
 

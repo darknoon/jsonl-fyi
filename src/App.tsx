@@ -15,13 +15,12 @@ import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
 import type { Example } from "./examples"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
-// gets tree-shaken out of production builds. The conditional below is a
-// build-time constant after Bun substitutes process.env.NODE_ENV, so the
-// import() is unreachable (and therefore omitted) in prod.
-const AgentationDev =
-  process.env.NODE_ENV !== "production"
-    ? lazy(() => import("./AgentationDev"))
-    : null
+// gets tree-shaken out of production builds. `import.meta.env.DEV` is a
+// build-time constant Vite inlines, so the import() is unreachable
+// (and therefore omitted) in prod.
+const AgentationDev = import.meta.env.DEV
+  ? lazy(() => import("./AgentationDev"))
+  : null
 
 function TerminalCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
