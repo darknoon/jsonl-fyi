@@ -23,11 +23,20 @@ any given turn is answerable without scrolling.
 ## Display format
 
 - **Claude:** `Opus 4.7` — pattern-based normalization. Match
-  `^claude-(opus|sonnet|haiku)-(\d+)-(\d+)(?:-.*)?$` and render as
-  `${TitleCase(family)} ${major}.${minor}`. This covers current and
-  future ids automatically (e.g. `claude-opus-5-0` → `Opus 5.0`,
-  `claude-haiku-4-5-20251001` → `Haiku 4.5`). Anything that does not
-  match falls back to the raw id.
+  `^claude-(opus|sonnet|haiku)-(\d+)(?:-(\d{1,2}))?(?:-\d{6,})?$` and
+  render as `${TitleCase(family)} ${major}${minor ? "." + minor : ""}`.
+  Examples:
+  - `claude-opus-4-7` → `Opus 4.7`
+  - `claude-opus-4-5-20251101` → `Opus 4.5` (date suffix discarded)
+  - `claude-haiku-4-5-20251001` → `Haiku 4.5`
+  - `claude-sonnet-4-20250514` → `Sonnet 4` (older `family-major-<date>`
+    shape with no minor; minor group declines to match an 8-digit date,
+    trailing date group swallows it)
+  - `claude-opus-5-0` → `Opus 5.0` (future major bump)
+  Anything that does not match falls back to the raw id. Dedup uses the
+  raw id, not the label, so two distinct raw ids with the same rendered
+  label would appear as two header entries (verified absent across 957
+  observed sessions, so this is theoretical).
 - **Codex:** `GPT 5.5/high` — pattern-based. Match
   `^gpt-(\d+(?:\.\d+)?)(?:-(.+))?$` and render as `GPT ${version}`
   (space between brand and version, matching Claude's `Opus 4.7` style),
@@ -141,10 +150,13 @@ Wire-up:
 
 ## Testing
 
-- Unit tests for `formatClaudeModel` covering the regex normalization
-  (current ids, hypothetical future major bumps like `claude-opus-5-0`,
-  date-suffixed forms like `claude-haiku-4-5-20251001`) and fallback
-  for non-matching ids.
+- Unit tests for `formatClaudeModel` covering the regex normalization:
+  - `claude-opus-4-7` → `Opus 4.7`
+  - `claude-opus-4-5-20251101` → `Opus 4.5`
+  - `claude-haiku-4-5-20251001` → `Haiku 4.5`
+  - `claude-sonnet-4-20250514` → `Sonnet 4` (no-minor + date)
+  - `claude-opus-5-0` → `Opus 5.0` (future major)
+  - Non-matching id (e.g. `claude-something-else`) falls back to raw.
 - Unit tests for `formatCodexModel` covering effort present/absent,
   brand-version spacing (`gpt-5.5` → `GPT 5.5`), and suffix preservation
   (`gpt-5.2-codex` → `GPT 5.2 codex`), plus a non-matching fallback case.
