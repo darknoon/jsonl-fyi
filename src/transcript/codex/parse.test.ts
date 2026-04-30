@@ -62,3 +62,43 @@ test("parseCodexEntries: drops response_item lines whose payload is malformed", 
   // Unknown subtypes pass through; only payloads missing the discriminator are dropped.
   expect(parseCodexEntries(lines).length).toBe(2)
 })
+
+test("parseCodexEntries: keeps event_msg rows of subtype token_count", () => {
+  const lines = [
+    {
+      type: "event_msg",
+      payload: {
+        type: "token_count",
+        info: {
+          last_token_usage: {
+            input_tokens: 18872,
+            cached_input_tokens: 6528,
+            output_tokens: 158,
+            reasoning_output_tokens: 0,
+            total_tokens: 19030,
+          },
+          total_token_usage: {
+            input_tokens: 18872,
+            cached_input_tokens: 6528,
+            output_tokens: 158,
+            reasoning_output_tokens: 0,
+            total_tokens: 19030,
+          },
+          model_context_window: 258400,
+        },
+      },
+    },
+  ]
+  const out = parseCodexEntries(lines)
+  expect(out).toHaveLength(1)
+  expect(out[0].type).toBe("event_msg")
+})
+
+test("parseCodexEntries: drops other event_msg rows", () => {
+  const lines = [
+    { type: "event_msg", payload: { type: "task_started" } },
+    { type: "event_msg", payload: { type: "token_count", info: null } },
+  ]
+  const out = parseCodexEntries(lines)
+  expect(out).toHaveLength(1)
+})

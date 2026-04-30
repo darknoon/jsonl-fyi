@@ -68,11 +68,29 @@ export type CodexCompacted = {
   payload: { message?: unknown; replacement_history?: unknown }
 }
 
-// `event_msg` lines exist in the wire format but we drop them — see spec §4.
-export type CodexEventMsg = { type: "event_msg"; payload: unknown }
+export type CodexTokenUsage = {
+  input_tokens?: number
+  cached_input_tokens?: number
+  output_tokens?: number
+  reasoning_output_tokens?: number
+  total_tokens?: number
+}
+
+export type CodexTokenCountInfo = {
+  last_token_usage?: CodexTokenUsage
+  total_token_usage?: CodexTokenUsage
+  model_context_window?: number
+} | null
+
+export type CodexEventMsgTokenCount = {
+  type: "event_msg"
+  timestamp?: string
+  payload: { type: "token_count"; info: CodexTokenCountInfo }
+}
 
 export type CodexEntry =
   | CodexSessionMeta
   | CodexTurnContext
   | CodexResponseItem
   | CodexCompacted
+  | CodexEventMsgTokenCount
