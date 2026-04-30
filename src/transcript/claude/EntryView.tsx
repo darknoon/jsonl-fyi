@@ -7,7 +7,12 @@ import { ImageBlock } from "../ImageBlock"
 import { Tool } from "./Tool"
 import { narrowToolUse } from "./toolTypes"
 
-const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [] }
+const EMPTY_RESULT: ToolResult = {
+  text: "",
+  images: [],
+  toolRefs: [],
+  isError: false,
+}
 
 type Props = {
   entry: MessageEntry

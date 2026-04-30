@@ -19,6 +19,7 @@ export type ToolResultBlock = {
   type: "tool_result"
   tool_use_id: string
   content: string | ToolResultContentItem[]
+  is_error?: boolean
 }
 
 export type Block =
@@ -65,6 +66,7 @@ export type ToolResult = {
   text: string
   images: ImageSource[]
   toolRefs: string[]
+  isError: boolean
   // Text the harness emits as a sibling user message right after the
   // tool_result, related to this tool call. Today only the Skill tool uses
   // it (the injected skill markdown body); see Transcript.tsx pre-pass.

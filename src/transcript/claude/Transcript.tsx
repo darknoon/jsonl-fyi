@@ -6,7 +6,12 @@ import { TurnSeparator } from "../TurnSeparator"
 import { buildTranscriptItems } from "../timing"
 import { EntryView } from "./EntryView"
 
-const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [] }
+const EMPTY_RESULT: ToolResult = {
+  text: "",
+  images: [],
+  toolRefs: [],
+  isError: false,
+}
 
 export function Transcript({ entries }: { entries: Entry[] }) {
   // Pass 1: index tool results by their tool_use_id.

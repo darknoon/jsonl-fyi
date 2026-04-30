@@ -96,3 +96,21 @@ test("extractResult handles string content, mixed array, and image-only", () => 
     text="" images=1"
   `)
 })
+
+test("extractResult preserves tool error status", () => {
+  expect(
+    extractResult({
+      type: "tool_result",
+      tool_use_id: "err",
+      content: "failed",
+      is_error: true,
+    }).isError,
+  ).toBe(true)
+  expect(
+    extractResult({
+      type: "tool_result",
+      tool_use_id: "ok",
+      content: "done",
+    }).isError,
+  ).toBe(false)
+})

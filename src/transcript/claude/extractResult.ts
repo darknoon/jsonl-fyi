@@ -8,7 +8,10 @@ import type {
 
 export function extractResult(block: ToolResultBlock): ToolResult {
   const c = block.content
-  if (typeof c === "string") return { text: c, images: [], toolRefs: [] }
+  const isError = block.is_error === true
+  if (typeof c === "string") {
+    return { text: c, images: [], toolRefs: [], isError }
+  }
   const text: string[] = []
   const images: ImageSource[] = []
   const toolRefs: string[] = []
@@ -17,7 +20,7 @@ export function extractResult(block: ToolResultBlock): ToolResult {
     else if (item.type === "image") images.push(item.source)
     else if (item.type === "tool_reference") toolRefs.push(item.tool_name)
   }
-  return { text: text.join("\n"), images, toolRefs }
+  return { text: text.join("\n"), images, toolRefs, isError }
 }
 
 export function getBlocks(entry: Entry): Block[] {
