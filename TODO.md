@@ -5,7 +5,7 @@
 - [x] Show timestamps
 - [x] Drag in Codex .jsonl transcripts
 - [x] Render limited agent markdown
-- [ ] Show tokens used?
+- [x] Show tokens used? (per-turn only; session totals deferred)
 - [ ] Show model used!
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
