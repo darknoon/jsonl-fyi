@@ -749,11 +749,26 @@ body,
   padding: 0.5em 0.75em;
   margin: 0;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-  /* Anchor positioning where supported; fallback uses default popover placement. */
+  /* Reset UA's `inset: 0` (centers the popover via margin: auto) before
+     applying our own placement. */
+  inset: auto;
+  /* Anchor positioning: place the popover beneath the gear button, with
+     the popover's right edge aligned to the button's right edge. The
+     `position-area` shorthand handles this in one declaration; the
+     fallback below pins to top-right of the viewport for browsers without
+     anchor support (the gear sits near the right edge so the offset
+     mostly works for narrow viewports — wide viewports without anchor
+     support will see the popover float in the right-side gutter). */
   position-anchor: --settings-anchor;
-  top: anchor(bottom);
-  right: anchor(right);
-  inset-area: bottom span-left;
+  position-area: bottom span-left;
+  margin-top: 4px;
+}
+
+@supports not (position-area: bottom) {
+  .settings-popover {
+    top: 48px;
+    right: 16px;
+  }
 }
 
 .settings-btn {
