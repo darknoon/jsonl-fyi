@@ -538,6 +538,34 @@ body,
   margin-top: 8px;
   color: var(--muted);
 }
+.drop-zone-button-row {
+  margin-top: 10px;
+}
+.drop-zone-button {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.04) 100%),
+    var(--card);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 1px 1px rgba(0, 0, 0, 0.06);
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+.drop-zone-button:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.02) 100%),
+    var(--card);
+}
 .drop-zone.drag-over {
   border-color: var(--fg);
   background: var(--card);

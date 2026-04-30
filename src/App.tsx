@@ -210,15 +210,21 @@ export function App() {
             <span />
           )}
 
-          <button
-            className="icon-btn settings-btn"
-            aria-label="Settings"
-            title="Settings"
-            popoverTarget={SETTINGS_POPOVER_ID}
-          >
-            <GearIcon size={16} weight="fill" />
-          </button>
-          <SettingsPopover />
+          {session ? (
+            <>
+              <button
+                className="icon-btn settings-btn"
+                aria-label="Settings"
+                title="Settings"
+                popoverTarget={SETTINGS_POPOVER_ID}
+              >
+                <GearIcon size={16} weight="fill" />
+              </button>
+              <SettingsPopover />
+            </>
+          ) : (
+            <span />
+          )}
         </div>
       </header>
       <div className="app">
