@@ -2,9 +2,9 @@ import React from "react"
 import type { CodexEntry, CodexResponseItem } from "./types"
 import type { ToolResult } from "../../types"
 import { EntryView } from "./EntryView"
-import { SessionHeader } from "./SessionHeader"
 import { CompactedMarker } from "./CompactedMarker"
 import { TurnSeparator } from "../TurnSeparator"
+import { TranscriptHeader } from "../TranscriptHeader"
 
 // Codex doesn't emit a `turn_duration` row like Claude. Derive per-turn
 // duration from response_item timestamps: a turn runs from a user-authored
@@ -80,14 +80,25 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
     }
   }
 
-  // Find session_meta (typically the first line).
-  const meta = entries.find(e => e.type === "session_meta")
+  // Use the first available timestamp (session_meta or earliest response_item)
+  // for the chat-start header — same treatment as the Claude path.
+  let startTimestamp: string | undefined
+  for (const e of entries) {
+    if (e.type === "session_meta" && e.payload.timestamp) {
+      startTimestamp = e.payload.timestamp
+      break
+    }
+    if (e.type === "response_item" && e.timestamp) {
+      startTimestamp = e.timestamp
+      break
+    }
+  }
 
   const durations = buildCodexTurnDurations(entries)
 
   return (
     <div className="transcript">
-      {meta && meta.type === "session_meta" && <SessionHeader meta={meta} />}
+      {startTimestamp && <TranscriptHeader startTimestamp={startTimestamp} />}
       {entries.map((entry, i) => {
         let node: React.ReactNode = null
         if (entry.type === "session_meta") node = null

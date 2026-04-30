@@ -20,7 +20,7 @@ async function loadText(promise: Promise<{ default: string }>): Promise<string> 
 export const EXAMPLES: Example[] = [
   {
     name: "app header redesign",
-    fileName: "sample.jsonl",
+    fileName: "0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
     turns: 8,
     sizeBytes: 437659,
     load: () =>
@@ -32,7 +32,7 @@ export const EXAMPLES: Example[] = [
   },
   {
     name: "codex: app header redesign",
-    fileName: "codex-sample.jsonl",
+    fileName: "rollout-2026-04-29T21-53-05-019ddc16-f5f2-7940-8892-8495d619b213.jsonl",
     turns: 20,
     sizeBytes: 776298,
     load: () =>

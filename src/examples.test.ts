@@ -8,7 +8,7 @@ import {
 
 const stub: Example = {
   name: "demo",
-  fileName: "sample.jsonl",
+  fileName: "demo.jsonl",
   turns: 0,
   sizeBytes: 0,
   load: async () => "",
@@ -25,12 +25,14 @@ test("formatBytes uses bytes / KB / MB with one decimal", () => {
 })
 
 test("exampleHref maps an example to a stable jsonl route", () => {
-  expect(exampleHref(stub)).toBe("/examples/sample.jsonl")
+  expect(exampleHref(stub)).toBe("/examples/demo.jsonl")
 })
 
-test("findExampleByPath returns bundled examples for example routes", () => {
-  expect(findExampleByPath("/examples/sample.jsonl")?.fileName)
-    .toBe("sample.jsonl")
+test("findExampleByPath returns the first bundled example by its filename", () => {
+  const real = findExampleByPath(
+    "/examples/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
+  )
+  expect(real?.name).toBe("app header redesign")
 })
 
 test("findExampleByPath ignores non-example and unknown example routes", () => {

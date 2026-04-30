@@ -544,44 +544,6 @@ body,
   font-family: inherit;
 }
 
-/* ── session header (Task 13) ── */
-.session-header {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin: 12px 0 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-.session-header-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.session-branch {
-  font-weight: 600;
-  color: var(--text);
-}
-.session-sha {
-  font-family: var(--font-mono, monospace);
-  background: var(--code-bg, rgba(127, 127, 127, 0.1));
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-.session-cli {
-  margin-left: auto;
-}
-.session-repo,
-.session-cwd {
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
-  word-break: break-all;
-}
-
 /* ── compacted marker (Task 13) ── */
 .compacted-marker {
   text-align: center;

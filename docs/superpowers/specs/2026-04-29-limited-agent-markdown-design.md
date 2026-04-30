@@ -190,10 +190,29 @@ Unit tests:
   verbatim in both modes.
 - Heading levels `h1`–`h6` all render with the semantic tag.
 
-Snapshot test on a small fixture exercising: emphasis, strong, inline
-code, fenced code block (with language tag), unordered list, ordered
-list, task list, heading, link with http URL, image, raw HTML, link
-with `javascript:` URL.
+Snapshot test against a single fixture
+(`src/transcript/__fixtures__/markdown-sample.md`) exercising
+emphasis, strong, strikethrough, inline code, fenced code block (with
+language tag), nested unordered list, ordered list, task list,
+headings, blockquote, GFM table, a safe `https://` link, an image, a
+`javascript:` link, and raw HTML. Two snapshots are taken — block
+mode and inline mode — so regressions in either mode show up.
+
+The block-mode snapshot covers the three "kept as literal" rules in
+one line:
+
+```html
+<p>A <a class="md-link" href="https://example.com" target="_blank"
+rel="noreferrer noopener">safe link</a>, an
+![image](https://ex.com/i.png), a [bad link](javascript:alert(1)),
+and some &lt;b&gt;raw HTML&lt;/b&gt;.</p>
+```
+
+The image, the `javascript:` link, and the raw HTML round-trip back
+to their original Markdown source as text content; only the safe
+link becomes an `<a>`. The inline-mode snapshot additionally shows
+that headings, lists, code blocks, blockquotes, and tables in the
+same fixture appear as literal source lines.
 
 Manual:
 
