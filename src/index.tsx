@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client"
 import { preloadHighlighter } from "@pierre/diffs"
 import { App } from "./App"
+import { SettingsProvider } from "./settings"
 
 void preloadHighlighter({
   themes: ["pierre-light", "pierre-dark"],
@@ -22,4 +23,8 @@ void preloadHighlighter({
   ],
 })
 
-createRoot(document.getElementById("root")!).render(<App />)
+createRoot(document.getElementById("root")!).render(
+  <SettingsProvider>
+    <App />
+  </SettingsProvider>,
+)
