@@ -13,6 +13,9 @@
 
   --fs-base: 16px;
   --fs-sm: 13.5px;
+  /* Relative size for inline monospaced text — compensates for the optical
+     size mismatch between the proportional UI font and the monospaced font. */
+  --fs-mono: 0.875em;
 }
 
 @media (prefers-color-scheme: light) {
@@ -698,7 +701,7 @@ body,
   background: var(--code-bg);
   border-radius: 3px;
   padding: 0 0.25em;
-  font-size: 0.875em;
+  font-size: var(--fs-mono);
   color: var(--muted);
 }
 
