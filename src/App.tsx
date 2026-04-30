@@ -1,7 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { iterJsonlLines } from "./parse/iter"
+import { classifyJsonl } from "./parse/classify"
 import { parseJsonl } from "./transcript/claude/parse"
+import { parseCodexEntries } from "./transcript/codex/parse"
 import type { Entry } from "./types"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
+import { CodexTranscript } from "./transcript/codex/CodexTranscript"
+import type { CodexEntry } from "./transcript/codex/types"
 import { ArrowLeftIcon, GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
 import { Examples } from "./ExamplesSection"
 import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
@@ -19,18 +24,39 @@ const AgentationDev =
 const STORAGE_KEY = "jsonl-fyi:last"
 const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
 
+type LoadedSession =
+  | { format: "claude"; entries: Entry[] }
+  | { format: "codex"; entries: CodexEntry[] }
+
 export function App() {
-  const [entries, setEntries] = useState<Entry[] | null>(null)
+  const [session, setSession] = useState<LoadedSession | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [skipped, setSkipped] = useState(0)
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function loadText(text: string, name: string, persist = true) {
-    const result = parseJsonl(text)
-    setEntries(result.entries)
+    const allLines: unknown[] = []
+    const it = iterJsonlLines(text)
+    let result = it.next()
+    while (!result.done) {
+      allLines.push(result.value)
+      result = it.next()
+    }
+    const skippedCount = result.value.skipped
+
+    const format = classifyJsonl(allLines.slice(0, 10))
+    if (format === "codex") {
+      setSession({ format: "codex", entries: parseCodexEntries(allLines) })
+    } else if (format === "claude") {
+      // parseJsonl re-parses the text; small overhead, fine for now.
+      const r = parseJsonl(text)
+      setSession({ format: "claude", entries: r.entries })
+    } else {
+      setSession(null)
+    }
     setFileName(name)
-    setSkipped(result.skipped)
+    setSkipped(skippedCount)
     if (persist) {
       try {
         if (text.length < STORAGE_LIMIT_BYTES) {
@@ -50,7 +76,7 @@ export function App() {
   }
 
   function reset(clearUrl = false) {
-    setEntries(null)
+    setSession(null)
     setFileName(null)
     setSkipped(0)
     if (inputRef.current) inputRef.current.value = ""
@@ -111,7 +137,7 @@ export function App() {
     <>
       <header className="app-header">
         <div className="app-header-inner">
-          {entries ? (
+          {session ? (
             <button
               className="title-pill"
               onClick={() => reset(true)}
@@ -124,7 +150,7 @@ export function App() {
           ) : (
             <h1 className="title-logo">jsonl.fyi</h1>
           )}
-          {entries ? (
+          {session ? (
             <div className="filename-group">
               <span className="filename">{fileName}</span>
               <button
@@ -142,6 +168,7 @@ export function App() {
           ) : (
             <span />
           )}
+
           <button
             className="icon-btn settings-btn"
             aria-label="Settings"
@@ -152,7 +179,7 @@ export function App() {
         </div>
       </header>
       <div className="app">
-      {!entries && (
+      {!session && (
         <>
           <div
             className={`drop-zone ${dragOver ? "drag-over" : ""}`}
@@ -167,7 +194,7 @@ export function App() {
             onClick={() => inputRef.current?.click()}
           >
             <div className="drop-zone-text">
-              Drop a Claude session <code>.jsonl</code> here
+              Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
               <div className="drop-zone-sub">or click to choose a file</div>
             </div>
             <input
@@ -187,11 +214,16 @@ export function App() {
             <code>~/.claude/projects/&lt;project-slug&gt;/&lt;session&gt;.jsonl</code>
             The project slug is the absolute path to the project directory, with <code>/</code> replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
           </p>
+          <p className="drop-zone-hint">
+            Codex stores sessions at{" "}
+            <code>~/.codex/sessions/&lt;YYYY&gt;/&lt;MM&gt;/&lt;DD&gt;/rollout-*.jsonl</code>
+          </p>
           <Examples onSelect={loadExample} />
         </>
       )}
 
-      {entries && <ClaudeCodeTranscript entries={entries} />}
+      {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
+      {session && session.format === "claude" && <ClaudeCodeTranscript entries={session.entries} />}
       <footer className="app-footer">
         <LockIcon size={14} weight="bold" />
         Your data is processed locally in the browser
