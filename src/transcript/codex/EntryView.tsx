@@ -17,7 +17,12 @@ export function EntryView({ entry, results }: Props) {
 
   switch (p.type) {
     case "message": {
-      // Hide harness-injected environment_context blocks.
+      // Drop harness-injected messages entirely:
+      //   - `developer` / `system` roles carry permissions instructions and tool
+      //     specs the model received; not user-authored.
+      //   - `user` role messages whose first text block opens with
+      //     <environment_context> are auto-injected per-turn context.
+      if (p.role === "developer" || p.role === "system") return null
       const isEnvContext =
         p.role === "user" &&
         p.content[0]?.type === "input_text" &&
@@ -78,6 +83,7 @@ export function EntryView({ entry, results }: Props) {
 }
 
 function MessageText({ role, text }: { role: "user" | "assistant"; text: string }) {
+  // role narrowed by caller — developer/system are filtered before this is reached.
   return (
     <div className={`message message-${role}`}>
       <pre className="message-text">{text}</pre>

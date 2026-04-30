@@ -9,7 +9,11 @@ export type CodexContentItem = CodexInputText | CodexOutputText | CodexInputImag
 export type CodexReasoningSummary = { type: "summary_text"; text: string }
 
 export type CodexResponseItemPayload =
-  | { type: "message"; role: "user" | "assistant"; content: CodexContentItem[] }
+  | {
+      type: "message"
+      role: "user" | "assistant" | "developer" | "system"
+      content: CodexContentItem[]
+    }
   | {
       type: "reasoning"
       summary: CodexReasoningSummary[]
