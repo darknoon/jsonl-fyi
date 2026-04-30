@@ -698,7 +698,7 @@ body,
   background: var(--code-bg);
   border-radius: 3px;
   padding: 0 0.25em;
-  font-size: 0.95em;
+  font-size: 0.875em;
   color: var(--muted);
 }
 
