@@ -74,6 +74,7 @@ export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
               <TurnSeparator
                 key={`sep-${item.afterUuid}`}
                 durationMs={item.durationMs}
+                usage={item.usage}
               />
             )
           case "entry":

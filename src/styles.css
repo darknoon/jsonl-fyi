@@ -625,6 +625,12 @@ body,
   min-width: 0;
   font-weight: 600;
 }
+.turn-separator-usage {
+  display: inline-flex;
+  gap: 0.5em;
+  margin-left: 0.5em;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── apply-patch (Task 10 deferred) ── */
 .apply-patch-files {
