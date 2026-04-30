@@ -29,9 +29,10 @@ any given turn is answerable without scrolling.
   - `claude-opus-4-7` → `Opus 4.7`
   - `claude-opus-4-5-20251101` → `Opus 4.5` (date suffix discarded)
   - `claude-haiku-4-5-20251001` → `Haiku 4.5`
-  - `claude-sonnet-4-20250514` → `Sonnet 4` (older `family-major-<date>`
-    shape with no minor; minor group declines to match an 8-digit date,
-    trailing date group swallows it)
+  - `claude-sonnet-4-20250514` → `Sonnet 4` (`family-major-<date>` shape
+    with no minor — also a legitimate forward shape, not legacy. The
+    minor group declines to match an 8-digit date, the trailing date
+    group swallows it.)
   - `claude-opus-5-0` → `Opus 5.0` (future major bump)
   Anything that does not match falls back to the raw id. Dedup uses the
   raw id, not the label, so two distinct raw ids with the same rendered
