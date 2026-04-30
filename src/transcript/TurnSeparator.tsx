@@ -13,9 +13,9 @@ export function TurnSeparator({ durationMs, usage }: Props) {
       <span className="turn-separator-label">{formatDuration(durationMs)}</span>
       {usage && (
         <span className="turn-separator-usage">
-          <span>↑{formatTokens(usage.input)}</span>
-          <span>↻{formatTokens(usage.cacheRead)}</span>
-          <span>↓{formatTokens(usage.output)}</span>
+          <span>↑ {formatTokens(usage.input)}</span>
+          <span>↻ {formatTokens(usage.cacheRead)}</span>
+          <span>↓ {formatTokens(usage.output)}</span>
         </span>
       )}
     </div>

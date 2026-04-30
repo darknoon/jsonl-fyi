@@ -17,13 +17,13 @@ test("TurnSeparator: with usage renders ↑input ↻cacheRead ↓output in order
       usage={{ input: 6, output: 165, cacheRead: 29000 }}
     />,
   )
-  expect(html).toContain("↑6")
-  expect(html).toContain("↻29.0k")
-  expect(html).toContain("↓165")
+  expect(html).toContain("↑ 6")
+  expect(html).toContain("↻ 29.0k")
+  expect(html).toContain("↓ 165")
   // Order check — input before cacheRead before output
-  const i = html.indexOf("↑6")
-  const c = html.indexOf("↻29.0k")
-  const o = html.indexOf("↓165")
+  const i = html.indexOf("↑ 6")
+  const c = html.indexOf("↻ 29.0k")
+  const o = html.indexOf("↓ 165")
   expect(i).toBeLessThan(c)
   expect(c).toBeLessThan(o)
 })
@@ -34,5 +34,5 @@ test("TurnSeparator: with usage where cacheRead is 0 still renders the ↻ slot"
   const html = renderToStaticMarkup(
     <TurnSeparator durationMs={500} usage={{ input: 10, output: 20, cacheRead: 0 }} />,
   )
-  expect(html).toContain("↻0")
+  expect(html).toContain("↻ 0")
 })
