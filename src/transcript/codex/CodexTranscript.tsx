@@ -1,8 +1,43 @@
-import type { CodexEntry } from "./types"
+import React from "react"
+import type { CodexEntry, CodexResponseItem } from "./types"
 import type { ToolResult } from "../../types"
 import { EntryView } from "./EntryView"
 import { SessionHeader } from "./SessionHeader"
 import { CompactedMarker } from "./CompactedMarker"
+import { TurnSeparator } from "../TurnSeparator"
+
+// Codex doesn't emit a `turn_duration` row like Claude. Derive per-turn
+// duration from response_item timestamps: a turn runs from a user-authored
+// `message` (role=user, not env_context) to the last response_item before the
+// next user message. Returns Map<entryIndex → durationMs> keyed on the index
+// of the LAST entry of each turn (so the separator renders after that entry).
+function buildCodexTurnDurations(entries: CodexEntry[]): Map<number, number> {
+  const userIndices: number[] = []
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i]
+    if (e.type !== "response_item") continue
+    const p = e.payload
+    if (p.type !== "message" || p.role !== "user") continue
+    const first = p.content[0]
+    if (first?.type === "input_text" && first.text.startsWith("<environment_context>")) continue
+    userIndices.push(i)
+  }
+
+  const out = new Map<number, number>()
+  for (let k = 0; k < userIndices.length; k++) {
+    const startIdx = userIndices[k]
+    const endIdx = k + 1 < userIndices.length ? userIndices[k + 1] - 1 : entries.length - 1
+    if (endIdx <= startIdx) continue
+
+    const startEntry = entries[startIdx] as CodexResponseItem
+    const endEntry = entries[endIdx]
+    const endTs = endEntry.type === "response_item" ? endEntry.timestamp : undefined
+    if (!startEntry.timestamp || !endTs) continue
+    const ms = new Date(endTs).getTime() - new Date(startEntry.timestamp).getTime()
+    if (Number.isFinite(ms) && ms > 0) out.set(endIdx, ms)
+  }
+  return out
+}
 
 function deriveIsError(output: string, kind: "function" | "custom"): boolean {
   if (!output) return false
@@ -48,15 +83,25 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
   // Find session_meta (typically the first line).
   const meta = entries.find(e => e.type === "session_meta")
 
+  const durations = buildCodexTurnDurations(entries)
+
   return (
     <div className="transcript">
       {meta && meta.type === "session_meta" && <SessionHeader meta={meta} />}
       {entries.map((entry, i) => {
-        if (entry.type === "session_meta") return null
-        if (entry.type === "turn_context") return null
-        if (entry.type === "compacted") return <CompactedMarker key={`comp-${i}`} />
-        // entry.type === "response_item"
-        return <EntryView key={i} entry={entry} results={results} />
+        let node: React.ReactNode = null
+        if (entry.type === "session_meta") node = null
+        else if (entry.type === "turn_context") node = null
+        else if (entry.type === "compacted") node = <CompactedMarker key={`comp-${i}`} />
+        else node = <EntryView key={i} entry={entry} results={results} />
+
+        const ms = durations.get(i)
+        return (
+          <React.Fragment key={`row-${i}`}>
+            {node}
+            {ms != null && <TurnSeparator durationMs={ms} />}
+          </React.Fragment>
+        )
       })}
     </div>
   )
