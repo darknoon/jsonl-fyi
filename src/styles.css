@@ -675,6 +675,9 @@ body,
   gap: 0.5em;
   font-variant-numeric: tabular-nums;
 }
+.turn-separator-model {
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── apply-patch (Task 10 deferred) ── */
 .apply-patch-files {
