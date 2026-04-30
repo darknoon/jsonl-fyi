@@ -29,35 +29,16 @@ import {
   Field,
   Output,
   Extras,
+  ToolTitle,
   hasOutput,
   type CardProps,
 } from "../shared"
+import { UnknownTool } from "../UnknownTool"
 
 // ---------------------------------------------------------------------------
 // Per-tool components — each destructures every input field; `assertExhaustive`
 // guarantees no field is silently dropped if the input type grows.
 // ---------------------------------------------------------------------------
-
-function ToolTitle({
-  name,
-  detail,
-}: {
-  name: string
-  detail?: ReactNode
-}) {
-  return (
-    <>
-      <strong className="tool-title-name">{name}</strong>
-      {detail != null && (
-        <>
-          (
-          <span>{detail}</span>
-          )
-        </>
-      )}
-    </>
-  )
-}
 
 function Bash({ input, output }: CardProps<BashInput>) {
   const {
@@ -576,45 +557,6 @@ function Skill({ input, output }: CardProps<SkillInput>) {
   )
 }
 
-// MCP / unknown — we don't have a typed shape, so render raw fields.
-function UnknownTool({
-  use,
-  output,
-}: {
-  use: { name: string; input: Record<string, unknown> }
-  output: ToolResult
-}) {
-  const keys = Object.keys(use.input)
-  const hasContent = keys.length > 0 || hasOutput(output)
-  return (
-    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
-      <ToolCard.Trigger>
-        <Header>
-          <ToolTitle name={use.name} />
-        </Header>
-      </ToolCard.Trigger>
-      <ToolCard.Content>
-        {keys.length > 0 && (
-          <dl className="tool-fields">
-            {keys.map(k => {
-              const v = use.input[k]
-              return (
-                <Field
-                  key={k}
-                  name={k}
-                  value={typeof v === "string" ? v : JSON.stringify(v, null, 2)}
-                />
-              )
-            })}
-          </dl>
-        )}
-        <Output output={output} />
-        <Extras output={output} />
-      </ToolCard.Content>
-    </ToolCard.Root>
-  )
-}
-
 // ---------------------------------------------------------------------------
 // Dispatcher component — exhaustive on KnownToolUse (TS errors on missing case).
 // ---------------------------------------------------------------------------
@@ -627,7 +569,7 @@ export function Tool({
   output: ToolResult
 }) {
   if (!isKnownToolUse(use)) {
-    return <UnknownTool use={use} output={output} />
+    return <UnknownTool name={use.name} input={use.input} output={output} />
   }
   switch (use.name) {
     case "Bash":

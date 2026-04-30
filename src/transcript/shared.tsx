@@ -72,3 +72,24 @@ export function hasOutput(output: ToolResult): boolean {
     output.toolRefs.length > 0
   )
 }
+
+export function ToolTitle({
+  name,
+  detail,
+}: {
+  name: string
+  detail?: ReactNode
+}) {
+  return (
+    <>
+      <strong className="tool-title-name">{name}</strong>
+      {detail != null && (
+        <>
+          (
+          <span>{detail}</span>
+          )
+        </>
+      )}
+    </>
+  )
+}
