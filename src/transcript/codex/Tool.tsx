@@ -3,6 +3,7 @@ import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
 import { Header, Field, Output, ToolTitle, hasOutput } from "../shared"
 import { UnknownTool } from "../UnknownTool"
+import { ApplyPatch } from "./ApplyPatch"
 
 // Helper: extract exit code from a Codex shell-tool output. Used to derive
 // `isError` for the tool result and (optionally) for header decoration.
@@ -183,6 +184,10 @@ export function CodexCustomToolCall({
   input: string
   output: ToolResult
 }) {
-  // Task 10 will add ApplyPatch handling. For now, fall through.
-  return <UnknownTool name={name} input={{ _raw: input }} output={output} />
+  switch (name) {
+    case "apply_patch":
+      return <ApplyPatch patch={input} output={output} />
+    default:
+      return <UnknownTool name={name} input={{ _raw: input }} output={output} />
+  }
 }
