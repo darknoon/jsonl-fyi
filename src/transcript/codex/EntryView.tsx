@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import type { CodexResponseItem } from "./types"
 import { ThinkingBlock } from "../ThinkingBlock"
 import { ImageBlock } from "../ImageBlock"
+import { TextBlock } from "../claude/TextBlock"
 import { CodexFunctionCall, CodexCustomToolCall, WebSearchCall } from "./Tool"
 import type { ToolResult } from "../../types"
 
@@ -32,7 +33,7 @@ export function EntryView({ entry, results }: Props) {
       const nodes: ReactNode[] = []
       p.content.forEach((c, i) => {
         if (c.type === "input_text" || c.type === "output_text") {
-          nodes.push(<MessageText key={i} role={role} text={c.text} />)
+          nodes.push(<TextBlock key={i} role={role} text={c.text} />)
         } else if (c.type === "input_image") {
           nodes.push(<ImageBlock key={i} source={{ type: "url", url: c.image_url }} role={role} />)
         }
@@ -82,11 +83,3 @@ export function EntryView({ entry, results }: Props) {
   }
 }
 
-function MessageText({ role, text }: { role: "user" | "assistant"; text: string }) {
-  // role narrowed by caller — developer/system are filtered before this is reached.
-  return (
-    <div className={`message message-${role}`}>
-      <pre className="message-text">{text}</pre>
-    </div>
-  )
-}
