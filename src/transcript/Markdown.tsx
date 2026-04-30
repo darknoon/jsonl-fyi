@@ -54,11 +54,10 @@ export function Markdown({
 
   if (!renderMarkdown) {
     if (inline) return <>{source}</>
-    return (
-      <div className="assistant-text" style={{ whiteSpace: "pre-wrap" }}>
-        {source}
-      </div>
-    )
+    // Plain block with pre-wrap. The call-site container (assistant-text,
+    // tool-body, etc.) already supplies any layout/bullet styling — we must
+    // NOT re-emit `assistant-text` here or it doubles the ::before bullet.
+    return <div style={{ whiteSpace: "pre-wrap" }}>{source}</div>
   }
 
   const plugins = inline
