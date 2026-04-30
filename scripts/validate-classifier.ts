@@ -4,9 +4,17 @@ import { iterJsonlLines } from "../src/parse/iter"
 import { classifyJsonl } from "../src/parse/classify"
 import { homedir } from "os"
 
-type Result = { path: string; label: ReturnType<typeof classifyJsonl>; expected: "claude" | "codex" }
+type Result = {
+  path: string
+  label: ReturnType<typeof classifyJsonl>
+  expected: "claude" | "codex"
+}
 
-async function* walk(root: string, pattern: string, expected: "claude" | "codex"): AsyncGenerator<Result> {
+async function* walk(
+  root: string,
+  pattern: string,
+  expected: "claude" | "codex",
+): AsyncGenerator<Result> {
   const glob = new Glob(pattern)
   for await (const path of glob.scan({ cwd: root, absolute: true, onlyFiles: true })) {
     const file = Bun.file(path)

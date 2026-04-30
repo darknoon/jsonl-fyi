@@ -9,11 +9,7 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
   const files = "files" in parsed ? parsed.files : []
   const fileCount = files.length
   const detail =
-    fileCount === 0
-      ? undefined
-      : fileCount === 1
-        ? shortFile(files[0].path)
-        : `${fileCount} files`
+    fileCount === 0 ? undefined : fileCount === 1 ? shortFile(files[0].path) : `${fileCount} files`
 
   // Output may be JSON-wrapped: {"output":"...","metadata":{"exit_code", "duration_seconds"}}.
   const meta = tryParsePatchOutput(output.text)
@@ -85,7 +81,8 @@ function tryParsePatchOutput(raw: string): {
     const v = JSON.parse(raw) as { output?: unknown; metadata?: unknown }
     if (v && typeof v === "object") {
       const text = typeof v.output === "string" ? v.output : raw
-      const meta = (v.metadata && typeof v.metadata === "object") ? (v.metadata as Record<string, unknown>) : {}
+      const meta =
+        v.metadata && typeof v.metadata === "object" ? (v.metadata as Record<string, unknown>) : {}
       const exitCode = typeof meta.exit_code === "number" ? meta.exit_code : null
       const duration = typeof meta.duration_seconds === "number" ? meta.duration_seconds : null
       return { text, exitCode, duration }

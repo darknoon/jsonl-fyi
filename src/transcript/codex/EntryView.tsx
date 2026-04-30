@@ -42,7 +42,7 @@ export function EntryView({ entry, results }: Props) {
     }
 
     case "reasoning": {
-      const text = p.summary.map(s => s.text).join("\n\n")
+      const text = p.summary.map((s) => s.text).join("\n\n")
       return text ? <ThinkingBlock text={text} /> : null
     }
 
@@ -62,13 +62,7 @@ export function EntryView({ entry, results }: Props) {
       return null
 
     case "web_search_call":
-      return (
-        <WebSearchCall
-          status={p.status}
-          query={p.action?.query}
-          queries={p.action?.queries}
-        />
-      )
+      return <WebSearchCall status={p.status} query={p.action?.query} queries={p.action?.queries} />
 
     case "ghost_snapshot":
       // Not rendered in v1 — see spec §13.
@@ -82,4 +76,3 @@ export function EntryView({ entry, results }: Props) {
     }
   }
 }
-

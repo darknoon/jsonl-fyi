@@ -3,7 +3,9 @@ import { iterJsonlLines } from "../src/parse/iter"
 import { classifyJsonl } from "../src/parse/classify"
 import { parseCodexEntries } from "../src/transcript/codex/parse"
 
-const path = process.argv[2] ?? "/Users/andrew/.codex/sessions/2026/04/29/rollout-2026-04-29T17-56-12-019ddb3e-1472-7010-9751-927dc6eed3fc.jsonl"
+const path =
+  process.argv[2] ??
+  "/Users/andrew/.codex/sessions/2026/04/29/rollout-2026-04-29T17-56-12-019ddb3e-1472-7010-9751-927dc6eed3fc.jsonl"
 const text = await Bun.file(path).text()
 
 const all: unknown[] = []
@@ -25,7 +27,10 @@ for (const e of entries) {
 }
 const toolNames = new Map<string, number>()
 for (const e of entries) {
-  if (e.type === "response_item" && (e.payload.type === "function_call" || e.payload.type === "custom_tool_call")) {
+  if (
+    e.type === "response_item" &&
+    (e.payload.type === "function_call" || e.payload.type === "custom_tool_call")
+  ) {
     toolNames.set(e.payload.name, (toolNames.get(e.payload.name) ?? 0) + 1)
   }
 }

@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-04-28-jsonl-viewer-design.md`
 
 **Scope notes:**
+
 - Pure transformations (JSONL parsing, tool-result extraction, toolMeta label generation) get unit tests via `bun test`. UI rendering does not — that's covered end-to-end by `agent-browser` in Task 8.
 - Test style: build a realistic fixture, run the transformation, format the result into a single concise summary string, and snapshot that string with `toMatchInlineSnapshot()`. One snapshot per transformation — no scattered `expect()` calls per field. This makes regressions easy to read as a diff.
 - Each task ends with a commit; the repo is initialized in Task 0 since the working dir is not yet a git repo.
@@ -22,35 +23,36 @@
 
 Files this plan creates or modifies:
 
-| Path | Created in | Responsibility |
-| --- | --- | --- |
-| `package.json` | scaffold (exists) | Deps + scripts. Updated in Task 0. |
-| `tsconfig.json` | scaffold (exists) | TS config. |
-| `index.html` | scaffold (exists) | Entry. |
-| `src/index.tsx` | scaffold (exists) | Mount `<App/>`. |
-| `src/App.tsx` | scaffold (exists) | Drop zone + routing between empty state and `<Transcript/>`. Modified in Task 8. |
-| `src/styles.css` | scaffold (exists) | Single CSS file. Extended throughout. |
-| `src/types.ts` | Task 1 | Block / Entry / ImageSource types. |
-| `src/parse.ts` | Task 1 | `parseJsonl` — split, JSON.parse, filter noise. |
-| `src/parse.test.ts` | Task 1 | Snapshot tests for `parseJsonl`. |
-| `src/__fixtures__/sample.jsonl` | Task 1 | Anonymized real Claude session, used by all transform tests. |
-| `src/transcript/extractResult.ts` | Task 6 | Pure transform: `tool_result.content` → `{ text, images }`. |
-| `src/transcript/extractResult.test.ts` | Task 6 | Snapshot tests for the transform. |
-| `src/transcript/toolMeta.test.ts` | Task 3 | Snapshot tests for `toolLabel` / `shortPath`. |
-| `src/transcript/toolMeta.ts` | Task 3 | Verb map, `shortPath`, `toolTitle`, icon map. |
-| `src/transcript/TextBlock.tsx` | Task 4 | Text rendering (user bubble vs assistant flat). |
-| `src/transcript/ThinkingBlock.tsx` | Task 4 | Italic line-clamped expandable. |
-| `src/transcript/ImageBlock.tsx` | Task 4 | Inline `<img>` for base64 + url sources. |
-| `src/transcript/EditDiff.tsx` | Task 2/5 | `<FileDiff>` wrapper. |
-| `src/transcript/FileView.tsx` | Task 2/5 | `<File>` wrapper. |
-| `src/transcript/ToolCard.tsx` | Task 5 | Header row + tool-specific body. |
-| `src/transcript/Transcript.tsx` | Task 6 | Two-pass renderer. |
+| Path                                   | Created in        | Responsibility                                                                   |
+| -------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
+| `package.json`                         | scaffold (exists) | Deps + scripts. Updated in Task 0.                                               |
+| `tsconfig.json`                        | scaffold (exists) | TS config.                                                                       |
+| `index.html`                           | scaffold (exists) | Entry.                                                                           |
+| `src/index.tsx`                        | scaffold (exists) | Mount `<App/>`.                                                                  |
+| `src/App.tsx`                          | scaffold (exists) | Drop zone + routing between empty state and `<Transcript/>`. Modified in Task 8. |
+| `src/styles.css`                       | scaffold (exists) | Single CSS file. Extended throughout.                                            |
+| `src/types.ts`                         | Task 1            | Block / Entry / ImageSource types.                                               |
+| `src/parse.ts`                         | Task 1            | `parseJsonl` — split, JSON.parse, filter noise.                                  |
+| `src/parse.test.ts`                    | Task 1            | Snapshot tests for `parseJsonl`.                                                 |
+| `src/__fixtures__/sample.jsonl`        | Task 1            | Anonymized real Claude session, used by all transform tests.                     |
+| `src/transcript/extractResult.ts`      | Task 6            | Pure transform: `tool_result.content` → `{ text, images }`.                      |
+| `src/transcript/extractResult.test.ts` | Task 6            | Snapshot tests for the transform.                                                |
+| `src/transcript/toolMeta.test.ts`      | Task 3            | Snapshot tests for `toolLabel` / `shortPath`.                                    |
+| `src/transcript/toolMeta.ts`           | Task 3            | Verb map, `shortPath`, `toolTitle`, icon map.                                    |
+| `src/transcript/TextBlock.tsx`         | Task 4            | Text rendering (user bubble vs assistant flat).                                  |
+| `src/transcript/ThinkingBlock.tsx`     | Task 4            | Italic line-clamped expandable.                                                  |
+| `src/transcript/ImageBlock.tsx`        | Task 4            | Inline `<img>` for base64 + url sources.                                         |
+| `src/transcript/EditDiff.tsx`          | Task 2/5          | `<FileDiff>` wrapper.                                                            |
+| `src/transcript/FileView.tsx`          | Task 2/5          | `<File>` wrapper.                                                                |
+| `src/transcript/ToolCard.tsx`          | Task 5            | Header row + tool-specific body.                                                 |
+| `src/transcript/Transcript.tsx`        | Task 6            | Two-pass renderer.                                                               |
 
 ---
 
 ## Task 0: Initialize git and lock in dev tooling
 
 **Files:**
+
 - Modify: `package.json`
 - Create: `.gitignore` (already in scaffold; verify)
 
@@ -87,14 +89,16 @@ git commit -m "chore: initial scaffold"
 ## Task 1: Data model, JSONL parser, and tests
 
 **Files:**
+
 - Create: `src/types.ts`
 - Create: `src/parse.ts`
 - Create: `src/__fixtures__/sample.jsonl` (anonymized real session)
 - Create: `src/parse.test.ts`
 
-**Fixture sourcing:** the source is `/Users/andrew/.claude/projects/-Users-andrew-Developer-Web-Dave/04819ab3-be01-4118-8196-5dfc2a411442.jsonl` — 31 lines, contains user/assistant turns plus tool calls (Edit, Read, Agent, ToolSearch, mcp__dave__RenameChat) and one image, so it exercises the parser and the tool-result extractor in one file. Copy into `src/__fixtures__/sample.jsonl` and anonymize before committing.
+**Fixture sourcing:** the source is `/Users/andrew/.claude/projects/-Users-andrew-Developer-Web-Dave/04819ab3-be01-4118-8196-5dfc2a411442.jsonl` — 31 lines, contains user/assistant turns plus tool calls (Edit, Read, Agent, ToolSearch, mcp**dave**RenameChat) and one image, so it exercises the parser and the tool-result extractor in one file. Copy into `src/__fixtures__/sample.jsonl` and anonymize before committing.
 
 **Anonymization rules** (apply in this order, per line, preserving line count):
+
 1. Replace any absolute path containing `/Users/andrew` or `/Users/<name>` with `/Users/example`.
 2. Replace any cwd or path mentioning `Developer/Web/Dave` (or similar private project names) with `Developer/example/project`.
 3. Replace `gitBranch` values that aren't `main`/`master` with `main`.
@@ -131,12 +135,7 @@ export type ToolResultBlock = {
   content: string | ToolResultContentItem[]
 }
 
-export type Block =
-  | TextBlock
-  | ThinkingBlock
-  | ImageBlock
-  | ToolUseBlock
-  | ToolResultBlock
+export type Block = TextBlock | ThinkingBlock | ImageBlock | ToolUseBlock | ToolResultBlock
 
 export type Entry = {
   uuid?: string
@@ -203,9 +202,7 @@ import { test, expect } from "bun:test"
 import { parseJsonl } from "./parse"
 
 test("parseJsonl summarizes a real session correctly", async () => {
-  const text = await Bun.file(
-    new URL("./__fixtures__/sample.jsonl", import.meta.url),
-  ).text()
+  const text = await Bun.file(new URL("./__fixtures__/sample.jsonl", import.meta.url)).text()
   const { entries, skipped } = parseJsonl(text)
 
   // Build a single concise summary string covering: total kept, skipped count,
@@ -218,11 +215,11 @@ test("parseJsonl summarizes a real session correctly", async () => {
     .join(" ")
 
   const blockSeq = entries
-    .map(e => {
+    .map((e) => {
       const c = e.message?.content
       if (!c) return `${e.type}:-`
       if (typeof c === "string") return `${e.type}:str`
-      const blocks = c.map(b => {
+      const blocks = c.map((b) => {
         if (b.type === "tool_use") return `tool_use(${b.name})`
         if (b.type === "tool_result") return `tool_result`
         return b.type
@@ -249,7 +246,7 @@ test("malformed lines increment skipped, valid lines keep parsing", () => {
     `{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"hello"}]}}`,
   ].join("\n")
   const { entries, skipped } = parseJsonl(text)
-  const summary = `entries=${entries.length} skipped=${skipped} kept=${entries.map(e => e.type).join(",")}`
+  const summary = `entries=${entries.length} skipped=${skipped} kept=${entries.map((e) => e.type).join(",")}`
   expect(summary).toMatchInlineSnapshot(`"entries=2 skipped=1 kept=user,assistant"`)
 })
 ```
@@ -280,6 +277,7 @@ git commit -m "feat: jsonl parser, types, and snapshot tests"
 This task is intentionally scoped tight: prove the library works with our setup before building the rest of the UI on top. If it requires a `WorkerPoolContextProvider` or other root-level setup, this is where we discover it.
 
 **Files:**
+
 - Create: `src/transcript/EditDiff.tsx`
 - Create: `src/transcript/FileView.tsx`
 - Modify: `src/App.tsx` (temporary spike harness)
@@ -291,19 +289,8 @@ Write `src/transcript/FileView.tsx`:
 ```tsx
 import { File } from "@pierre/diffs/react"
 
-export function FileView({
-  filePath,
-  contents,
-}: {
-  filePath: string
-  contents: string
-}) {
-  return (
-    <File
-      file={{ name: filePath, contents }}
-      disableWorkerPool
-    />
-  )
+export function FileView({ filePath, contents }: { filePath: string; contents: string }) {
+  return <File file={{ name: filePath, contents }} disableWorkerPool />
 }
 ```
 
@@ -364,6 +351,7 @@ bun dev &
 ```
 
 Use `agent-browser` to load the printed URL and screenshot. Confirm:
+
 - The TS source renders with syntax highlighting (keywords colored).
 - The diff renders with the comment line marked as an addition.
 - No console errors.
@@ -389,6 +377,7 @@ git commit -m "feat: pierre/diffs FileView + EditDiff spike"
 ## Task 3: Tool metadata helpers
 
 **Files:**
+
 - Create: `src/transcript/toolMeta.ts`
 
 - [ ] **Step 1: Write the module**
@@ -492,14 +481,8 @@ test("toolLabel covers known tools and falls back for unknown ones", () => {
 })
 
 test("shortPath collapses deep paths but preserves shallow ones", () => {
-  const summary = [
-    "/a",
-    "a/b",
-    "a/b/c",
-    "a/b/c/d/e",
-    "",
-  ]
-    .map(p => `${JSON.stringify(p)} -> ${JSON.stringify(shortPath(p))}`)
+  const summary = ["/a", "a/b", "a/b/c", "a/b/c/d/e", ""]
+    .map((p) => `${JSON.stringify(p)} -> ${JSON.stringify(shortPath(p))}`)
     .join("\n")
   expect(summary).toMatchInlineSnapshot()
 })
@@ -523,6 +506,7 @@ git commit -m "feat: tool metadata helpers with snapshot tests"
 ## Task 4: Leaf rendering blocks (Text, Thinking, Image)
 
 **Files:**
+
 - Create: `src/transcript/TextBlock.tsx`
 - Create: `src/transcript/ThinkingBlock.tsx`
 - Create: `src/transcript/ImageBlock.tsx`
@@ -570,9 +554,7 @@ import type { ImageSource } from "../types"
 
 export function ImageBlock({ source }: { source: ImageSource }) {
   const src =
-    source.type === "base64"
-      ? `data:${source.media_type};base64,${source.data}`
-      : source.url
+    source.type === "base64" ? `data:${source.media_type};base64,${source.data}` : source.url
   return (
     <a href={src} target="_blank" rel="noreferrer" className="image-block">
       <img src={src} alt="" />
@@ -600,19 +582,42 @@ Append to `src/styles.css`:
   gap: 8px;
   padding: 4px 0;
 }
-.assistant-row span { white-space: pre-wrap; flex: 1; }
-.icon-muted { color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+.assistant-row span {
+  white-space: pre-wrap;
+  flex: 1;
+}
+.icon-muted {
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 .thinking {
-  display: flex; align-items: flex-start; gap: 8px; width: 100%;
-  text-align: left; color: var(--muted); font-style: italic; padding: 4px 0;
-  background: none; border: none; cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  color: var(--muted);
+  font-style: italic;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
-.thinking span { flex: 1; white-space: pre-wrap; }
+.thinking span {
+  flex: 1;
+  white-space: pre-wrap;
+}
 .clamp-1 {
-  display: -webkit-box; -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.image-block { display: inline-block; margin: 4px 0; }
+.image-block {
+  display: inline-block;
+  margin: 4px 0;
+}
 .image-block img {
   max-width: 100%;
   max-height: 320px;
@@ -650,6 +655,7 @@ git commit -m "feat: text/thinking/image leaf blocks"
 ## Task 5: ToolCard
 
 **Files:**
+
 - Create: `src/transcript/ToolCard.tsx`
 - Modify: `src/styles.css`
 
@@ -663,13 +669,7 @@ import { EditDiff } from "./EditDiff"
 import { FileView } from "./FileView"
 import { ImageBlock } from "./ImageBlock"
 
-export function ToolCard({
-  block,
-  result,
-}: {
-  block: ToolUseBlock
-  result: ToolResult
-}) {
+export function ToolCard({ block, result }: { block: ToolUseBlock; result: ToolResult }) {
   const [expanded, setExpanded] = useState(false)
   const { Icon, color } = iconFor(block.name)
   const title = toolTitle(block.input)
@@ -696,8 +696,7 @@ export function ToolCard({
       />
     )
   } else if (block.name === "MultiEdit") {
-    const edits =
-      (input.edits as Array<{ old_string?: string; new_string?: string }>) ?? []
+    const edits = (input.edits as Array<{ old_string?: string; new_string?: string }>) ?? []
     body = (
       <div className="multi-edit">
         {edits.map((e, i) => (
@@ -711,12 +710,7 @@ export function ToolCard({
       </div>
     )
   } else if (block.name === "Write") {
-    body = (
-      <FileView
-        filePath={filePath}
-        contents={(input.content as string) ?? ""}
-      />
-    )
+    body = <FileView filePath={filePath} contents={(input.content as string) ?? ""} />
   } else if (block.name === "Read" && output) {
     body = <FileView filePath={filePath} contents={output} />
   } else if (output) {
@@ -754,26 +748,55 @@ export function ToolCard({
 Append to `src/styles.css`:
 
 ```css
-.tool-card { display: flex; flex-direction: column; }
-.tool-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 4px 6px; border-radius: 4px; width: 100%;
-  text-align: left; background: none; border: none;
-  color: inherit; font: inherit;
+.tool-card {
+  display: flex;
+  flex-direction: column;
 }
-.tool-row.clickable { cursor: pointer; }
-.tool-row.clickable:hover { background: var(--card); }
-.tool-row .icon { flex-shrink: 0; }
-.icon.tool-blue { color: #7ab7ff; }
-.icon.tool-amber { color: #f5b870; }
-.icon.tool-green { color: #74d99f; }
-.icon.tool-violet { color: #c79bf3; }
-.icon.tool-muted { color: var(--muted); }
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+}
+.tool-row.clickable {
+  cursor: pointer;
+}
+.tool-row.clickable:hover {
+  background: var(--card);
+}
+.tool-row .icon {
+  flex-shrink: 0;
+}
+.icon.tool-blue {
+  color: #7ab7ff;
+}
+.icon.tool-amber {
+  color: #f5b870;
+}
+.icon.tool-green {
+  color: #74d99f;
+}
+.icon.tool-violet {
+  color: #c79bf3;
+}
+.icon.tool-muted {
+  color: var(--muted);
+}
 .tool-body {
   margin: 4px 0 8px 24px;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.cmd, .output {
+.cmd,
+.output {
   font-size: 12px;
   background: var(--code-bg);
   border: 1px solid var(--border);
@@ -785,8 +808,14 @@ Append to `src/styles.css`:
   white-space: pre-wrap;
   word-break: break-word;
 }
-.cmd { color: var(--muted); }
-.multi-edit { display: flex; flex-direction: column; gap: 8px; }
+.cmd {
+  color: var(--muted);
+}
+.multi-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 ```
 
 - [ ] **Step 3: Type-check**
@@ -805,6 +834,7 @@ git commit -m "feat: ToolCard with per-tool body rendering"
 ## Task 6: Transcript (two-pass renderer)
 
 **Files:**
+
 - Create: `src/transcript/extractResult.ts`
 - Create: `src/transcript/extractResult.test.ts`
 - Create: `src/transcript/Transcript.tsx`
@@ -815,13 +845,7 @@ git commit -m "feat: ToolCard with per-tool body rendering"
 Create `src/transcript/extractResult.ts`:
 
 ```ts
-import type {
-  Entry,
-  Block,
-  ImageSource,
-  ToolResult,
-  ToolResultBlock,
-} from "../types"
+import type { Entry, Block, ImageSource, ToolResult, ToolResultBlock } from "../types"
 
 export function extractResult(block: ToolResultBlock): ToolResult {
   const c = block.content
@@ -853,9 +877,7 @@ import { parseJsonl } from "../parse"
 import { extractResult, getBlocks } from "./extractResult"
 
 test("extractResult on every tool_result in the fixture", async () => {
-  const text = await Bun.file(
-    new URL("../__fixtures__/sample.jsonl", import.meta.url),
-  ).text()
+  const text = await Bun.file(new URL("../__fixtures__/sample.jsonl", import.meta.url)).text()
   const { entries } = parseJsonl(text)
 
   const lines: string[] = []
@@ -863,9 +885,7 @@ test("extractResult on every tool_result in the fixture", async () => {
     for (const block of getBlocks(entry)) {
       if (block.type === "tool_result") {
         const r = extractResult(block)
-        lines.push(
-          `${block.tool_use_id} text=${r.text.length}b images=${r.images.length}`,
-        )
+        lines.push(`${block.tool_use_id} text=${r.text.length}b images=${r.images.length}`)
       }
     }
   }
@@ -887,12 +907,10 @@ test("extractResult handles string content, mixed array, and image-only", () => 
     extractResult({
       type: "tool_result",
       tool_use_id: "c",
-      content: [
-        { type: "image", source: { type: "url", url: "https://x/y.png" } },
-      ],
+      content: [{ type: "image", source: { type: "url", url: "https://x/y.png" } }],
     }),
   ]
-    .map(r => `text=${JSON.stringify(r.text)} images=${r.images.length}`)
+    .map((r) => `text=${JSON.stringify(r.text)} images=${r.images.length}`)
     .join("\n")
   expect(summary).toMatchInlineSnapshot(
     `"text=\"hello\" images=0\ntext=\"out\\nmore\" images=1\ntext=\"\" images=1"`,
@@ -946,11 +964,7 @@ export function Transcript({ entries }: { entries: Entry[] }) {
         nodes.push(<ImageBlock key={k} source={block.source} />)
       } else if (block.type === "tool_use") {
         nodes.push(
-          <ToolCard
-            key={k}
-            block={block}
-            result={results.get(block.id) ?? EMPTY_RESULT}
-          />,
+          <ToolCard key={k} block={block} result={results.get(block.id) ?? EMPTY_RESULT} />,
         )
       }
       // tool_result skipped (already paired)
@@ -964,7 +978,11 @@ export function Transcript({ entries }: { entries: Entry[] }) {
 - [ ] **Step 5: Append CSS**
 
 ```css
-.transcript { display: flex; flex-direction: column; gap: 4px; }
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 ```
 
 - [ ] **Step 6: Type-check**
@@ -983,6 +1001,7 @@ git commit -m "feat: Transcript two-pass renderer with snapshot tests"
 ## Task 7: Replace App spike with real shell
 
 **Files:**
+
 - Modify: `src/App.tsx`
 - Modify: `src/styles.css`
 
@@ -1027,7 +1046,9 @@ export function App() {
             <span className="filename">{fileName}</span>
             <span className="count">{entries.length} entries</span>
             {skipped > 0 && <span className="skipped">{skipped} skipped</span>}
-            <button className="reset" onClick={reset}>Clear</button>
+            <button className="reset" onClick={reset}>
+              Clear
+            </button>
           </div>
         )}
       </header>
@@ -1035,9 +1056,12 @@ export function App() {
       {!entries && (
         <div
           className={`drop-zone ${dragOver ? "drag-over" : ""}`}
-          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={e => {
+          onDrop={(e) => {
             e.preventDefault()
             setDragOver(false)
             const f = e.dataTransfer.files[0]
@@ -1055,7 +1079,7 @@ export function App() {
             accept=".jsonl,application/jsonl,text/plain"
             data-testid="file-input"
             style={{ display: "none" }}
-            onChange={e => {
+            onChange={(e) => {
               const f = e.target.files?.[0]
               if (f) void loadFile(f)
             }}
@@ -1075,20 +1099,41 @@ The `data-testid="file-input"` is for `agent-browser` to target reliably.
 
 ```css
 .app-header {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 16px; margin-bottom: 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 .meta {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 12px; color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
 }
-.meta .filename { color: var(--fg); font-family: ui-monospace, monospace; }
+.meta .filename {
+  color: var(--fg);
+  font-family: ui-monospace, monospace;
+}
 .meta .reset {
-  color: var(--muted); text-decoration: underline; cursor: pointer;
-  background: none; border: none; padding: 0; font: inherit;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
 }
-.drop-zone-sub { margin-top: 8px; font-size: 12px; color: var(--muted); }
-.drop-zone.drag-over { border-color: var(--fg); background: var(--card); }
+.drop-zone-sub {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.drop-zone.drag-over {
+  border-color: var(--fg);
+  background: var(--card);
+}
 ```
 
 - [ ] **Step 3: Type-check**
@@ -1107,6 +1152,7 @@ git commit -m "feat: drop zone shell + Transcript wiring"
 ## Task 8: End-to-end verification with agent-browser
 
 **Files:**
+
 - (No source changes; this task verifies the full app.)
 
 The fixture file is `/Users/andrew/.claude/projects/-Users-andrew-Developer-Web-Dave/0512d505-a628-4e5f-93e2-7f1f99168488.jsonl` (383 lines, 79 Bash, 25 Read, 12 Edit, 7 Grep, 11 image entries).
@@ -1160,6 +1206,7 @@ If verification passes cleanly, no commit needed for this task.
 ## Self-Review
 
 Spec coverage:
+
 - Drop zone + file picker → Task 7
 - JSONL parsing + noise filtering → Task 1
 - Two-pass render with tool result pairing (text + images) → Task 6

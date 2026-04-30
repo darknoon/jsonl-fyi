@@ -84,11 +84,7 @@ test("parseV4A: Add File", () => {
 })
 
 test("parseV4A: Delete File (no body)", () => {
-  const patch = [
-    "*** Begin Patch",
-    "*** Delete File: /gone.txt",
-    "*** End Patch",
-  ].join("\n")
+  const patch = ["*** Begin Patch", "*** Delete File: /gone.txt", "*** End Patch"].join("\n")
   const result = parseV4A(patch)
   expect("error" in result).toBe(false)
   if ("error" in result) return
@@ -141,7 +137,7 @@ test("parseV4A: multiple files in one patch", () => {
   const result = parseV4A(patch)
   expect("error" in result).toBe(false)
   if ("error" in result) return
-  expect(result.files.map(f => f.op)).toEqual(["update", "add"])
+  expect(result.files.map((f) => f.op)).toEqual(["update", "add"])
 })
 
 test("parseV4A: malformed patch (missing Begin Patch)", () => {

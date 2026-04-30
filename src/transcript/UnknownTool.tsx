@@ -23,7 +23,7 @@ export function UnknownTool({
       <ToolCard.Content>
         {keys.length > 0 && (
           <dl className="tool-fields">
-            {keys.map(k => {
+            {keys.map((k) => {
               const v = input[k]
               return (
                 <Field

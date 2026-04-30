@@ -1,10 +1,5 @@
 import { test, expect } from "bun:test"
-import {
-  exampleHref,
-  findExampleByPath,
-  formatBytes,
-  type Example,
-} from "./examples"
+import { exampleHref, findExampleByPath, formatBytes, type Example } from "./examples"
 
 const stub: Example = {
   name: "demo",
@@ -30,9 +25,7 @@ test("exampleHref maps an example to a stable jsonl route", () => {
 })
 
 test("findExampleByPath returns the first bundled example by its filename", () => {
-  const real = findExampleByPath(
-    "/examples/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
-  )
+  const real = findExampleByPath("/examples/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl")
   expect(real?.name).toBe("Centering the filename in the header")
 })
 

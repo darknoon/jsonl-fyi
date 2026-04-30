@@ -52,9 +52,14 @@ function deriveIsError(output: string, kind: "function" | "custom"): boolean {
   if (output.startsWith("{")) {
     try {
       const v = JSON.parse(output) as { metadata?: unknown }
-      const meta = v.metadata && typeof v.metadata === "object" ? (v.metadata as Record<string, unknown>) : null
+      const meta =
+        v.metadata && typeof v.metadata === "object"
+          ? (v.metadata as Record<string, unknown>)
+          : null
       if (meta && typeof meta.exit_code === "number" && meta.exit_code !== 0) return true
-    } catch { /* not json — fall through */ }
+    } catch {
+      /* not json — fall through */
+    }
   }
   return false
 }
@@ -138,9 +143,7 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
         return (
           <React.Fragment key={`row-${i}`}>
             {node}
-            {ms != null && (
-              <TurnSeparator durationMs={ms} usage={usages.get(i) ?? null} />
-            )}
+            {ms != null && <TurnSeparator durationMs={ms} usage={usages.get(i) ?? null} />}
           </React.Fragment>
         )
       })}

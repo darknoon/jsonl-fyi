@@ -3,9 +3,7 @@ export type V4AFile =
   | { op: "update"; path: string; movedTo?: string; unifiedDiff: string }
   | { op: "delete"; path: string }
 
-export type V4AResult =
-  | { files: V4AFile[] }
-  | { error: string; raw: string }
+export type V4AResult = { files: V4AFile[] } | { error: string; raw: string }
 
 const BEGIN = "*** Begin Patch"
 const END = "*** End Patch"
@@ -26,7 +24,10 @@ export function parseV4A(input: string): V4AResult {
     }
     const m = /^\*\*\* (Add File|Update File|Delete File): (.+)$/.exec(line)
     if (!m) {
-      if (line.trim() === "") { i++; continue }
+      if (line.trim() === "") {
+        i++
+        continue
+      }
       return { error: `unexpected line: ${line}`, raw: input }
     }
     const op = m[1]

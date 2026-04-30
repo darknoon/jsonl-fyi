@@ -12,12 +12,12 @@ export function Examples({ onSelect }: Props) {
     <section className="examples">
       <h2 className="examples-header">Examples</h2>
       <ul className="examples-list">
-        {EXAMPLES.map(example => (
+        {EXAMPLES.map((example) => (
           <li key={example.fileName}>
             <a
               href={exampleHref(example)}
               className="example-row"
-              onClick={event => {
+              onClick={(event) => {
                 event.preventDefault()
                 onSelect(example)
               }}
@@ -25,7 +25,8 @@ export function Examples({ onSelect }: Props) {
               <FileIcon format={example.format} />
               <span className="example-row-title">{example.name}</span>
               <span className="example-row-meta">
-                {example.format === "codex" ? "Codex" : "Claude Code"} • {example.turns} turns • {formatBytes(example.sizeBytes)}
+                {example.format === "codex" ? "Codex" : "Claude Code"} • {example.turns} turns •{" "}
+                {formatBytes(example.sizeBytes)}
               </span>
             </a>
           </li>

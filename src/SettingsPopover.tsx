@@ -16,7 +16,7 @@ export function SettingsPopover() {
         <input
           type="checkbox"
           checked={renderMarkdown}
-          onChange={e => setRenderMarkdown(e.target.checked)}
+          onChange={(e) => setRenderMarkdown(e.target.checked)}
         />
         <span>Render markdown</span>
       </label>

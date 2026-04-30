@@ -63,12 +63,7 @@ export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
       {items.map((item, idx) => {
         switch (item.kind) {
           case "header":
-            return (
-              <TranscriptHeader
-                key={`hdr-${idx}`}
-                startTimestamp={item.chatStartIso}
-              />
-            )
+            return <TranscriptHeader key={`hdr-${idx}`} startTimestamp={item.chatStartIso} />
           case "separator":
             return (
               <TurnSeparator

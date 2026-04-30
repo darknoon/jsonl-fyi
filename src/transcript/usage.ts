@@ -23,9 +23,7 @@ export function extractClaudeTurnUsage(entry: MessageEntry): TurnUsage | null {
   }
 }
 
-export function extractCodexTurnUsage(
-  ev: CodexEventMsgTokenCount,
-): TurnUsage | null {
+export function extractCodexTurnUsage(ev: CodexEventMsgTokenCount): TurnUsage | null {
   const last = ev.payload.info?.last_token_usage
   if (!last) return null
   const totalIn = last.input_tokens ?? 0

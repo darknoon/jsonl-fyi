@@ -24,15 +24,11 @@ test("image → literal alt-image syntax", () => {
 })
 
 test("javascript: link → literal", () => {
-  expect(transform("[click](javascript:alert(1))")).toBe(
-    "\\[click]\\(javascript:alert(1))",
-  )
+  expect(transform("[click](javascript:alert(1))")).toBe("\\[click]\\(javascript:alert(1))")
 })
 
 test("http link kept as link", () => {
-  expect(transform("[ok](https://example.com)")).toBe(
-    "[ok](https://example.com)",
-  )
+  expect(transform("[ok](https://example.com)")).toBe("[ok](https://example.com)")
 })
 
 test("raw html block kept as text", () => {

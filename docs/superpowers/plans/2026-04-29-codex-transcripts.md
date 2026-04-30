@@ -12,6 +12,7 @@
 **Tech Stack:** React 19, TypeScript (`@typescript/native-preview` via `tsgo`), Bun (`bun:test`), `@pierre/diffs/react` (existing — both `EditDiff` and the not-yet-used `PatchDiff` ship in this lib). No new dependencies.
 
 **UI conventions to follow** (introduced by recent refactor on main):
+
 - Tool headers use `<Header><ToolTitle name="..." detail="..." /></Header>`. No icons, no color props.
 - Every `<ToolCard.Root>` passes `status={output.isError ? "error" : "success"}`.
 - `ToolResult.isError: boolean` is required on every output (default `false`).
@@ -21,12 +22,14 @@
 ## File Structure
 
 **Refactor / rename (Task 1):**
+
 - Move `src/parse.ts` → `src/transcript/claude/parse.ts`
 - Move `src/parse.test.ts` → `src/transcript/claude/parse.test.ts`
 - Rename `src/transcript/claude/Transcript.tsx` (export name `Transcript`) → `src/transcript/claude/ClaudeCodeTranscript.tsx` (export name `ClaudeCodeTranscript`)
 - Update imports in `src/App.tsx`
 
 **Format-agnostic helpers (Tasks 2–4):**
+
 - Create `src/parse/iter.ts` — `iterJsonlLines` generator
 - Create `src/parse/iter.test.ts`
 - Create `src/parse/classify.ts` — `classifyJsonl`
@@ -34,6 +37,7 @@
 - Create `scripts/validate-classifier.ts`
 
 **Codex parsing (Tasks 5–7):**
+
 - Create `src/transcript/codex/types.ts`
 - Create `src/transcript/codex/parse.ts`
 - Create `src/transcript/codex/parse.test.ts`
@@ -41,17 +45,20 @@
 - Create `src/transcript/codex/v4a.test.ts`
 
 **Shared extraction (Task 8):**
+
 - Modify `src/transcript/shared.tsx` — move `ToolTitle` here from `claude/Tool.tsx`
 - Create `src/transcript/UnknownTool.tsx` (extracted from `claude/Tool.tsx`)
 - Modify `src/transcript/claude/Tool.tsx` — import `ToolTitle` and `UnknownTool` from shared locations
 
 **Codex tool components (Tasks 9–12):**
+
 - Create `src/transcript/codex/Tool.tsx` — dispatcher + ShellCommand, ExecCommand, Shell components
 - Create `src/transcript/codex/ApplyPatch.tsx` (referenced from `Tool.tsx`)
 - Modify `src/transcript/codex/Tool.tsx` — add UpdatePlan, ViewImage, WebSearchCall components
 - Modify `src/transcript/codex/Tool.tsx` — add SpawnAgent, WaitAgent components
 
 **Codex top-level rendering (Tasks 13–14):**
+
 - Create `src/transcript/codex/EntryView.tsx`
 - Create `src/transcript/codex/SessionHeader.tsx`
 - Create `src/transcript/codex/CompactedMarker.tsx`
@@ -60,6 +67,7 @@
 - Modify `src/App.tsx` — classification routing
 
 **Verification (Task 15):**
+
 - Run `bun run check`, `bun test`, manual browser test
 - Commit any final tweaks
 
@@ -68,6 +76,7 @@
 ## Task 1: Refactor — rename Claude path for symmetry
 
 **Files:**
+
 - Move: `src/parse.ts` → `src/transcript/claude/parse.ts`
 - Move: `src/parse.test.ts` → `src/transcript/claude/parse.test.ts`
 - Move: `src/transcript/claude/Transcript.tsx` → `src/transcript/claude/ClaudeCodeTranscript.tsx` (rename component too)
@@ -90,9 +99,7 @@ git mv src/parse.test.ts src/transcript/claude/parse.test.ts
 Open `src/transcript/claude/parse.test.ts`. The fixture loader uses `new URL("./__fixtures__/sample.jsonl", import.meta.url)`. After the move, the fixture lives two directories up. Change line ~5 to:
 
 ```ts
-const text = await Bun.file(
-  new URL("../../__fixtures__/sample.jsonl", import.meta.url),
-).text()
+const text = await Bun.file(new URL("../../__fixtures__/sample.jsonl", import.meta.url)).text()
 ```
 
 The import on line 2 already says `from "./parse"` — that still resolves correctly (both files are in the same directory now).
@@ -134,13 +141,17 @@ import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 Change line 182:
 
 ```tsx
-{entries && <Transcript entries={entries} />}
+{
+  entries && <Transcript entries={entries} />
+}
 ```
 
 to:
 
 ```tsx
-{entries && <ClaudeCodeTranscript entries={entries} />}
+{
+  entries && <ClaudeCodeTranscript entries={entries} />
+}
 ```
 
 - [ ] **Step 5: Search for any leftover references**
@@ -169,6 +180,7 @@ git commit -m "refactor: rename Transcript→ClaudeCodeTranscript, move parser i
 Extract the JSONL line-streaming concern into a format-agnostic generator. Both formats can iterate the same source.
 
 **Files:**
+
 - Create: `src/parse/iter.ts`
 - Create: `src/parse/iter.test.ts`
 
@@ -181,24 +193,14 @@ import { test, expect } from "bun:test"
 import { iterJsonlLines } from "./iter"
 
 test("iterJsonlLines: yields one parsed value per non-empty line", () => {
-  const text = [
-    '{"a":1}',
-    '{"b":2}',
-    '',
-    '{"c":3}',
-  ].join("\n")
+  const text = ['{"a":1}', '{"b":2}', "", '{"c":3}'].join("\n")
   const out = []
   for (const v of iterJsonlLines(text)) out.push(v)
   expect(out).toEqual([{ a: 1 }, { b: 2 }, { c: 3 }])
 })
 
 test("iterJsonlLines: malformed lines are skipped, count exposed via return", () => {
-  const text = [
-    '{"a":1}',
-    'not json',
-    '',
-    '{"b":2}',
-  ].join("\n")
+  const text = ['{"a":1}', "not json", "", '{"b":2}'].join("\n")
   const it = iterJsonlLines(text)
   const values = []
   let result = it.next()
@@ -270,6 +272,7 @@ git commit -m "feat: iterJsonlLines generator (format-agnostic)"
 Decide whether a dropped JSONL file is Claude Code, Codex, or unknown — based on the first ~10 parsed lines.
 
 **Files:**
+
 - Create: `src/parse/classify.ts`
 - Create: `src/parse/classify.test.ts`
 
@@ -290,7 +293,9 @@ test("classifyJsonl: codex from session_meta", () => {
 })
 
 test("classifyJsonl: codex from response_item alone", () => {
-  expect(classifyJsonl([{ type: "response_item", payload: { type: "reasoning", summary: [] } }])).toBe("codex")
+  expect(
+    classifyJsonl([{ type: "response_item", payload: { type: "reasoning", summary: [] } }]),
+  ).toBe("codex")
 })
 
 test("classifyJsonl: codex from turn_context", () => {
@@ -298,19 +303,29 @@ test("classifyJsonl: codex from turn_context", () => {
 })
 
 test("classifyJsonl: codex from event_msg", () => {
-  expect(classifyJsonl([{ type: "event_msg", payload: { type: "agent_message", message: "hi" } }])).toBe("codex")
+  expect(
+    classifyJsonl([{ type: "event_msg", payload: { type: "agent_message", message: "hi" } }]),
+  ).toBe("codex")
 })
 
 test("classifyJsonl: claude from user/assistant + content array", () => {
   const lines = [
     { type: "user", uuid: "u1", message: { role: "user", content: "hi" } },
-    { type: "assistant", uuid: "a1", message: { role: "assistant", content: [{ type: "text", text: "hello" }] } },
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
+    },
   ]
   expect(classifyJsonl(lines)).toBe("claude")
 })
 
 test("classifyJsonl: claude from system entries (turn_duration)", () => {
-  expect(classifyJsonl([{ type: "system", subtype: "turn_duration", parentUuid: "u1", durationMs: 100 }])).toBe("claude")
+  expect(
+    classifyJsonl([
+      { type: "system", subtype: "turn_duration", parentUuid: "u1", durationMs: 100 },
+    ]),
+  ).toBe("claude")
 })
 
 test("classifyJsonl: unknown when nothing matches", () => {
@@ -342,7 +357,13 @@ Expected: FAIL with `Cannot find module './classify'`.
 Create `src/parse/classify.ts`:
 
 ```ts
-const CODEX_TYPES = new Set(["session_meta", "response_item", "turn_context", "event_msg", "compacted"])
+const CODEX_TYPES = new Set([
+  "session_meta",
+  "response_item",
+  "turn_context",
+  "event_msg",
+  "compacted",
+])
 const CLAUDE_TYPES = new Set(["user", "assistant", "system"])
 
 export type FormatLabel = "claude" | "codex" | "unknown"
@@ -387,6 +408,7 @@ git commit -m "feat: classifyJsonl format detector"
 ## Task 4: Validation script — exercise classifier on local logs
 
 **Files:**
+
 - Create: `scripts/validate-classifier.ts`
 
 - [ ] **Step 1: Implement**
@@ -400,9 +422,17 @@ import { iterJsonlLines } from "../src/parse/iter"
 import { classifyJsonl } from "../src/parse/classify"
 import { homedir } from "os"
 
-type Result = { path: string; label: ReturnType<typeof classifyJsonl>; expected: "claude" | "codex" }
+type Result = {
+  path: string
+  label: ReturnType<typeof classifyJsonl>
+  expected: "claude" | "codex"
+}
 
-async function* walk(root: string, pattern: string, expected: "claude" | "codex"): AsyncGenerator<Result> {
+async function* walk(
+  root: string,
+  pattern: string,
+  expected: "claude" | "codex",
+): AsyncGenerator<Result> {
   const glob = new Glob(pattern)
   for await (const path of glob.scan({ cwd: root, absolute: true, onlyFiles: true })) {
     const text = await Bun.file(path).text()
@@ -467,6 +497,7 @@ git commit -m "chore: validate-classifier script for local Claude+Codex logs"
 Define the `CodexEntry` discriminated union mirroring the wire shape.
 
 **Files:**
+
 - Create: `src/transcript/codex/types.ts`
 
 - [ ] **Step 1: Implement**
@@ -543,11 +574,7 @@ export type CodexCompacted = {
 // `event_msg` lines exist in the wire format but we drop them — see spec §4.
 export type CodexEventMsg = { type: "event_msg"; payload: unknown }
 
-export type CodexEntry =
-  | CodexSessionMeta
-  | CodexTurnContext
-  | CodexResponseItem
-  | CodexCompacted
+export type CodexEntry = CodexSessionMeta | CodexTurnContext | CodexResponseItem | CodexCompacted
 ```
 
 - [ ] **Step 2: Type-check**
@@ -570,6 +597,7 @@ git commit -m "feat: Codex wire-shape types"
 Convert iterated raw line objects (from `iterJsonlLines`) into a typed `CodexEntry[]`. Drop `event_msg` lines (spec §4). Be liberal: unknown payload subtypes flow through, malformed rows are dropped silently.
 
 **Files:**
+
 - Create: `src/transcript/codex/parse.ts`
 - Create: `src/transcript/codex/parse.test.ts`
 
@@ -611,7 +639,7 @@ test("parseCodexEntries: keeps known top-level types, drops event_msg", () => {
     { type: "compacted", payload: { message: null, replacement_history: null } },
   ]
   const entries = parseCodexEntries(lines)
-  expect(entries.map(e => e.type)).toEqual([
+  expect(entries.map((e) => e.type)).toEqual([
     "session_meta",
     "turn_context",
     "response_item",
@@ -630,7 +658,7 @@ test("parseCodexEntries: skips unknown top-level types and malformed objects", (
     { no_type_field: true },
     { type: "response_item", payload: { type: "message", role: "user", content: [] } },
   ]
-  expect(parseCodexEntries(lines).map(e => e.type)).toEqual(["session_meta", "response_item"])
+  expect(parseCodexEntries(lines).map((e) => e.type)).toEqual(["session_meta", "response_item"])
 })
 
 test("parseCodexEntries: drops response_item lines whose payload is malformed", () => {
@@ -723,6 +751,7 @@ V4A grammar (see spec §6 V4A parser):
 ```
 
 **Files:**
+
 - Create: `src/transcript/codex/v4a.ts`
 - Create: `src/transcript/codex/v4a.test.ts`
 
@@ -791,11 +820,7 @@ test("parseV4A: Add File", () => {
 })
 
 test("parseV4A: Delete File (no body)", () => {
-  const patch = [
-    "*** Begin Patch",
-    "*** Delete File: /gone.txt",
-    "*** End Patch",
-  ].join("\n")
+  const patch = ["*** Begin Patch", "*** Delete File: /gone.txt", "*** End Patch"].join("\n")
   const result = parseV4A(patch)
   expect("error" in result).toBe(false)
   if ("error" in result) return
@@ -848,7 +873,7 @@ test("parseV4A: multiple files in one patch", () => {
   const result = parseV4A(patch)
   expect("error" in result).toBe(false)
   if ("error" in result) return
-  expect(result.files.map(f => f.op)).toEqual(["update", "add"])
+  expect(result.files.map((f) => f.op)).toEqual(["update", "add"])
 })
 
 test("parseV4A: malformed patch (missing Begin Patch)", () => {
@@ -896,9 +921,7 @@ export type V4AFile =
   | { op: "update"; path: string; movedTo?: string; unifiedDiff: string }
   | { op: "delete"; path: string }
 
-export type V4AResult =
-  | { files: V4AFile[] }
-  | { error: string; raw: string }
+export type V4AResult = { files: V4AFile[] } | { error: string; raw: string }
 
 const BEGIN = "*** Begin Patch"
 const END = "*** End Patch"
@@ -919,7 +942,10 @@ export function parseV4A(input: string): V4AResult {
     }
     const m = /^\*\*\* (Add File|Update File|Delete File): (.+)$/.exec(line)
     if (!m) {
-      if (line.trim() === "") { i++; continue }
+      if (line.trim() === "") {
+        i++
+        continue
+      }
       return { error: `unexpected line: ${line}`, raw: input }
     }
     const op = m[1]
@@ -1027,6 +1053,7 @@ git commit -m "feat: V4A patch parser → unified-diff strings"
 `ToolTitle` is currently a private helper in `claude/Tool.tsx`. `UnknownTool` is also private. Both will be reused by Codex tool components.
 
 **Files:**
+
 - Modify: `src/transcript/shared.tsx` — add `ToolTitle` export
 - Create: `src/transcript/UnknownTool.tsx`
 - Modify: `src/transcript/claude/Tool.tsx` — remove private copies, import from shared
@@ -1036,21 +1063,13 @@ git commit -m "feat: V4A patch parser → unified-diff strings"
 Open `src/transcript/shared.tsx`. Add this export at the bottom of the file (after `hasOutput`):
 
 ```tsx
-export function ToolTitle({
-  name,
-  detail,
-}: {
-  name: string
-  detail?: ReactNode
-}) {
+export function ToolTitle({ name, detail }: { name: string; detail?: ReactNode }) {
   return (
     <>
       <strong className="tool-title-name">{name}</strong>
       {detail != null && (
         <>
-          (
-          <span>{detail}</span>
-          )
+          (<span>{detail}</span>)
         </>
       )}
     </>
@@ -1086,7 +1105,7 @@ export function UnknownTool({
       <ToolCard.Content>
         {keys.length > 0 && (
           <dl className="tool-fields">
-            {keys.map(k => {
+            {keys.map((k) => {
               const v = input[k]
               return (
                 <Field
@@ -1188,6 +1207,7 @@ Build the Codex tool dispatcher and the three shell-family components (`ShellCom
 Codex tool components follow the Claude pattern: `<ToolCard.Root status=...>` → `<ToolCard.Trigger>` with `<Header><ToolTitle name=... detail=... /></Header>` → `<ToolCard.Content>` with the command in `<pre>`, other args as `<Field>`, then `<Output>`.
 
 **Files:**
+
 - Create: `src/transcript/codex/Tool.tsx`
 
 - [ ] **Step 1: Implement (dispatcher + shell-family + helpers)**
@@ -1241,7 +1261,9 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
         {command && <pre className="output cmd">{command}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -1292,7 +1314,9 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
         {cmd && <pre className="output cmd">{cmd}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -1329,7 +1353,9 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
         {joined && <pre className="output cmd">{joined}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -1405,6 +1431,7 @@ git commit -m "feat: Codex Tool dispatcher with shell-family components"
 Wire V4A parser to `<PatchDiff>`. Replace the placeholder `CodexCustomToolCall` body in `Tool.tsx`.
 
 **Files:**
+
 - Create: `src/transcript/codex/ApplyPatch.tsx`
 - Modify: `src/transcript/codex/Tool.tsx`
 - Modify: `src/styles.css`
@@ -1500,7 +1527,8 @@ function tryParsePatchOutput(raw: string): {
     const v = JSON.parse(raw) as { output?: unknown; metadata?: unknown }
     if (v && typeof v === "object") {
       const text = typeof v.output === "string" ? v.output : raw
-      const meta = (v.metadata && typeof v.metadata === "object") ? (v.metadata as Record<string, unknown>) : {}
+      const meta =
+        v.metadata && typeof v.metadata === "object" ? (v.metadata as Record<string, unknown>) : {}
       const exitCode = typeof meta.exit_code === "number" ? meta.exit_code : null
       const duration = typeof meta.duration_seconds === "number" ? meta.duration_seconds : null
       return { text, exitCode, duration }
@@ -1582,6 +1610,7 @@ git commit -m "feat: ApplyPatch component (V4A → PatchDiff per file)"
 `UpdatePlan` and `ViewImage` are dispatched through `CodexFunctionCall`. `WebSearchCall` is dispatched at the `response_item.payload.type` level (Task 13's EntryView), not the function-call dispatcher — but defining it here keeps all Codex tool-component code in one file.
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx`
 - Modify: `src/styles.css`
 
@@ -1649,33 +1678,30 @@ function ViewImage({ input, output }: { input: ViewImageInput; output: ToolResul
             <Field name="path" value={path} />
           </dl>
         )}
-        {embeddedImage ? (
-          <ImageBlock source={embeddedImage} />
-        ) : (
-          <Output output={output} />
-        )}
+        {embeddedImage ? <ImageBlock source={embeddedImage} /> : <Output output={output} />}
       </ToolCard.Content>
     </ToolCard.Root>
   )
 }
 
-function tryParseEmbeddedImage(
-  raw: string,
-): { type: "url"; url: string } | null {
+function tryParseEmbeddedImage(raw: string): { type: "url"; url: string } | null {
   if (!raw || !raw.startsWith("[")) return null
   try {
     const arr = JSON.parse(raw) as unknown
     if (!Array.isArray(arr)) return null
     for (const item of arr) {
       if (
-        item && typeof item === "object" &&
+        item &&
+        typeof item === "object" &&
         (item as { type?: unknown }).type === "input_image" &&
         typeof (item as { image_url?: unknown }).image_url === "string"
       ) {
         return { type: "url", url: (item as { image_url: string }).image_url }
       }
     }
-  } catch { /* not json — fall through */ }
+  } catch {
+    /* not json — fall through */
+  }
   return null
 }
 
@@ -1686,9 +1712,7 @@ type WebSearchCallProps = {
 }
 
 export function WebSearchCall({ query, queries, status }: WebSearchCallProps) {
-  const extra = queries && queries.length > 1
-    ? queries.filter(q => q !== query)
-    : []
+  const extra = queries && queries.length > 1 ? queries.filter((q) => q !== query) : []
   const hasContent = extra.length > 0 || !!status
   return (
     <ToolCard.Root hasContent={hasContent} status="success">
@@ -1751,6 +1775,7 @@ git commit -m "feat: UpdatePlan, ViewImage, WebSearchCall components"
 ## Task 12: SpawnAgent, WaitAgent components
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx`
 
 - [ ] **Step 1: Add components**
@@ -1788,7 +1813,9 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
         {message && <pre className="output">{message}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
       </ToolCard.Content>
@@ -1826,7 +1853,9 @@ function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResul
       <ToolCard.Content>
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -1863,6 +1892,7 @@ git commit -m "feat: SpawnAgent, WaitAgent components"
 ## Task 13: Codex EntryView + SessionHeader + CompactedMarker
 
 **Files:**
+
 - Create: `src/transcript/codex/EntryView.tsx`
 - Create: `src/transcript/codex/SessionHeader.tsx`
 - Create: `src/transcript/codex/CompactedMarker.tsx`
@@ -1881,9 +1911,7 @@ export function SessionHeader({ meta }: { meta: CodexSessionMeta }) {
   const sha = m.git?.commit_hash?.slice(0, 7)
   const repo = m.git?.repository_url
   const cwd = m.cwd ? shortPath(m.cwd) : null
-  const cli = m.cli_version
-    ? `${m.originator ?? "codex"} ${m.cli_version}`
-    : m.originator
+  const cli = m.cli_version ? `${m.originator ?? "codex"} ${m.cli_version}` : m.originator
 
   return (
     <div className="session-header">
@@ -1961,7 +1989,7 @@ export function EntryView({ entry, results }: Props) {
     }
 
     case "reasoning": {
-      const text = p.summary.map(s => s.text).join("\n\n")
+      const text = p.summary.map((s) => s.text).join("\n\n")
       return text ? <ThinkingBlock text={text} /> : null
     }
 
@@ -1981,13 +2009,7 @@ export function EntryView({ entry, results }: Props) {
       return null
 
     case "web_search_call":
-      return (
-        <WebSearchCall
-          status={p.status}
-          query={p.action?.query}
-          queries={p.action?.queries}
-        />
-      )
+      return <WebSearchCall status={p.status} query={p.action?.query} queries={p.action?.queries} />
 
     case "ghost_snapshot":
       // Not rendered in v1 — see spec §13.
@@ -2090,10 +2112,12 @@ git commit -m "feat: Codex EntryView, SessionHeader, CompactedMarker"
 ## Task 14: `CodexTranscript` top-level + App routing
 
 Tie it together. The pre-pass derives `isError` from output text — it's true when:
+
 - `function_call_output.output` matches `/^Exit code: ([1-9]\d*)/m`, OR
 - `custom_tool_call_output.output` is JSON-wrapped with `metadata.exit_code != 0`
 
 **Files:**
+
 - Create: `src/transcript/codex/CodexTranscript.tsx`
 - Modify: `src/App.tsx`
 
@@ -2119,9 +2143,14 @@ function deriveIsError(output: string, kind: "function" | "custom"): boolean {
   if (output.startsWith("{")) {
     try {
       const v = JSON.parse(output) as { metadata?: unknown }
-      const meta = v.metadata && typeof v.metadata === "object" ? (v.metadata as Record<string, unknown>) : null
+      const meta =
+        v.metadata && typeof v.metadata === "object"
+          ? (v.metadata as Record<string, unknown>)
+          : null
       if (meta && typeof meta.exit_code === "number" && meta.exit_code !== 0) return true
-    } catch { /* not json — fall through */ }
+    } catch {
+      /* not json — fall through */
+    }
   }
   return false
 }
@@ -2150,7 +2179,7 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
   }
 
   // Find session_meta (typically the first line).
-  const meta = entries.find(e => e.type === "session_meta")
+  const meta = entries.find((e) => e.type === "session_meta")
 
   return (
     <div className="transcript">
@@ -2246,8 +2275,12 @@ Update remaining `entries` references in the file:
 Replace the render call:
 
 ```tsx
-{session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
-{session && session.format === "claude" && <ClaudeCodeTranscript entries={session.entries} />}
+{
+  session && session.format === "codex" && <CodexTranscript entries={session.entries} />
+}
+{
+  session && session.format === "claude" && <ClaudeCodeTranscript entries={session.entries} />
+}
 ```
 
 Update the drop-zone copy:
@@ -2305,6 +2338,7 @@ ls -1t ~/.codex/sessions/2026/04/*/rollout-*.jsonl | head -3
 In the browser, click the drop zone and select one (or drag it in).
 
 Verify:
+
 - Session header appears at the top: branch, short sha, cwd, codex version
 - User and assistant messages render
 - Reasoning blocks render as collapsible thinking blocks

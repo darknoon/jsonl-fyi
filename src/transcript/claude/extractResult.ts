@@ -1,10 +1,4 @@
-import type {
-  Entry,
-  Block,
-  ImageSource,
-  ToolResult,
-  ToolResultBlock,
-} from "../../types"
+import type { Entry, Block, ImageSource, ToolResult, ToolResultBlock } from "../../types"
 
 export function extractResult(block: ToolResultBlock): ToolResult {
   const c = block.content

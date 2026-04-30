@@ -22,12 +22,7 @@ export type ToolResultBlock = {
   is_error?: boolean
 }
 
-export type Block =
-  | TextBlock
-  | ThinkingBlock
-  | ImageBlock
-  | ToolUseBlock
-  | ToolResultBlock
+export type Block = TextBlock | ThinkingBlock | ImageBlock | ToolUseBlock | ToolResultBlock
 
 export type ClaudeUsage = {
   input_tokens?: number

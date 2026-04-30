@@ -14,9 +14,7 @@ function imageToText(node: Image): Text {
 function linkToText(node: Link): Text {
   // Children of a link are themselves mdast nodes (e.g. text, emphasis).
   // For literal-text fallback we only need the plain-text concatenation.
-  const inner = node.children
-    .map(c => (c.type === "text" ? c.value : ""))
-    .join("")
+  const inner = node.children.map((c) => (c.type === "text" ? c.value : "")).join("")
   const title = node.title ? ` "${node.title}"` : ""
   return { type: "text", value: `[${inner}](${node.url}${title})` }
 }
@@ -25,7 +23,7 @@ function htmlToText(node: Html): Text {
   return { type: "text", value: node.value }
 }
 
-export const remarkKeepDisallowed: Plugin<[], Root> = () => tree => {
+export const remarkKeepDisallowed: Plugin<[], Root> = () => (tree) => {
   visit(tree, (node, index, parent: Parent | undefined) => {
     if (!parent || index === undefined) return
     if (node.type === "image") {

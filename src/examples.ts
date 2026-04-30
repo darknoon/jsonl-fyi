@@ -58,7 +58,7 @@ export function findExampleByPath(pathname: string): Example | null {
     return null
   }
 
-  return EXAMPLES.find(example => example.fileName === fileName) ?? null
+  return EXAMPLES.find((example) => example.fileName === fileName) ?? null
 }
 
 export function formatBytes(n: number): string {

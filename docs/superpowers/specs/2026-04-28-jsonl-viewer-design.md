@@ -52,6 +52,7 @@ The current scaffold contains only `package.json`, `tsconfig.json`, `.gitignore`
 ## Reference implementation
 
 `/Users/andrew/Developer/Prefix/prefix-eval-03-2026/web/src/components/SessionLog.tsx` — `ClaudeTraceLog` is the closest existing pattern. We adopt:
+
 - The two-pass tool-result-pairing model (build `Map<tool_use_id, output>` first, then render)
 - Tool card layout (icon + verb + short path; expandable body)
 - `pastTense` verb table, `shortPath` helper, role-aware text rendering
@@ -75,10 +76,7 @@ type Block =
       tool_use_id: string
       content:
         | string
-        | Array<
-            | { type: "text"; text: string }
-            | { type: "image"; source: ImageSource }
-          >
+        | Array<{ type: "text"; text: string } | { type: "image"; source: ImageSource }>
     }
 
 type Entry = {
@@ -86,7 +84,7 @@ type Entry = {
   parentUuid?: string | null
   isSidechain?: boolean
   timestamp?: string
-  type: string                    // "user" | "assistant" | …
+  type: string // "user" | "assistant" | …
   message?: { role?: string; content?: Block[] | string }
 }
 ```
@@ -109,6 +107,7 @@ parseJsonl(text: string): { entries: Entry[]; skipped: number }
 **Pass 1 — index tool results.** Walk all entries; for each `tool_result` block (typically inside a `user` entry), record `tool_use_id → { text, images }`. Extraction: if `content` is a string, `text` is the string and `images` is empty; if it's an array, join `text` items with `\n` and collect any `image` blocks into the `images` array. Two-pass is robust to any out-of-order results without costing anything at this scale.
 
 **Pass 2 — render in order.** For each entry's `message.content` blocks:
+
 - `text` → `<TextBlock text role={message.role} />`
   - `role === "user"` → bordered/bubbled left-padded block
   - otherwise → flat row with Robot icon + inline text (no bubble)
@@ -128,6 +127,7 @@ Header row: icon + label, expandable body.
 - Label: `${verb} ${shortPath(title)}` where verb comes from a fixed past-tense map (Read, Wrote, Edited, Ran command, Searched files, Searched code, Applied patch, …) and `title` is `input.file_path ?? input.command ?? input.pattern ?? input.script ?? ""`. Since we view static files, status is always "completed" — present-tense forms aren't needed.
 
 Expanded body, by tool:
+
 - `Bash` → `<pre>$ {input.command}</pre>` then output `<pre>` (full content, scrollable via `max-height` on the container)
 - `Edit` → `<EditDiff filePath={input.file_path} oldString={input.old_string} newString={input.new_string} />`
 - `Write` → `<FileView filePath={input.file_path} contents={input.content} />` (full new file, syntax-highlighted; not a diff against empty)
@@ -142,12 +142,14 @@ When a result has images (e.g. screenshot tools, `WebFetch` rendering), they're 
 `@pierre/diffs` is built on Shiki and exposes a React API at `@pierre/diffs/react` with `File` (single-file syntax-highlighted view) and `FileDiff` (two-file diff). Using one library for both keeps theming consistent.
 
 **EditDiff (`<EditDiff>` wrapping `<FileDiff>`):**
+
 1. Build two `FileContents` records: `{ name: filePath, contents: oldString }` and `{ name: filePath, contents: newString }`. The `name` drives Shiki language inference.
 2. Call `parseDiffFromFile(oldFile, newFile)` to get a `FileDiffMetadata`.
 3. Render `<FileDiff fileDiff={metadata} disableWorkerPool />`.
 4. Layout: stacked (unified) to keep each tool body compact.
 
 **FileView (`<FileView>` wrapping `<File>`):**
+
 1. Build a `FileContents` record `{ name: filePath, contents }`.
 2. Render the corresponding non-diff React component from `@pierre/diffs/react` (the `File` export, with `disableWorkerPool` if available — exact prop name to be confirmed against the type during implementation).
 
@@ -160,6 +162,7 @@ This is the area with the most unknowns. A small spike at the start of implement
 State: `entries: Entry[] | null`, `fileName: string | null`, `skipped: number`.
 
 UI:
+
 - Header: title, and once a file is loaded — file name, entry count, skipped count (if > 0), reset button.
 - When no file: large drop zone "Drop a Claude session `.jsonl` here / or click to choose a file". Supports drag-and-drop and file picker (hidden `<input type="file" accept=".jsonl,application/jsonl,text/plain">`). `FileReader`/`File.text()` → `parseJsonl` → setState.
 - When file loaded: `<Transcript entries={entries} />`.

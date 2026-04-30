@@ -46,7 +46,9 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
         {command && <pre className="output cmd">{command}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -97,7 +99,9 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
         {cmd && <pre className="output cmd">{cmd}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -134,7 +138,9 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
         {joined && <pre className="output cmd">{joined}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -200,33 +206,30 @@ function ViewImage({ input, output }: { input: ViewImageInput; output: ToolResul
             <Field name="path" value={path} />
           </dl>
         )}
-        {embeddedImage ? (
-          <ImageBlock source={embeddedImage} />
-        ) : (
-          <Output output={output} />
-        )}
+        {embeddedImage ? <ImageBlock source={embeddedImage} /> : <Output output={output} />}
       </ToolCard.Content>
     </ToolCard.Root>
   )
 }
 
-function tryParseEmbeddedImage(
-  raw: string,
-): { type: "url"; url: string } | null {
+function tryParseEmbeddedImage(raw: string): { type: "url"; url: string } | null {
   if (!raw || !raw.startsWith("[")) return null
   try {
     const arr = JSON.parse(raw) as unknown
     if (!Array.isArray(arr)) return null
     for (const item of arr) {
       if (
-        item && typeof item === "object" &&
+        item &&
+        typeof item === "object" &&
         (item as { type?: unknown }).type === "input_image" &&
         typeof (item as { image_url?: unknown }).image_url === "string"
       ) {
         return { type: "url", url: (item as { image_url: string }).image_url }
       }
     }
-  } catch { /* not json — fall through */ }
+  } catch {
+    /* not json — fall through */
+  }
   return null
 }
 
@@ -237,9 +240,7 @@ type WebSearchCallProps = {
 }
 
 export function WebSearchCall({ query, queries, status }: WebSearchCallProps) {
-  const extra = queries && queries.length > 1
-    ? queries.filter(q => q !== query)
-    : []
+  const extra = queries && queries.length > 1 ? queries.filter((q) => q !== query) : []
   const hasContent = extra.length > 0 || !!status
   return (
     <ToolCard.Root hasContent={hasContent} status="success">
@@ -300,7 +301,9 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
         {message && <pre className="output">{message}</pre>}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
       </ToolCard.Content>
@@ -338,7 +341,9 @@ function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResul
       <ToolCard.Content>
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />

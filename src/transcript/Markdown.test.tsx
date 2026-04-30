@@ -5,10 +5,7 @@ import { join } from "node:path"
 import { Markdown } from "./Markdown"
 import { SettingsProvider } from "../settings"
 
-const FIXTURE = readFileSync(
-  join(import.meta.dir, "__fixtures__/markdown-sample.md"),
-  "utf8",
-)
+const FIXTURE = readFileSync(join(import.meta.dir, "__fixtures__/markdown-sample.md"), "utf8")
 
 function render(node: React.ReactNode, renderMarkdown = true): string {
   return renderToStaticMarkup(

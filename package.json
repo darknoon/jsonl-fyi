@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "check": "tsgo --noEmit && oxlint --type-aware",
-    "check:format": "oxfmt --check"
+    "check": "tsgo --noEmit && oxlint --type-aware && oxfmt --check"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

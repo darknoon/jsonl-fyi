@@ -32,29 +32,29 @@ Vite has fast, reliable HMR; identical HTML-as-entry model; first-class TS/React
 
 ## API surface changes
 
-| Before | After |
-|---|---|
-| `bun index.html` | `vite` (dev) |
-| `bun build ./index.html --outdir=dist --production --public-path=/` | `vite build` (prod) |
-| `import x from "./fixture.jsonl" with { type: "file" }` | `import x from "./fixture.jsonl?url"` |
-| `process.env.NODE_ENV !== "production"` | `import.meta.env.DEV` |
-| `bun test` | `bun test` (unchanged) |
-| `bun run check` (`tsgo --noEmit && oxlint`) | unchanged |
+| Before                                                              | After                                 |
+| ------------------------------------------------------------------- | ------------------------------------- |
+| `bun index.html`                                                    | `vite` (dev)                          |
+| `bun build ./index.html --outdir=dist --production --public-path=/` | `vite build` (prod)                   |
+| `import x from "./fixture.jsonl" with { type: "file" }`             | `import x from "./fixture.jsonl?url"` |
+| `process.env.NODE_ENV !== "production"`                             | `import.meta.env.DEV`                 |
+| `bun test`                                                          | `bun test` (unchanged)                |
+| `bun run check` (`tsgo --noEmit && oxlint`)                         | unchanged                             |
 
 ## Files touched
 
-| File | Action | Reason |
-|---|---|---|
-| `package.json` | modify | Add `vite`, `@vitejs/plugin-react` to devDeps; update `dev` and `build` scripts |
-| `vite.config.ts` | create | Vite config with React plugin |
-| `src/examples.ts` | modify | Replace `with { type: "file" }` with `?url` suffix |
-| `src/App.tsx` | modify | Replace `process.env.NODE_ENV` with `import.meta.env.DEV` |
-| `tsconfig.json` | modify | Add `vite/client` to `types` (alongside `bun`) for `import.meta.env` typing |
-| `index.html` | unchanged | Vite uses it as-is |
-| `vercel.json` | unchanged | `vite build` outputs to `dist/`, matching the existing config |
-| `bunfig.toml` | unchanged | Test preload config still applies |
-| `bun.lock` | regenerated | New deps |
-| `dist/` | unchanged in repo | gitignored |
+| File              | Action            | Reason                                                                          |
+| ----------------- | ----------------- | ------------------------------------------------------------------------------- |
+| `package.json`    | modify            | Add `vite`, `@vitejs/plugin-react` to devDeps; update `dev` and `build` scripts |
+| `vite.config.ts`  | create            | Vite config with React plugin                                                   |
+| `src/examples.ts` | modify            | Replace `with { type: "file" }` with `?url` suffix                              |
+| `src/App.tsx`     | modify            | Replace `process.env.NODE_ENV` with `import.meta.env.DEV`                       |
+| `tsconfig.json`   | modify            | Add `vite/client` to `types` (alongside `bun`) for `import.meta.env` typing     |
+| `index.html`      | unchanged         | Vite uses it as-is                                                              |
+| `vercel.json`     | unchanged         | `vite build` outputs to `dist/`, matching the existing config                   |
+| `bunfig.toml`     | unchanged         | Test preload config still applies                                               |
+| `bun.lock`        | regenerated       | New deps                                                                        |
+| `dist/`           | unchanged in repo | gitignored                                                                      |
 
 ## Risks and mitigations
 

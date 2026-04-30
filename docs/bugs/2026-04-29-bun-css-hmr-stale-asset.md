@@ -16,7 +16,7 @@ Edits to `src/styles.css` are not reflected in the dev server's served CSS, even
 
 ## Evidence (the part that proves it isn't a "did the file save?" miss)
 
-I did *not* infer this from the screenshot alone. I compared on-disk vs. served-over-HTTP:
+I did _not_ infer this from the screenshot alone. I compared on-disk vs. served-over-HTTP:
 
 **Disk (`src/styles.css`):**
 
@@ -45,12 +45,12 @@ Two corroborating signals:
 - The CSS asset URL hash (`c561fa4eb3c3d4c8`) **did not change** across multiple edits. A content-hashed asset whose hash is unchanged means the bundler is reusing a cached pre-edit blob.
 - `agent-browser eval "getComputedStyle(document.querySelector('.drop-zone-hint'))"` returned the old `textAlign: "center"` / `fontSize: "13px"` values, matching the served file, not the disk file.
 
-## What was *not* the cause
+## What was _not_ the cause
 
 - Not a browser cache: cache-buster query (`?nocache=$(date +%s)`) returned the same stale CSS.
 - Not a sessionStorage replay: the empty state was rendering, no transcript loaded.
 - Not a sourcemap glitch: `curl` directly on the asset URL bypasses the browser entirely and showed the same stale content.
-- Not the JS bundle: the JS hash *did* update when I edited `App.tsx`, and the new JSX (lock icon, `<Examples />`) was present in the DOM.
+- Not the JS bundle: the JS hash _did_ update when I edited `App.tsx`, and the new JSX (lock icon, `<Examples />`) was present in the DOM.
 
 ## Resolution
 

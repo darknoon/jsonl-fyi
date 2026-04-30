@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
 export type Settings = { renderMarkdown: boolean }
 
@@ -57,7 +51,7 @@ export function SettingsProvider({
 
   const value: Ctx = {
     ...settings,
-    setRenderMarkdown: v => setSettings(s => ({ ...s, renderMarkdown: v })),
+    setRenderMarkdown: (v) => setSettings((s) => ({ ...s, renderMarkdown: v })),
   }
   return <SettingsCtx.Provider value={value}>{children}</SettingsCtx.Provider>
 }

@@ -15,10 +15,12 @@
 ## File Structure
 
 **New:**
+
 - `src/transcript/usage.ts` — `TurnUsage` type, `formatTokens`, `extractClaudeTurnUsage`, `extractCodexTurnUsage`
 - `src/transcript/usage.test.ts` — unit tests for the above
 
 **Modified:**
+
 - `src/types.ts` — add optional `usage` field to Claude `MessageEntry.message`
 - `src/transcript/timing.ts` — attach `usage?: TurnUsage` to `separator` items in `RenderItem`
 - `src/transcript/timing.test.ts` — assert usage attached on separator items
@@ -35,6 +37,7 @@
 ## Task 1: `formatTokens` helper
 
 **Files:**
+
 - Create: `src/transcript/usage.ts`
 - Create: `src/transcript/usage.test.ts`
 
@@ -115,6 +118,7 @@ git commit -m "feat(usage): formatTokens SI helper"
 ## Task 2: `TurnUsage` type and `extractClaudeTurnUsage`
 
 **Files:**
+
 - Modify: `src/types.ts` (add `usage` to `MessageEntry.message`)
 - Modify: `src/transcript/usage.ts` (add type + extractor)
 - Modify: `src/transcript/usage.test.ts` (extractor tests)
@@ -252,6 +256,7 @@ git commit -m "feat(usage): TurnUsage type + extractClaudeTurnUsage"
 ## Task 3: Attach usage to Claude separator items in `buildTranscriptItems`
 
 **Files:**
+
 - Modify: `src/transcript/timing.ts`
 - Modify: `src/transcript/timing.test.ts`
 
@@ -284,7 +289,7 @@ test("buildTranscriptItems: attaches usage from the duration-anchor assistant ro
     } as Entry,
   ]
   const items = buildTranscriptItems(entries)
-  const sep = items.find(i => i.kind === "separator")
+  const sep = items.find((i) => i.kind === "separator")
   expect(sep).toBeDefined()
   if (sep?.kind !== "separator") throw new Error("expected separator")
   expect(sep.durationMs).toBe(1234)
@@ -302,7 +307,7 @@ test("buildTranscriptItems: separator usage is null when assistant entry has no 
     } as Entry,
   ]
   const items = buildTranscriptItems(entries)
-  const sep = items.find(i => i.kind === "separator")
+  const sep = items.find((i) => i.kind === "separator")
   if (sep?.kind !== "separator") throw new Error("expected separator")
   expect(sep.usage).toBeNull()
 })
@@ -375,6 +380,7 @@ git commit -m "feat(timing): attach TurnUsage to Claude separator items"
 ## Task 4: Render usage in `TurnSeparator` and drop the "Done " prefix
 
 **Files:**
+
 - Modify: `src/transcript/TurnSeparator.tsx`
 - Modify: `src/transcript/claude/ClaudeCodeTranscript.tsx`
 - Modify: `src/styles.css`
@@ -400,10 +406,7 @@ test("TurnSeparator: duration only — no 'Done' prefix, no usage span", () => {
 
 test("TurnSeparator: with usage renders ↑input ↻cacheRead ↓output in order", () => {
   const html = renderToStaticMarkup(
-    <TurnSeparator
-      durationMs={1234}
-      usage={{ input: 6, output: 165, cacheRead: 29000 }}
-    />,
+    <TurnSeparator durationMs={1234} usage={{ input: 6, output: 165, cacheRead: 29000 }} />,
   )
   expect(html).toContain("↑6")
   expect(html).toContain("↻29.0k")
@@ -505,6 +508,7 @@ Expected: PASS.
 - [ ] **Step 7: Visual smoke check**
 
 Start dev server (kill any prior PID first per CLAUDE.md global rule) and load a Claude transcript fixture in the browser. Confirm:
+
 - Each turn separator shows `✓ <duration> ↑… ↻… ↓…`
 - No "Done" word anywhere
 - Spacing is single-space-ish, no extra padding
@@ -526,6 +530,7 @@ git commit -m "feat(turn-separator): render token usage; drop 'Done' prefix"
 ## Task 5: Codex — keep `token_count` events through the parser
 
 **Files:**
+
 - Modify: `src/transcript/codex/types.ts`
 - Modify: `src/transcript/codex/parse.ts`
 - Modify: `src/transcript/codex/parse.test.ts`
@@ -689,6 +694,7 @@ git commit -m "feat(codex): retain token_count event_msg rows through parser"
 ## Task 6: Codex — `extractCodexTurnUsage` and wire into the transcript
 
 **Files:**
+
 - Modify: `src/transcript/usage.ts`
 - Modify: `src/transcript/usage.test.ts`
 - Modify: `src/transcript/codex/CodexTranscript.tsx`
@@ -760,7 +766,7 @@ test("extractCodexTurnUsage: never returns negative input if cached > input (def
 ```
 
 > **Why subtract `cached_input_tokens` from `input_tokens`?** Codex's
-> `input_tokens` is the *total* input including the cached portion; the Claude
+> `input_tokens` is the _total_ input including the cached portion; the Claude
 > shape splits them (`input_tokens` is fresh-only, `cache_read_input_tokens`
 > is separate). We normalize Codex to the same fresh-vs-cached split so both
 > formats render identical arrows.
@@ -777,9 +783,7 @@ Append to `src/transcript/usage.ts`:
 ```ts
 import type { CodexEventMsgTokenCount } from "./codex/types"
 
-export function extractCodexTurnUsage(
-  ev: CodexEventMsgTokenCount,
-): TurnUsage | null {
+export function extractCodexTurnUsage(ev: CodexEventMsgTokenCount): TurnUsage | null {
   const last = ev.payload.info?.last_token_usage
   if (!last) return null
   const totalIn = last.input_tokens ?? 0
@@ -838,9 +842,9 @@ const usages = buildCodexTurnUsage(entries, durations.keys())
 And in the JSX, change the separator render to:
 
 ```tsx
-{ms != null && (
-  <TurnSeparator durationMs={ms} usage={usages.get(i) ?? null} />
-)}
+{
+  ms != null && <TurnSeparator durationMs={ms} usage={usages.get(i) ?? null} />
+}
 ```
 
 Also: the new `event_msg` variant flows through the `entries.map` switch. Add a no-op branch so it renders nothing:
@@ -879,6 +883,7 @@ git commit -m "feat(codex): per-turn token usage on TurnSeparator"
 ## Task 7: TODO sweep
 
 **Files:**
+
 - Modify: `TODO.md`
 
 - [ ] **Step 1: Mark the line done**
@@ -907,6 +912,7 @@ git commit -m "chore: tick 'show tokens used' in TODO"
 ## Self-Review
 
 **Spec coverage:**
+
 - Per-turn line `✓ 1.2s ↑in ↻cache ↓out` → Tasks 4 (Claude) + 6 (Codex)
 - `formatTokens` SI helper → Task 1
 - `TurnUsage` type + extractors → Tasks 2 (Claude) + 6 (Codex)

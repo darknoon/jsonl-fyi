@@ -51,7 +51,7 @@ restructuring:
 
 Each `system` / `subtype: "turn_duration"` entry has `parentUuid` pointing to
 the assistant entry that ended the turn. Render the separator immediately
-*after* that assistant entry.
+_after_ that assistant entry.
 
 ### Duration formatting
 
@@ -69,7 +69,7 @@ wall-clock duration computed from entry timestamps:
 
 Definitions:
 
-- **Triggering user-typed message**: a user-role entry whose content is *not*
+- **Triggering user-typed message**: a user-role entry whose content is _not_
   a `tool_result` (i.e. the human typed it), bounded by the previous
   user-typed message.
 - **Last assistant entry of the turn**: the final `assistant` entry whose
@@ -131,7 +131,7 @@ type SystemEntry =
 type Entry = MessageEntry | SystemEntry
 ```
 
-We are deliberately *not* depending on `@anthropic-ai/claude-agent-sdk`:
+We are deliberately _not_ depending on `@anthropic-ai/claude-agent-sdk`:
 
 - Inspected v0.2.123: `turn_duration` and `away_summary` aren't in the public
   types yet.

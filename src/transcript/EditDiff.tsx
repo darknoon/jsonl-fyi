@@ -2,8 +2,7 @@ import { useMemo } from "react"
 import { parseDiffFromFile } from "@pierre/diffs"
 import { FileDiff } from "@pierre/diffs/react"
 
-const ensureTrailingNewline = (s: string) =>
-  s.length > 0 && !s.endsWith("\n") ? s + "\n" : s
+const ensureTrailingNewline = (s: string) => (s.length > 0 && !s.endsWith("\n") ? s + "\n" : s)
 
 export function EditDiff({
   filePath,

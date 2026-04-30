@@ -7,7 +7,14 @@ import type { Entry } from "./types"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import type { CodexEntry } from "./transcript/codex/types"
-import { ArrowLeftIcon, CheckIcon, CopyIcon, GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  CopyIcon,
+  GearIcon,
+  LockIcon,
+  XIcon,
+} from "@phosphor-icons/react"
 import { SettingsPopover, SETTINGS_POPOVER_ID } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
 import { FileIcon } from "./FileIcon"
@@ -18,15 +25,15 @@ import type { Example } from "./examples"
 // gets tree-shaken out of production builds. `import.meta.env.DEV` is a
 // build-time constant Vite inlines, so the import() is unreachable
 // (and therefore omitted) in prod.
-const AgentationDev = import.meta.env.DEV
-  ? lazy(() => import("./AgentationDev"))
-  : null
+const AgentationDev = import.meta.env.DEV ? lazy(() => import("./AgentationDev")) : null
 
 function TerminalCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
   return (
     <div className="terminal-cmd">
-      <span className="terminal-cmd-prompt" aria-hidden="true">$</span>
+      <span className="terminal-cmd-prompt" aria-hidden="true">
+        $
+      </span>
       <code className="terminal-cmd-text">{command}</code>
       <button
         className="terminal-cmd-copy"
@@ -161,7 +168,9 @@ export function App() {
     }
 
     void loadCurrentLocation(true)
-    const handlePopState = () => { void loadCurrentLocation(false) }
+    const handlePopState = () => {
+      void loadCurrentLocation(false)
+    }
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
   }, [])
@@ -195,9 +204,7 @@ export function App() {
               >
                 <XIcon size={14} weight="bold" />
               </button>
-              {skipped > 0 && (
-                <span className="skipped">{skipped} malformed</span>
-              )}
+              {skipped > 0 && <span className="skipped">{skipped} malformed</span>}
             </div>
           ) : (
             <span />
@@ -215,65 +222,75 @@ export function App() {
         </div>
       </header>
       <div className="app">
-      {!session && (
-        <>
-          <div
-            className={`drop-zone ${dragOver ? "drag-over" : ""} ${dropError ? "drop-error" : ""}`}
-            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => {
-              e.preventDefault()
-              setDragOver(false)
-              const f = e.dataTransfer.files[0]
-              if (f) void loadFile(f)
-            }}
-            onClick={() => inputRef.current?.click()}
-          >
-            <div className="drop-zone-text">
-              {dropError ? (
-                <>
-                  {dropError}
-                  <div className="drop-zone-sub">Drop a different file or click to choose</div>
-                </>
-              ) : (
-                <>
-                  Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
-                  <div className="drop-zone-sub">or click to choose a file</div>
-                </>
-              )}
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".jsonl,application/jsonl,text/plain"
-              data-testid="file-input"
-              style={{ display: "none" }}
-              onChange={e => {
-                const f = e.target.files?.[0]
+        {!session && (
+          <>
+            <div
+              className={`drop-zone ${dragOver ? "drag-over" : ""} ${dropError ? "drop-error" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragOver(true)
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragOver(false)
+                const f = e.dataTransfer.files[0]
                 if (f) void loadFile(f)
               }}
-            />
-          </div>
-          <details className="drop-zone-defined">
-            <summary>How do I find the .jsonl on my computer?</summary>
-            <p className="drop-zone-hint">Claude Code stores sessions in <code>~/.claude/projects/</code>:</p>
-            <TerminalCommand command="open ~/.claude/projects/" />
-            <p className="drop-zone-hint">
-              The project slug is the absolute path to the project directory, with <code>/</code> replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
-            </p>
-            <p className="drop-zone-hint">Codex stores sessions in <code>~/.codex/sessions/</code>:</p>
-            <TerminalCommand command="open ~/.codex/sessions/" />
-          </details>
-          <Examples onSelect={loadExample} />
-        </>
-      )}
+              onClick={() => inputRef.current?.click()}
+            >
+              <div className="drop-zone-text">
+                {dropError ? (
+                  <>
+                    {dropError}
+                    <div className="drop-zone-sub">Drop a different file or click to choose</div>
+                  </>
+                ) : (
+                  <>
+                    Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
+                    <div className="drop-zone-sub">or click to choose a file</div>
+                  </>
+                )}
+              </div>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".jsonl,application/jsonl,text/plain"
+                data-testid="file-input"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) void loadFile(f)
+                }}
+              />
+            </div>
+            <details className="drop-zone-defined">
+              <summary>How do I find the .jsonl on my computer?</summary>
+              <p className="drop-zone-hint">
+                Claude Code stores sessions in <code>~/.claude/projects/</code>:
+              </p>
+              <TerminalCommand command="open ~/.claude/projects/" />
+              <p className="drop-zone-hint">
+                The project slug is the absolute path to the project directory, with <code>/</code>{" "}
+                replaced by <code>-</code>, eg <code>-Users-andrew-Developer-Prefix-jsonl-fyi</code>
+              </p>
+              <p className="drop-zone-hint">
+                Codex stores sessions in <code>~/.codex/sessions/</code>:
+              </p>
+              <TerminalCommand command="open ~/.codex/sessions/" />
+            </details>
+            <Examples onSelect={loadExample} />
+          </>
+        )}
 
-      {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
-      {session && session.format === "claude" && <ClaudeCodeTranscript entries={session.entries} />}
-      <footer className="app-footer">
-        <LockIcon size={14} weight="bold" />
-        Your data is processed locally in the browser
-      </footer>
+        {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
+        {session && session.format === "claude" && (
+          <ClaudeCodeTranscript entries={session.entries} />
+        )}
+        <footer className="app-footer">
+          <LockIcon size={14} weight="bold" />
+          Your data is processed locally in the browser
+        </footer>
       </div>
       {AgentationDev && (
         <Suspense fallback={null}>

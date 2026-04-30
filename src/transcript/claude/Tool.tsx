@@ -42,14 +42,8 @@ import { Markdown } from "../Markdown"
 // ---------------------------------------------------------------------------
 
 function Bash({ input, output }: CardProps<BashInput>) {
-  const {
-    command,
-    description,
-    timeout,
-    run_in_background,
-    dangerouslyDisableSandbox,
-    ...rest
-  } = input
+  const { command, description, timeout, run_in_background, dangerouslyDisableSandbox, ...rest } =
+    input
   assertExhaustive(rest)
   const hasContent =
     !!command ||
@@ -62,25 +56,17 @@ function Bash({ input, output }: CardProps<BashInput>) {
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
         <Header>
-          <ToolTitle
-            name="Bash"
-            detail={command || "Done"}
-          />
+          <ToolTitle name="Bash" detail={command || "Done"} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
         {command && <pre className="output cmd">{command}</pre>}
-        {(description ||
-          timeout != null ||
-          run_in_background ||
-          dangerouslyDisableSandbox) && (
+        {(description || timeout != null || run_in_background || dangerouslyDisableSandbox) && (
           <dl className="tool-fields">
             {description && <Field name="description" value={description} />}
             {timeout != null && <Field name="timeout" value={`${timeout}ms`} />}
             {run_in_background && <Field name="run_in_background" value="true" />}
-            {dangerouslyDisableSandbox && (
-              <Field name="dangerouslyDisableSandbox" value="true" />
-            )}
+            {dangerouslyDisableSandbox && <Field name="dangerouslyDisableSandbox" value="true" />}
           </dl>
         )}
         <Output output={output} />
@@ -93,11 +79,7 @@ function Bash({ input, output }: CardProps<BashInput>) {
 function Read({ input, output }: CardProps<ReadInput>) {
   const { file_path, offset, limit, pages, ...rest } = input
   assertExhaustive(rest)
-  const hasContent =
-    offset != null ||
-    limit != null ||
-    !!pages ||
-    hasOutput(output)
+  const hasContent = offset != null || limit != null || !!pages || hasOutput(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -133,13 +115,7 @@ function Edit({ input, output }: CardProps<EditInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
-        {hasDiff && (
-          <EditDiff
-            filePath={file_path}
-            oldString={old_string}
-            newString={new_string}
-          />
-        )}
+        {hasDiff && <EditDiff filePath={file_path} oldString={old_string} newString={new_string} />}
         {replace_all && (
           <dl className="tool-fields">
             <Field name="replace_all" value="true" />
@@ -175,11 +151,7 @@ function MultiEdit({ input, output }: CardProps<MultiEditInput>) {
                     <span className="tool-field-key">replace_all</span> true
                   </div>
                 )}
-                <EditDiff
-                  filePath={file_path}
-                  oldString={old_string}
-                  newString={new_string}
-                />
+                <EditDiff filePath={file_path} oldString={old_string} newString={new_string} />
               </div>
             )
           })}
@@ -344,11 +316,7 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
   )
 }
 
-function Agent({
-  input,
-  output,
-  name,
-}: CardProps<AgentInput> & { name: "Task" | "Agent" }) {
+function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" | "Agent" }) {
   const {
     description,
     prompt,
@@ -398,7 +366,10 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
   const { todos, ...rest } = input
   assertExhaustive(rest)
   return (
-    <ToolCard.Root hasContent={todos.length > 0 || hasOutput(output)} status={output.isError ? "error" : "success"}>
+    <ToolCard.Root
+      hasContent={todos.length > 0 || hasOutput(output)}
+      status={output.isError ? "error" : "success"}
+    >
       <ToolCard.Trigger>
         <Header>
           <ToolTitle name="TodoWrite" />
@@ -426,10 +397,7 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
   )
 }
 
-function EnterPlanMode({
-  input,
-  output,
-}: CardProps<EnterPlanModeInput>) {
+function EnterPlanMode({ input, output }: CardProps<EnterPlanModeInput>) {
   const rest: Record<string, never> = input
   assertExhaustive(rest)
   return (
@@ -447,10 +415,7 @@ function EnterPlanMode({
   )
 }
 
-function ExitPlanMode({
-  input,
-  output,
-}: CardProps<ExitPlanModeInput>) {
+function ExitPlanMode({ input, output }: CardProps<ExitPlanModeInput>) {
   const { plan, ...rest } = input
   assertExhaustive(rest)
   const hasContent = !!plan || hasOutput(output)
@@ -470,27 +435,19 @@ function ExitPlanMode({
   )
 }
 
-function NotebookEdit({
-  input,
-  output,
-}: CardProps<NotebookEditInput>) {
-  const { notebook_path, new_source, cell_id, cell_type, edit_mode, ...rest } =
-    input
+function NotebookEdit({ input, output }: CardProps<NotebookEditInput>) {
+  const { notebook_path, new_source, cell_id, cell_type, edit_mode, ...rest } = input
   assertExhaustive(rest)
   const opts: Array<[string, ReactNode]> = []
   if (cell_id) opts.push(["cell_id", cell_id])
   if (cell_type) opts.push(["cell_type", cell_type])
   if (edit_mode) opts.push(["edit_mode", edit_mode])
-  const hasContent =
-    !!new_source || opts.length > 0 || hasOutput(output)
+  const hasContent = !!new_source || opts.length > 0 || hasOutput(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
         <Header>
-          <ToolTitle
-            name="NotebookEdit"
-            detail={notebook_path && shortPath(notebook_path)}
-          />
+          <ToolTitle name="NotebookEdit" detail={notebook_path && shortPath(notebook_path)} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -550,9 +507,7 @@ function Skill({ input, output }: CardProps<SkillInput>) {
             <Field name="args" value={args} />
           </dl>
         )}
-        {output.injectedText && (
-          <pre className="output">{output.injectedText}</pre>
-        )}
+        {output.injectedText && <pre className="output">{output.injectedText}</pre>}
         <Output output={output} />
         <Extras output={output} />
       </ToolCard.Content>
@@ -564,13 +519,7 @@ function Skill({ input, output }: CardProps<SkillInput>) {
 // Dispatcher component — exhaustive on KnownToolUse (TS errors on missing case).
 // ---------------------------------------------------------------------------
 
-export function Tool({
-  use,
-  output,
-}: {
-  use: ToolUse
-  output: ToolResult
-}) {
+export function Tool({ use, output }: { use: ToolUse; output: ToolResult }) {
   if (!isKnownToolUse(use)) {
     return <UnknownTool name={use.name} input={use.input} output={output} />
   }

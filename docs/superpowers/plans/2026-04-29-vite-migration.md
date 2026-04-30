@@ -14,19 +14,20 @@
 
 ## File structure
 
-| File | Responsibility |
-|---|---|
+| File                   | Responsibility                                            |
+| ---------------------- | --------------------------------------------------------- |
 | `vite.config.ts` (new) | Vite config — React plugin, dev server port, build output |
-| `package.json` | Updated `dev`/`build` scripts, new devDeps |
-| `tsconfig.json` | Add `vite/client` to `types` |
-| `src/examples.ts` | Use `?url` for fixture URLs |
-| `src/App.tsx` | Use `import.meta.env.DEV` for dev toolbar lazy-load gate |
+| `package.json`         | Updated `dev`/`build` scripts, new devDeps                |
+| `tsconfig.json`        | Add `vite/client` to `types`                              |
+| `src/examples.ts`      | Use `?url` for fixture URLs                               |
+| `src/App.tsx`          | Use `import.meta.env.DEV` for dev toolbar lazy-load gate  |
 
 ---
 
 ### Task 1: Install Vite and create config
 
 **Files:**
+
 - Modify: `package.json`
 - Create: `vite.config.ts`
 
@@ -81,6 +82,7 @@ git commit -m "build: add vite and replace dev/build scripts"
 ### Task 2: Replace Bun-specific fixture imports
 
 **Files:**
+
 - Modify: `src/examples.ts:12-17`
 
 - [ ] **Step 1: Replace the two `with { type: "file" }` imports**
@@ -138,6 +140,7 @@ git commit -m "refactor(examples): use vite ?url import for fixture URLs"
 ### Task 3: Replace `process.env.NODE_ENV` with `import.meta.env.DEV`
 
 **Files:**
+
 - Modify: `src/App.tsx:15-22`
 
 - [ ] **Step 1: Update the lazy-load conditional**
@@ -150,9 +153,7 @@ Edit `src/App.tsx`. Find:
 // build-time constant after Bun substitutes process.env.NODE_ENV, so the
 // import() is unreachable (and therefore omitted) in prod.
 const AgentationDev =
-  process.env.NODE_ENV !== "production"
-    ? lazy(() => import("./AgentationDev"))
-    : null
+  process.env.NODE_ENV !== "production" ? lazy(() => import("./AgentationDev")) : null
 ```
 
 Replace with:
@@ -162,9 +163,7 @@ Replace with:
 // gets tree-shaken out of production builds. `import.meta.env.DEV` is a
 // build-time constant Vite inlines, so the import() is unreachable
 // (and therefore omitted) in prod.
-const AgentationDev = import.meta.env.DEV
-  ? lazy(() => import("./AgentationDev"))
-  : null
+const AgentationDev = import.meta.env.DEV ? lazy(() => import("./AgentationDev")) : null
 ```
 
 - [ ] **Step 2: Commit**
@@ -179,6 +178,7 @@ git commit -m "refactor(app): use import.meta.env.DEV for vite tree-shaking"
 ### Task 4: Add Vite client types to tsconfig
 
 **Files:**
+
 - Modify: `tsconfig.json`
 
 - [ ] **Step 1: Add `vite/client` to `types`**
@@ -221,6 +221,7 @@ Run: `bun test`
 Expected: all tests pass (formatBytes, exampleHref, findExampleByPath, plus any other suites).
 
 If `bun test` fails on the `?url` import in `examples.ts`:
+
 - Modern Bun (1.1+) understands `?url` as a no-op and resolves to the file URL.
 - If it doesn't: add a small shim in `src/__fixtures__/index.ts` exporting the file path as a `string` constant, and import that in `examples.ts` instead. Re-run tests.
 
@@ -235,6 +236,7 @@ Run: `bun run dev`
 Expected: Vite starts and prints `Local: http://localhost:3000/`.
 
 Manually verify (in a browser):
+
 - Page loads, drop zone visible
 - Drop a JSONL file → renders transcript
 - Visit `/examples/<filename>.jsonl` → loads the example
@@ -248,6 +250,7 @@ Run: `bun run build`
 Expected: builds successfully, produces `dist/index.html` and hashed assets in `dist/assets/`.
 
 Spot-check `dist/`:
+
 ```bash
 ls dist
 ls dist/assets | head
@@ -275,12 +278,14 @@ If verification turned up no edits beyond what Tasks 1–4 introduced, skip this
 ### Task 6: Drop unused Bun build-time docs and clean up
 
 **Files:**
+
 - Modify: `src/examples.ts` (already cleaned in Task 2 — verification step)
 - Optional: README/docs references to the old `bun build` flow, if any
 
 - [ ] **Step 1: Search for stale references to `bun index.html` or `bun build`**
 
 Run:
+
 ```bash
 grep -rn "bun index.html\|bun build" --include="*.md" --include="*.json" --include="*.ts" --include="*.tsx" .
 ```
@@ -301,6 +306,7 @@ If nothing changed, skip the commit.
 ## Self-review
 
 **Spec coverage:**
+
 - Replace `bun index.html` / `bun build` → Task 1 ✓
 - Fix stale-bundle issue → resolved structurally by switching bundlers ✓
 - Keep `bun test` → Task 5 verifies ✓

@@ -6,12 +6,7 @@ import { useSettings } from "../settings"
 
 const COMPONENTS: Components = {
   a: ({ node: _node, ...props }) => (
-    <a
-      {...props}
-      className="md-link"
-      target="_blank"
-      rel="noreferrer noopener"
-    />
+    <a {...props} className="md-link" target="_blank" rel="noreferrer noopener" />
   ),
   code: ({ node: _node, className, children, ...props }) => {
     const lang = /language-(\w+)/.exec(className ?? "")?.[1]
@@ -19,11 +14,7 @@ const COMPONENTS: Components = {
     // react-markdown, so the same component handles both. We only set
     // data-lang when there's an actual language tag.
     return (
-      <code
-        {...props}
-        className={lang ? "md-code" : "md-code-inline"}
-        data-lang={lang}
-      >
+      <code {...props} className={lang ? "md-code" : "md-code-inline"} data-lang={lang}>
         {children}
       </code>
     )
@@ -31,9 +22,7 @@ const COMPONENTS: Components = {
   pre: ({ node: _node, ...props }) => <pre {...props} className="md-code-block" />,
   ul: ({ node: _node, ...props }) => <ul {...props} className="md-list" />,
   ol: ({ node: _node, ...props }) => <ol {...props} className="md-list" />,
-  blockquote: ({ node: _node, ...props }) => (
-    <blockquote {...props} className="md-quote" />
-  ),
+  blockquote: ({ node: _node, ...props }) => <blockquote {...props} className="md-quote" />,
   table: ({ node: _node, ...props }) => <table {...props} className="md-table" />,
   h1: ({ node: _node, ...props }) => <h1 {...props} className="md-heading" />,
   h2: ({ node: _node, ...props }) => <h2 {...props} className="md-heading" />,
@@ -43,13 +32,7 @@ const COMPONENTS: Components = {
   h6: ({ node: _node, ...props }) => <h6 {...props} className="md-heading" />,
 }
 
-export function Markdown({
-  source,
-  inline = false,
-}: {
-  source: string
-  inline?: boolean
-}) {
+export function Markdown({ source, inline = false }: { source: string; inline?: boolean }) {
   const { renderMarkdown } = useSettings()
 
   if (!renderMarkdown) {

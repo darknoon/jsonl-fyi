@@ -202,10 +202,7 @@ const KNOWN_NAMES = new Set<KnownToolUse["name"]>([
 // union. We trust `name` to discriminate `input`; if Claude Code ever ships
 // a known tool with a different shape, it'll surface as a runtime error in
 // the body component, which is the right place to notice.
-export function narrowToolUse(block: {
-  name: string
-  input: Record<string, unknown>
-}): ToolUse {
+export function narrowToolUse(block: { name: string; input: Record<string, unknown> }): ToolUse {
   if (KNOWN_NAMES.has(block.name as KnownToolUse["name"])) {
     return block as KnownToolUse
   }

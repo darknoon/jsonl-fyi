@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react"
+import { createContext, useContext, useState, type ReactNode } from "react"
 
 type CardCtx = {
   expanded: boolean
@@ -31,9 +26,7 @@ function Root({
   const [expanded, setExpanded] = useState(false)
   const statusClass = status ? ` tool-card-${status}` : ""
   return (
-    <Ctx.Provider
-      value={{ expanded, toggle: () => setExpanded(e => !e), hasContent }}
-    >
+    <Ctx.Provider value={{ expanded, toggle: () => setExpanded((e) => !e), hasContent }}>
       <div className={`tool-card${statusClass}`}>{children}</div>
     </Ctx.Provider>
   )

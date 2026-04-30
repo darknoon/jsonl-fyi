@@ -3,7 +3,7 @@ import { shortPath } from "./toolMeta"
 
 test("shortPath collapses deep paths but preserves shallow ones", () => {
   const summary = ["/a", "a/b", "a/b/c", "a/b/c/d/e", ""]
-    .map(p => `${JSON.stringify(p)} -> ${JSON.stringify(shortPath(p))}`)
+    .map((p) => `${JSON.stringify(p)} -> ${JSON.stringify(shortPath(p))}`)
     .join("\n")
   expect(summary).toMatchInlineSnapshot(`
     ""/a" -> "/a"

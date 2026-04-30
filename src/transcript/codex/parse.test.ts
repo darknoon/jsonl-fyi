@@ -31,7 +31,7 @@ test("parseCodexEntries: keeps known top-level types, drops event_msg", () => {
     { type: "compacted", payload: { message: null, replacement_history: null } },
   ]
   const entries = parseCodexEntries(lines)
-  expect(entries.map(e => e.type)).toEqual([
+  expect(entries.map((e) => e.type)).toEqual([
     "session_meta",
     "turn_context",
     "response_item",
@@ -50,7 +50,7 @@ test("parseCodexEntries: skips unknown top-level types and malformed objects", (
     { no_type_field: true },
     { type: "response_item", payload: { type: "message", role: "user", content: [] } },
   ]
-  expect(parseCodexEntries(lines).map(e => e.type)).toEqual(["session_meta", "response_item"])
+  expect(parseCodexEntries(lines).map((e) => e.type)).toEqual(["session_meta", "response_item"])
 })
 
 test("parseCodexEntries: drops response_item lines whose payload is malformed", () => {

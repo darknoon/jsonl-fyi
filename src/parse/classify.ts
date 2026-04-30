@@ -1,4 +1,10 @@
-const CODEX_TYPES = new Set(["session_meta", "response_item", "turn_context", "event_msg", "compacted"])
+const CODEX_TYPES = new Set([
+  "session_meta",
+  "response_item",
+  "turn_context",
+  "event_msg",
+  "compacted",
+])
 const CLAUDE_TYPES = new Set(["user", "assistant", "system"])
 
 export type FormatLabel = "claude" | "codex" | "unknown"

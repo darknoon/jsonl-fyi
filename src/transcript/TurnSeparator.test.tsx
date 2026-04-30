@@ -12,10 +12,7 @@ test("TurnSeparator: duration only — no 'Done' prefix, no usage span", () => {
 
 test("TurnSeparator: with usage renders ↑input ↻cacheRead ↓output in order", () => {
   const html = renderToStaticMarkup(
-    <TurnSeparator
-      durationMs={1234}
-      usage={{ input: 6, output: 165, cacheRead: 29000 }}
-    />,
+    <TurnSeparator durationMs={1234} usage={{ input: 6, output: 165, cacheRead: 29000 }} />,
   )
   expect(html).toContain("↑ 6")
   expect(html).toContain("↻ 29.0k")

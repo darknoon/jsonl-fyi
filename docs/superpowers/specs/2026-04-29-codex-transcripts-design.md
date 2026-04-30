@@ -70,7 +70,14 @@ export type CodexSessionMeta = {
 
 export type CodexTurnContext = {
   type: "turn_context"
-  payload: { cwd?: string; model?: string; effort?: string; sandbox_policy?: unknown; approval_policy?: string; summary?: string }
+  payload: {
+    cwd?: string
+    model?: string
+    effort?: string
+    sandbox_policy?: unknown
+    approval_policy?: string
+    summary?: string
+  }
 }
 
 export type CodexResponseItem = {
@@ -78,13 +85,18 @@ export type CodexResponseItem = {
   timestamp?: string
   payload:
     | { type: "message"; role: "user" | "assistant"; content: CodexContentItem[] }
-    | { type: "reasoning"; summary: { type: "summary_text"; text: string }[]; content?: unknown; encrypted_content?: string }
+    | {
+        type: "reasoning"
+        summary: { type: "summary_text"; text: string }[]
+        content?: unknown
+        encrypted_content?: string
+      }
     | { type: "function_call"; name: string; arguments: string; call_id: string }
     | { type: "function_call_output"; call_id: string; output: string }
     | { type: "custom_tool_call"; name: string; input: string; call_id: string; status?: string }
     | { type: "custom_tool_call_output"; call_id: string; output: string }
     | { type: "ghost_snapshot"; ghost_commit: { id: string; parent: string } }
-    | { type: "web_search_call"; /* ... */ }
+    | { type: "web_search_call" /* ... */ }
 }
 
 export type CodexContentItem =
@@ -92,7 +104,10 @@ export type CodexContentItem =
   | { type: "output_text"; text: string }
   | { type: "input_image"; image_url: string }
 
-export type CodexCompacted = { type: "compacted"; payload: { message: unknown; replacement_history: unknown } }
+export type CodexCompacted = {
+  type: "compacted"
+  payload: { message: unknown; replacement_history: unknown }
+}
 
 export type CodexEntry = CodexSessionMeta | CodexTurnContext | CodexResponseItem | CodexCompacted
 ```
@@ -158,18 +173,18 @@ The Claude path's parser moves into `src/transcript/claude/parse.ts` to mirror C
 
 Each Codex tool gets its own minimal component using the `ToolCard.Root → Trigger → Content` pattern. They mirror the Claude side's per-tool style.
 
-| Tool name | Treatment | Notes |
-|---|---|---|
-| `shell_command` | Rich `<ShellCommand>` | Trigger header shows `command`; expanded body has `command` in `<pre>`, then `workdir`/`timeout_ms`/`login`/`sandbox_permissions`/`justification` as `<Field>`s, then `<Output>` |
-| `exec_command` | Rich `<ExecCommand>` | Same idea, field is `cmd` not `command`; also `tty`/`yield_time_ms`/`max_output_tokens`/`prefix_rule`/`sandbox_permissions`/`justification` |
-| `shell` | Rich `<Shell>` | Older variant, `command` is `string[]` — join with spaces for header/`<pre>`; `workdir`/`timeout_ms`/`with_escalated_permissions` as `<Field>`s |
-| `apply_patch` | Rich `<ApplyPatch>` (custom_tool_call) | V4A parser → per-file `<PatchDiff>` from `@pierre/diffs/react`; falls back to raw `<pre>` on parse failure; `Delete File` shown as `Deleted: <path>` (no body recoverable). Output exists in two forms: JSON-wrapped `{output, metadata: {exit_code, duration_seconds}}` (≈97% of calls) and plain text (≈3%). Try `JSON.parse`; on success render `metadata` fields and the inner `output` text; on failure render raw output. |
-| `update_plan` | Rich `<UpdatePlan>` | Args: `{explanation?, plan: [{step, status}]}` (note `step` not `content`; `status` is `pending`/`in_progress`/`completed`). Render the plan list with status indicators, similar visual to Claude's `TodoWrite`; show `explanation` above the list when present. |
-| `view_image` | Rich `<ViewImage>` | Header: `Viewed image <basename>`; expanded body shows path as `<Field>`. If output parses as a JSON array containing `{type:"input_image", image_url}` blocks, render the image inline via existing `ImageBlock`. Otherwise render the raw output text in `<Output>`. **No invented commentary text.** |
-| `spawn_agent` | Rich `<SpawnAgent>` | Header: `Spawned agent <agent_type>`; expanded shows the `message` prompt in `<pre>`, `agent_type`/`model`/`reasoning_effort`/`fork_context` as `<Field>`s. Output parses as `{agent_id, nickname}` and is shown as fields. |
-| `wait_agent` | Rich `<WaitAgent>` | Header: `Waited for agent`; `targets` and `timeout_ms` as fields; output is the agent's final result rendered as text. |
-| `web_search_call` (response_item subtype, not a `function_call`) | Rich `<WebSearchCall>` | Args: `{status, action: {type: "search", query, queries: string[]}}`. Header shows the primary `query`. Expanded body lists `queries[]` (related search variants) as fields. No paired output. Handled in `CodexEntryView`, not the function-call dispatcher. |
-| Anything else (MCP, `write_stdin`, future tools) | Generic `UnknownTool` reused from Claude path | Header `Ran <name>`; body lists every `arguments` field; standard `<Output>`. Need to extract `UnknownTool` from `claude/Tool.tsx` into a shared file (e.g. `src/transcript/UnknownTool.tsx`) so both paths can import it. |
+| Tool name                                                        | Treatment                                     | Notes                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell_command`                                                  | Rich `<ShellCommand>`                         | Trigger header shows `command`; expanded body has `command` in `<pre>`, then `workdir`/`timeout_ms`/`login`/`sandbox_permissions`/`justification` as `<Field>`s, then `<Output>`                                                                                                                                                                                                                                                |
+| `exec_command`                                                   | Rich `<ExecCommand>`                          | Same idea, field is `cmd` not `command`; also `tty`/`yield_time_ms`/`max_output_tokens`/`prefix_rule`/`sandbox_permissions`/`justification`                                                                                                                                                                                                                                                                                     |
+| `shell`                                                          | Rich `<Shell>`                                | Older variant, `command` is `string[]` — join with spaces for header/`<pre>`; `workdir`/`timeout_ms`/`with_escalated_permissions` as `<Field>`s                                                                                                                                                                                                                                                                                 |
+| `apply_patch`                                                    | Rich `<ApplyPatch>` (custom_tool_call)        | V4A parser → per-file `<PatchDiff>` from `@pierre/diffs/react`; falls back to raw `<pre>` on parse failure; `Delete File` shown as `Deleted: <path>` (no body recoverable). Output exists in two forms: JSON-wrapped `{output, metadata: {exit_code, duration_seconds}}` (≈97% of calls) and plain text (≈3%). Try `JSON.parse`; on success render `metadata` fields and the inner `output` text; on failure render raw output. |
+| `update_plan`                                                    | Rich `<UpdatePlan>`                           | Args: `{explanation?, plan: [{step, status}]}` (note `step` not `content`; `status` is `pending`/`in_progress`/`completed`). Render the plan list with status indicators, similar visual to Claude's `TodoWrite`; show `explanation` above the list when present.                                                                                                                                                               |
+| `view_image`                                                     | Rich `<ViewImage>`                            | Header: `Viewed image <basename>`; expanded body shows path as `<Field>`. If output parses as a JSON array containing `{type:"input_image", image_url}` blocks, render the image inline via existing `ImageBlock`. Otherwise render the raw output text in `<Output>`. **No invented commentary text.**                                                                                                                         |
+| `spawn_agent`                                                    | Rich `<SpawnAgent>`                           | Header: `Spawned agent <agent_type>`; expanded shows the `message` prompt in `<pre>`, `agent_type`/`model`/`reasoning_effort`/`fork_context` as `<Field>`s. Output parses as `{agent_id, nickname}` and is shown as fields.                                                                                                                                                                                                     |
+| `wait_agent`                                                     | Rich `<WaitAgent>`                            | Header: `Waited for agent`; `targets` and `timeout_ms` as fields; output is the agent's final result rendered as text.                                                                                                                                                                                                                                                                                                          |
+| `web_search_call` (response_item subtype, not a `function_call`) | Rich `<WebSearchCall>`                        | Args: `{status, action: {type: "search", query, queries: string[]}}`. Header shows the primary `query`. Expanded body lists `queries[]` (related search variants) as fields. No paired output. Handled in `CodexEntryView`, not the function-call dispatcher.                                                                                                                                                                   |
+| Anything else (MCP, `write_stdin`, future tools)                 | Generic `UnknownTool` reused from Claude path | Header `Ran <name>`; body lists every `arguments` field; standard `<Output>`. Need to extract `UnknownTool` from `claude/Tool.tsx` into a shared file (e.g. `src/transcript/UnknownTool.tsx`) so both paths can import it.                                                                                                                                                                                                      |
 
 Tool dispatch (in `codex/Tool.tsx`) is a single `switch` on the wire-level `name` string, plus a separate switch for `custom_tool_call.name` (currently only `apply_patch`). `web_search_call` is dispatched at the `response_item.payload.type` level inside `codex/EntryView.tsx`, not through the function-call switch. Unknown tool names fall through to `UnknownTool`. The dispatcher is exhaustive over the names listed above; new known names require an explicit `case`.
 
@@ -221,6 +236,7 @@ Each `{type: "compacted"}` line renders as a thin `<CompactedMarker>` row inline
 ### 10. User/assistant messages
 
 `response_item.message`:
+
 - `role: "user"` with `content[0].type === "input_text"` and text starting with `<environment_context>` → hide entirely (auto-injected by harness; not user-authored)
 - All other `role: "user"` → render as user text block
 - `role: "assistant"` with `output_text` content → render as assistant text block (markdown-aware once Claude side has it; see TODO "Render limited agent markdown" — same renderer should be used)

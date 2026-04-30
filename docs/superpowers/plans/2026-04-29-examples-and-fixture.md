@@ -25,6 +25,7 @@
 ## Task 1: Replace the fixture
 
 **Files:**
+
 - Replace: `src/__fixtures__/sample.jsonl`
 
 - [ ] **Step 1: Copy the real session over the existing fixture**
@@ -65,6 +66,7 @@ git commit -m "fixture: swap synthetic sample for real session transcript"
 The old test snapshots an entry-by-entry script. With the new fixture, that snapshot is hundreds of lines and dominated by tool calls. Replace it with a summary-statistics assertion that's tight, readable, and still catches regressions in `parseJsonl`'s filter behavior.
 
 **Files:**
+
 - Modify: `src/parse.test.ts`
 
 - [ ] **Step 1: Replace the fixture test body**
@@ -78,9 +80,7 @@ import { test, expect } from "bun:test"
 import { parseJsonl } from "./parse"
 
 test("parseJsonl filters and counts entries from the real fixture", async () => {
-  const text = await Bun.file(
-    new URL("./__fixtures__/sample.jsonl", import.meta.url),
-  ).text()
+  const text = await Bun.file(new URL("./__fixtures__/sample.jsonl", import.meta.url)).text()
   const { entries, skipped } = parseJsonl(text)
 
   const typeCounts = new Map<string, number>()
@@ -90,10 +90,7 @@ test("parseJsonl filters and counts entries from the real fixture", async () => 
     .map(([k, v]) => `${k}=${v}`)
     .join(" ")
 
-  const summary = [
-    `entries=${entries.length} skipped=${skipped}`,
-    `types: ${types}`,
-  ].join("\n")
+  const summary = [`entries=${entries.length} skipped=${skipped}`, `types: ${types}`].join("\n")
 
   expect(summary).toMatchInlineSnapshot()
 })
@@ -135,6 +132,7 @@ git commit -m "test: replace fixture script snapshot with stats summary"
 ## Task 3: `examples.ts` — types, helpers (TDD)
 
 **Files:**
+
 - Create: `src/examples.ts`
 - Create: `src/examples.test.ts`
 
@@ -186,11 +184,9 @@ test("exampleStats falls back to user-typed message count when no turn_duration"
 })
 
 test("exampleStats ignores malformed lines", () => {
-  const content = [
-    `{"type":"user","message":{"role":"user","content":"hi"}}`,
-    `not json`,
-    ``,
-  ].join("\n")
+  const content = [`{"type":"user","message":{"role":"user","content":"hi"}}`, `not json`, ``].join(
+    "\n",
+  )
   expect(exampleStats(content).turns).toBe(1)
 })
 ```
@@ -267,7 +263,7 @@ function isUserTypedMessage(entry: Record<string, unknown>): boolean {
   if (!Array.isArray(c)) return false
   // tool_result-bearing user messages are harness-emitted, not user-typed
   return !c.some(
-    b => b && typeof b === "object" && (b as { type?: unknown }).type === "tool_result",
+    (b) => b && typeof b === "object" && (b as { type?: unknown }).type === "tool_result",
   )
 }
 
@@ -304,6 +300,7 @@ git commit -m "feat: add examples module with stats helper"
 No project-level React testing harness exists, so this task uses manual browser verification rather than TDD. Keep the component small and side-effect-free so the logic is obvious by reading.
 
 **Files:**
+
 - Create: `src/Examples.tsx`
 
 - [ ] **Step 1: Implement the component**
@@ -321,7 +318,7 @@ export function Examples({ onSelect }: Props) {
     <section className="examples">
       <h2 className="examples-header">Examples</h2>
       <ul className="examples-list">
-        {EXAMPLES.map(example => {
+        {EXAMPLES.map((example) => {
           const { turns, sizeBytes } = exampleStats(example.content)
           return (
             <li key={example.fileName}>
@@ -362,6 +359,7 @@ git commit -m "feat: add Examples section component"
 ## Task 5: Wire `Examples` into `App.tsx`
 
 **Files:**
+
 - Modify: `src/App.tsx`
 
 - [ ] **Step 1: Remove the inline demo row and the now-unused `sampleJsonl` import**
@@ -385,7 +383,7 @@ import { EXAMPLES } from "./examples"
 
 - [ ] **Step 2: Replace the `.demo-row` block and reorder so Examples comes last**
 
-The spec defines the empty-state order as: drop zone → `~/.claude` hint → Examples. The current code has `.demo-row` *between* the drop zone and the hint. Remove the `.demo-row` entirely and place `<Examples />` *after* the hint.
+The spec defines the empty-state order as: drop zone → `~/.claude` hint → Examples. The current code has `.demo-row` _between_ the drop zone and the hint. Remove the `.demo-row` entirely and place `<Examples />` _after_ the hint.
 
 Find:
 
@@ -419,20 +417,20 @@ Replace with:
 Find this block in the `useEffect`:
 
 ```tsx
-    if (params.has("demo")) {
-      loadText(sampleJsonl, "sample.jsonl", false)
-      return
-    }
+if (params.has("demo")) {
+  loadText(sampleJsonl, "sample.jsonl", false)
+  return
+}
 ```
 
 Replace with:
 
 ```tsx
-    if (params.has("demo") && EXAMPLES.length > 0) {
-      const first = EXAMPLES[0]
-      loadText(first.content, first.fileName, false)
-      return
-    }
+if (params.has("demo") && EXAMPLES.length > 0) {
+  const first = EXAMPLES[0]
+  loadText(first.content, first.fileName, false)
+  return
+}
 ```
 
 - [ ] **Step 4: Type-check**
@@ -453,6 +451,7 @@ git commit -m "feat: render Examples section in empty state"
 ## Task 6: Styles
 
 **Files:**
+
 - Modify: `src/styles.css`
 
 - [ ] **Step 1: Remove the now-unused `.demo-row` and `.demo-link` rules**

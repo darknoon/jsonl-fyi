@@ -21,7 +21,7 @@ function nodeToSource(node: RootContent): string {
   return toMarkdown(node, { extensions: [gfmToMarkdown()] }).trimEnd()
 }
 
-export const remarkInlineOnly: Plugin<[], Root> = () => tree => {
+export const remarkInlineOnly: Plugin<[], Root> = () => (tree) => {
   function walk(parent: Parent) {
     for (let i = 0; i < parent.children.length; i++) {
       const child = parent.children[i]

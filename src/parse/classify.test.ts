@@ -10,7 +10,9 @@ test("classifyJsonl: codex from session_meta", () => {
 })
 
 test("classifyJsonl: codex from response_item alone", () => {
-  expect(classifyJsonl([{ type: "response_item", payload: { type: "reasoning", summary: [] } }])).toBe("codex")
+  expect(
+    classifyJsonl([{ type: "response_item", payload: { type: "reasoning", summary: [] } }]),
+  ).toBe("codex")
 })
 
 test("classifyJsonl: codex from turn_context", () => {
@@ -18,19 +20,29 @@ test("classifyJsonl: codex from turn_context", () => {
 })
 
 test("classifyJsonl: codex from event_msg", () => {
-  expect(classifyJsonl([{ type: "event_msg", payload: { type: "agent_message", message: "hi" } }])).toBe("codex")
+  expect(
+    classifyJsonl([{ type: "event_msg", payload: { type: "agent_message", message: "hi" } }]),
+  ).toBe("codex")
 })
 
 test("classifyJsonl: claude from user/assistant + content array", () => {
   const lines = [
     { type: "user", uuid: "u1", message: { role: "user", content: "hi" } },
-    { type: "assistant", uuid: "a1", message: { role: "assistant", content: [{ type: "text", text: "hello" }] } },
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
+    },
   ]
   expect(classifyJsonl(lines)).toBe("claude")
 })
 
 test("classifyJsonl: claude from system entries (turn_duration)", () => {
-  expect(classifyJsonl([{ type: "system", subtype: "turn_duration", parentUuid: "u1", durationMs: 100 }])).toBe("claude")
+  expect(
+    classifyJsonl([
+      { type: "system", subtype: "turn_duration", parentUuid: "u1", durationMs: 100 },
+    ]),
+  ).toBe("claude")
 })
 
 test("classifyJsonl: unknown when nothing matches", () => {

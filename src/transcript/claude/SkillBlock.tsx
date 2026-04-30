@@ -5,10 +5,7 @@ export function SkillBlock({ name, body }: { name: string; body: string }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className="tool-card">
-      <button
-        className="tool-row clickable"
-        onClick={() => setExpanded(!expanded)}
-      >
+      <button className="tool-row clickable" onClick={() => setExpanded(!expanded)}>
         <span>Skill (/{name})</span>
       </button>
       {expanded && (

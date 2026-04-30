@@ -13,16 +13,16 @@ always be viewed as raw text.
 
 ## Surfaces
 
-| Surface | Mode | Component (today) |
-| --- | --- | --- |
-| Assistant text | Block | `claude/TextBlock.tsx` (role ≠ user branch) |
-| `ExitPlanMode` plan | Block | tool card for `ExitPlanMode` |
-| Skill body | Block | `claude/SkillBlock.tsx` |
-| `Agent` / `Task` tool `prompt` field | Block | tool card for `Agent` / `Task` |
-| `TodoWrite` item `content` | Inline-only | tool card for `TodoWrite` |
-| User text bubble | Off | `claude/TextBlock.tsx` (role === user branch) |
-| Tool outputs (Bash, Read, generic `<pre>`) | Off | `transcript/shared.tsx` `Output` |
-| EditDiff bodies | Off | `transcript/EditDiff.tsx` |
+| Surface                                    | Mode        | Component (today)                             |
+| ------------------------------------------ | ----------- | --------------------------------------------- |
+| Assistant text                             | Block       | `claude/TextBlock.tsx` (role ≠ user branch)   |
+| `ExitPlanMode` plan                        | Block       | tool card for `ExitPlanMode`                  |
+| Skill body                                 | Block       | `claude/SkillBlock.tsx`                       |
+| `Agent` / `Task` tool `prompt` field       | Block       | tool card for `Agent` / `Task`                |
+| `TodoWrite` item `content`                 | Inline-only | tool card for `TodoWrite`                     |
+| User text bubble                           | Off         | `claude/TextBlock.tsx` (role === user branch) |
+| Tool outputs (Bash, Read, generic `<pre>`) | Off         | `transcript/shared.tsx` `Output`              |
+| EditDiff bodies                            | Off         | `transcript/EditDiff.tsx`                     |
 
 "Block" means full block-level rendering: paragraphs, lists, headings,
 fenced code blocks, blockquotes, GFM tables, GFM task lists, GFM
@@ -202,10 +202,13 @@ The block-mode snapshot covers the three "kept as literal" rules in
 one line:
 
 ```html
-<p>A <a class="md-link" href="https://example.com" target="_blank"
-rel="noreferrer noopener">safe link</a>, an
-![image](https://ex.com/i.png), a [bad link](javascript:alert(1)),
-and some &lt;b&gt;raw HTML&lt;/b&gt;.</p>
+<p>
+  A
+  <a class="md-link" href="https://example.com" target="_blank" rel="noreferrer noopener"
+    >safe link</a
+  >, an ![image](https://ex.com/i.png), a [bad link](javascript:alert(1)), and some &lt;b&gt;raw
+  HTML&lt;/b&gt;.
+</p>
 ```
 
 The image, the `javascript:` link, and the raw HTML round-trip back

@@ -45,13 +45,13 @@ the duration alone.
 ### Per-turn aggregation
 
 - **Claude**: a single request often emits multiple consecutive assistant
-  rows (thinking + tool_use + text) sharing the same `message.id` and
+  rows (thinking + `tool_use` + text) sharing the same `message.id` and
   `requestId`, with the **same** usage values repeated on each row. Example
   from `__fixtures__/sample.jsonl` — request `req_011CaYf3Jpg3WbDJHh6Csowv`,
   message `msg_01JmbYMfSzLZKyoHkdjZiENa`, two assistant rows with identical
   `usage: { input:6, cache_creation:28960, cache_read:0, output:165 }`. The
   turn separator already fires on the row whose uuid matches a
-  `turn_duration` parent — use *that row's* `message.usage`. Do **not** sum
+  `turn_duration` parent — use _that row's_ `message.usage`. Do **not** sum
   across rows from the same request.
 - **Codex**: each turn ends with a `token_count` event whose
   `last_token_usage` is the per-turn delta (`input_tokens`,
@@ -62,6 +62,7 @@ the duration alone.
 ## Components & data flow
 
 New module: `src/transcript/usage.ts`
+
 - `formatTokens(n: number): string` — SI abbreviation helper
 - `type TurnUsage = { input: number; output: number; cacheRead: number }`
   (cache-write intentionally not tracked at this layer in v1)
@@ -69,6 +70,7 @@ New module: `src/transcript/usage.ts`
 - `extractCodexTurnUsage(event): TurnUsage | null`
 
 Wire-up:
+
 - `buildTranscriptItems` (Claude) attaches a `TurnUsage | null` to each
   `separator` item alongside `durationMs`.
 - The Codex transcript's separator-mapping pass does the same.

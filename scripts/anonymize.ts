@@ -87,7 +87,10 @@ function scrubString(s: string): string {
   s = s.replace(/mcp__dave__/g, "mcp__project__")
 
   // Rule 5: email addresses not ending in example.com
-  s = s.replace(/[a-zA-Z0-9._%+-]+@(?!example\.com)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "user@example.com")
+  s = s.replace(
+    /[a-zA-Z0-9._%+-]+@(?!example\.com)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    "user@example.com",
+  )
 
   // Rule 6: 32+ char hex or base64 tokens (API keys, auth headers)
   // Match long hex strings

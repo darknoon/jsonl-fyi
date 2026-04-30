@@ -14,21 +14,33 @@ function Probe() {
 }
 
 test("default is renderMarkdown=true", () => {
-  expect(renderToStaticMarkup(
-    <SettingsProvider><Probe /></SettingsProvider>
-  )).toBe("<span>on</span>")
+  expect(
+    renderToStaticMarkup(
+      <SettingsProvider>
+        <Probe />
+      </SettingsProvider>,
+    ),
+  ).toBe("<span>on</span>")
 })
 
 test("reads existing value from localStorage", () => {
   globalThis.localStorage.setItem(KEY, JSON.stringify({ renderMarkdown: false }))
-  expect(renderToStaticMarkup(
-    <SettingsProvider><Probe /></SettingsProvider>
-  )).toBe("<span>off</span>")
+  expect(
+    renderToStaticMarkup(
+      <SettingsProvider>
+        <Probe />
+      </SettingsProvider>,
+    ),
+  ).toBe("<span>off</span>")
 })
 
 test("initial prop overrides localStorage (test-only)", () => {
   globalThis.localStorage.setItem(KEY, JSON.stringify({ renderMarkdown: true }))
-  expect(renderToStaticMarkup(
-    <SettingsProvider initial={{ renderMarkdown: false }}><Probe /></SettingsProvider>
-  )).toBe("<span>off</span>")
+  expect(
+    renderToStaticMarkup(
+      <SettingsProvider initial={{ renderMarkdown: false }}>
+        <Probe />
+      </SettingsProvider>,
+    ),
+  ).toBe("<span>off</span>")
 })

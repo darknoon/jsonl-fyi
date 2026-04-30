@@ -16,21 +16,11 @@ export type CardProps<I> = {
   output: ToolResult
 }
 
-export function Header({
-  children,
-}: {
-  children: ReactNode
-}) {
+export function Header({ children }: { children: ReactNode }) {
   return <span className="tool-title">{children}</span>
 }
 
-export function Field({
-  name,
-  value,
-}: {
-  name: string
-  value: ReactNode
-}) {
+export function Field({ name, value }: { name: string; value: ReactNode }) {
   return (
     <div className="tool-field">
       <dt>{name}</dt>
@@ -66,28 +56,16 @@ export function Extras({ output }: { output: ToolResult }) {
 }
 
 export function hasOutput(output: ToolResult): boolean {
-  return (
-    !!output.text ||
-    output.images.length > 0 ||
-    output.toolRefs.length > 0
-  )
+  return !!output.text || output.images.length > 0 || output.toolRefs.length > 0
 }
 
-export function ToolTitle({
-  name,
-  detail,
-}: {
-  name: string
-  detail?: ReactNode
-}) {
+export function ToolTitle({ name, detail }: { name: string; detail?: ReactNode }) {
   return (
     <>
       <strong className="tool-title-name">{name}</strong>
       {detail != null && (
         <>
-          (
-          <span>{detail}</span>
-          )
+          (<span>{detail}</span>)
         </>
       )}
     </>

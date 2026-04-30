@@ -15,6 +15,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/settings.tsx` — SettingsContext + provider + `useSettings()` hook + `localStorage` persistence
 - `src/transcript/Markdown.tsx` — `<Markdown>` component (block + inline modes)
 - `src/transcript/remarkKeepDisallowed.ts` — remark plugin converting disallowed nodes to text
@@ -24,6 +25,7 @@
 - `src/SettingsPopover.tsx` — gear-button popover housing the toggle
 
 **Modify:**
+
 - `package.json` — add `react-markdown`, `remark-gfm` deps
 - `src/index.tsx` — wrap app in `<SettingsProvider>`
 - `src/App.tsx` — replace gear `<button>` with popover trigger; render `<SettingsPopover>`
@@ -37,6 +39,7 @@
 ## Task 1: Add dependencies
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Install runtime deps**
@@ -64,6 +67,7 @@ git commit -m "deps: add react-markdown and remark-gfm for limited markdown rend
 Walks the mdast tree before render. For each `image`, `html`, or `link` with a non-allowed URL scheme, replaces the node with a `text` node containing its original Markdown source. This is what enforces "kept as literal text, never silently dropped."
 
 **Files:**
+
 - Create: `src/transcript/remarkKeepDisallowed.ts`
 - Test: `src/transcript/remarkKeepDisallowed.test.ts`
 
@@ -98,15 +102,11 @@ test("image → literal alt-image syntax", () => {
 })
 
 test("javascript: link → literal", () => {
-  expect(transform("[click](javascript:alert(1))")).toBe(
-    "\\[click]\\(javascript:alert\\(1\\))",
-  )
+  expect(transform("[click](javascript:alert(1))")).toBe("\\[click]\\(javascript:alert\\(1\\))")
 })
 
 test("http link kept as link", () => {
-  expect(transform("[ok](https://example.com)")).toBe(
-    "[ok](https://example.com)",
-  )
+  expect(transform("[ok](https://example.com)")).toBe("[ok](https://example.com)")
 })
 
 test("raw html block kept as text", () => {
@@ -152,9 +152,7 @@ function imageToText(node: Image): Text {
 function linkToText(node: Link): Text {
   // Children of a link are themselves mdast nodes (e.g. text, emphasis).
   // For literal-text fallback we only need the plain-text concatenation.
-  const inner = node.children
-    .map(c => (c.type === "text" ? c.value : ""))
-    .join("")
+  const inner = node.children.map((c) => (c.type === "text" ? c.value : "")).join("")
   const title = node.title ? ` "${node.title}"` : ""
   return { type: "text", value: `[${inner}](${node.url}${title})` }
 }
@@ -163,7 +161,7 @@ function htmlToText(node: Html): Text {
   return { type: "text", value: node.value }
 }
 
-export const remarkKeepDisallowed: Plugin<[], Root> = () => tree => {
+export const remarkKeepDisallowed: Plugin<[], Root> = () => (tree) => {
   visit(tree, (node, index, parent: Parent | undefined) => {
     if (!parent || index === undefined) return
     if (node.type === "image") {
@@ -215,6 +213,7 @@ git commit -m "feat(markdown): remark plugin converting disallowed nodes to lite
 Renders Markdown via `react-markdown`, with the `remarkKeepDisallowed` plugin always active. In this task we cover block mode and the `renderMarkdown=false` short-circuit. Inline mode comes in Task 4.
 
 **Files:**
+
 - Create: `src/transcript/Markdown.tsx`
 - Test: `src/transcript/Markdown.test.tsx`
 
@@ -222,10 +221,11 @@ Renders Markdown via `react-markdown`, with the `remarkKeepDisallowed` plugin al
 
 Create `src/transcript/__fixtures__/markdown-sample.md` with the spec's fixture content:
 
-```md
-A paragraph with **strong**, *emphasis*, ~~strike~~, and `inline code`.
+````md
+A paragraph with **strong**, _emphasis_, ~~strike~~, and `inline code`.
 
 # H1
+
 ## H2
 
 - item one
@@ -242,13 +242,15 @@ A paragraph with **strong**, *emphasis*, ~~strike~~, and `inline code`.
 ```ts
 const x: number = 1
 ```
+````
 
-A [safe link](https://example.com), an ![image](https://ex.com/i.png), a [bad link](javascript:alert(1)), and some <b>raw HTML</b>.
+A [safe link](https://example.com), an ![image](https://ex.com/i.png), a [bad link](<javascript:alert(1)>), and some <b>raw HTML</b>.
 
 | col a | col b |
-| --- | --- |
-| 1 | 2 |
-```
+| ----- | ----- |
+| 1     | 2     |
+
+````
 
 Create `src/transcript/Markdown.test.tsx`:
 
@@ -297,7 +299,7 @@ test("safe link gets target=_blank rel", () => {
   expect(html).toContain('target="_blank"')
   expect(html).toContain('rel="noreferrer noopener"')
 })
-```
+````
 
 - [ ] **Step 2: Run test, verify it fails**
 
@@ -344,12 +346,7 @@ import { useSettings } from "../settings"
 
 const COMPONENTS: Components = {
   a: ({ node: _node, ...props }) => (
-    <a
-      {...props}
-      className="md-link"
-      target="_blank"
-      rel="noreferrer noopener"
-    />
+    <a {...props} className="md-link" target="_blank" rel="noreferrer noopener" />
   ),
   code: ({ node: _node, className, children, ...props }) => {
     const lang = /language-(\w+)/.exec(className ?? "")?.[1]
@@ -357,11 +354,7 @@ const COMPONENTS: Components = {
     // react-markdown, so the same component handles both. We only set
     // data-lang when there's an actual language tag.
     return (
-      <code
-        {...props}
-        className={lang ? "md-code" : "md-code-inline"}
-        data-lang={lang}
-      >
+      <code {...props} className={lang ? "md-code" : "md-code-inline"} data-lang={lang}>
         {children}
       </code>
     )
@@ -369,9 +362,7 @@ const COMPONENTS: Components = {
   pre: ({ node: _node, ...props }) => <pre {...props} className="md-code-block" />,
   ul: ({ node: _node, ...props }) => <ul {...props} className="md-list" />,
   ol: ({ node: _node, ...props }) => <ol {...props} className="md-list" />,
-  blockquote: ({ node: _node, ...props }) => (
-    <blockquote {...props} className="md-quote" />
-  ),
+  blockquote: ({ node: _node, ...props }) => <blockquote {...props} className="md-quote" />,
   table: ({ node: _node, ...props }) => <table {...props} className="md-table" />,
   h1: ({ node: _node, ...props }) => <h1 {...props} className="md-heading" />,
   h2: ({ node: _node, ...props }) => <h2 {...props} className="md-heading" />,
@@ -381,13 +372,7 @@ const COMPONENTS: Components = {
   h6: ({ node: _node, ...props }) => <h6 {...props} className="md-heading" />,
 }
 
-export function Markdown({
-  source,
-  inline = false,
-}: {
-  source: string
-  inline?: boolean
-}) {
+export function Markdown({ source, inline = false }: { source: string; inline?: boolean }) {
   const { renderMarkdown } = useSettings()
 
   if (!renderMarkdown) {
@@ -402,10 +387,7 @@ export function Markdown({
   // Inline mode handled in Task 4. For now both modes use the same render.
   return (
     <div className="md-content">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkKeepDisallowed]}
-        components={COMPONENTS}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkKeepDisallowed]} components={COMPONENTS}>
         {source}
       </ReactMarkdown>
     </div>
@@ -438,6 +420,7 @@ git commit -m "feat(markdown): Markdown component with block-mode rendering and 
 Inline mode disallows block-level elements and renders their literal source instead.
 
 **Files:**
+
 - Modify: `src/transcript/Markdown.tsx`
 - Modify: `src/transcript/Markdown.test.tsx`
 
@@ -498,7 +481,7 @@ function nodeToSource(node: RootContent): string {
   return toMarkdown(node, { extensions: [gfmToMarkdown()] }).trimEnd()
 }
 
-export const remarkInlineOnly: Plugin<[], Root> = () => tree => {
+export const remarkInlineOnly: Plugin<[], Root> = () => (tree) => {
   function walk(parent: Parent) {
     for (let i = 0; i < parent.children.length; i++) {
       const child = parent.children[i]
@@ -580,6 +563,7 @@ git commit -m "feat(markdown): inline-only mode preserving block constructs as l
 Replace the placeholder provider from Task 3 with one that persists to `localStorage` and exposes a setter.
 
 **Files:**
+
 - Modify: `src/settings.tsx`
 - Test: `src/settings.test.tsx`
 
@@ -604,23 +588,35 @@ function Probe() {
 }
 
 test("default is renderMarkdown=true", () => {
-  expect(renderToStaticMarkup(
-    <SettingsProvider><Probe /></SettingsProvider>
-  )).toBe("<span>on</span>")
+  expect(
+    renderToStaticMarkup(
+      <SettingsProvider>
+        <Probe />
+      </SettingsProvider>,
+    ),
+  ).toBe("<span>on</span>")
 })
 
 test("reads existing value from localStorage", () => {
   globalThis.localStorage.setItem(KEY, JSON.stringify({ renderMarkdown: false }))
-  expect(renderToStaticMarkup(
-    <SettingsProvider><Probe /></SettingsProvider>
-  )).toBe("<span>off</span>")
+  expect(
+    renderToStaticMarkup(
+      <SettingsProvider>
+        <Probe />
+      </SettingsProvider>,
+    ),
+  ).toBe("<span>off</span>")
 })
 
 test("initial prop overrides localStorage (test-only)", () => {
   globalThis.localStorage.setItem(KEY, JSON.stringify({ renderMarkdown: true }))
-  expect(renderToStaticMarkup(
-    <SettingsProvider initial={{ renderMarkdown: false }}><Probe /></SettingsProvider>
-  )).toBe("<span>off</span>")
+  expect(
+    renderToStaticMarkup(
+      <SettingsProvider initial={{ renderMarkdown: false }}>
+        <Probe />
+      </SettingsProvider>,
+    ),
+  ).toBe("<span>off</span>")
 })
 ```
 
@@ -636,13 +632,7 @@ Expected: third test fails (no setter), or all fail if `localStorage` undefined.
 Replace `src/settings.tsx` contents:
 
 ```tsx
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
 export type Settings = { renderMarkdown: boolean }
 
@@ -695,7 +685,7 @@ export function SettingsProvider({
 
   const value: Ctx = {
     ...settings,
-    setRenderMarkdown: v => setSettings(s => ({ ...s, renderMarkdown: v })),
+    setRenderMarkdown: (v) => setSettings((s) => ({ ...s, renderMarkdown: v })),
   }
   return <SettingsCtx.Provider value={value}>{children}</SettingsCtx.Provider>
 }
@@ -727,6 +717,7 @@ git commit -m "feat(settings): SettingsProvider with localStorage persistence"
 ## Task 6: Wrap app in `<SettingsProvider>`
 
 **Files:**
+
 - Modify: `src/index.tsx`
 
 - [ ] **Step 1: Read current `src/index.tsx`**
@@ -749,7 +740,7 @@ root.render(
     <SettingsProvider>
       <App />
     </SettingsProvider>
-  </StrictMode>
+  </StrictMode>,
 )
 ```
 
@@ -772,6 +763,7 @@ git commit -m "feat(settings): wrap app in SettingsProvider"
 ## Task 7: `SettingsPopover` component using native HTML Popover
 
 **Files:**
+
 - Create: `src/SettingsPopover.tsx`
 - Modify: `src/App.tsx`
 
@@ -800,7 +792,7 @@ export function SettingsPopover() {
         <input
           type="checkbox"
           checked={renderMarkdown}
-          onChange={e => setRenderMarkdown(e.target.checked)}
+          onChange={(e) => setRenderMarkdown(e.target.checked)}
         />
         <span>Render markdown</span>
       </label>
@@ -814,11 +806,7 @@ export function SettingsPopover() {
 Edit `src/App.tsx`. Find the gear button:
 
 ```tsx
-<button
-  className="icon-btn settings-btn"
-  aria-label="Settings"
-  title="Settings"
->
+<button className="icon-btn settings-btn" aria-label="Settings" title="Settings">
   <GearIcon size={16} />
 </button>
 ```
@@ -870,6 +858,7 @@ git commit -m "feat(settings): native popover with Render markdown toggle"
 ## Task 8: Markdown + popover styles
 
 **Files:**
+
 - Modify: `src/styles.css`
 
 - [ ] **Step 1: Append styles**
@@ -1018,6 +1007,7 @@ git commit -m "style(markdown): scoped .md-content styles and settings popover"
 ## Task 9: Wire `<Markdown>` into transcript surfaces
 
 **Files:**
+
 - Modify: `src/transcript/claude/TextBlock.tsx`
 - Modify: `src/transcript/claude/SkillBlock.tsx`
 - Modify: `src/transcript/claude/Tool.tsx`
@@ -1058,10 +1048,7 @@ export function SkillBlock({ name, body }: { name: string; body: string }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className="tool-card">
-      <button
-        className="tool-row clickable"
-        onClick={() => setExpanded(!expanded)}
-      >
+      <button className="tool-row clickable" onClick={() => setExpanded(!expanded)}>
         <span>Skill (/{name})</span>
       </button>
       {expanded && (
@@ -1079,13 +1066,17 @@ export function SkillBlock({ name, body }: { name: string; body: string }) {
 In `src/transcript/claude/Tool.tsx`, replace the line in the `Agent` component:
 
 ```tsx
-{prompt && <pre className="output">{prompt}</pre>}
+{
+  prompt && <pre className="output">{prompt}</pre>
+}
 ```
 
 with:
 
 ```tsx
-{prompt && <Markdown source={prompt} />}
+{
+  prompt && <Markdown source={prompt} />
+}
 ```
 
 - [ ] **Step 4: Update `Tool.tsx` — TodoWrite items**
@@ -1109,13 +1100,17 @@ with:
 In the `ExitPlanMode` component, replace:
 
 ```tsx
-{plan && <pre className="output">{plan}</pre>}
+{
+  plan && <pre className="output">{plan}</pre>
+}
 ```
 
 with:
 
 ```tsx
-{plan && <Markdown source={plan} />}
+{
+  plan && <Markdown source={plan} />
+}
 ```
 
 - [ ] **Step 6: Add `Markdown` import at top of `Tool.tsx`**
@@ -1153,6 +1148,7 @@ git commit -m "feat(markdown): render Markdown in assistant text, skills, plans,
 ## Task 10: Update TODO.md
 
 **Files:**
+
 - Modify: `TODO.md`
 
 - [ ] **Step 1: Mark item complete**

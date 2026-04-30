@@ -7,10 +7,7 @@ export type FormatChatStartOptions = {
   timeZone?: string
 }
 
-export function formatChatStart(
-  isoTimestamp: string,
-  opts: FormatChatStartOptions = {},
-): string {
+export function formatChatStart(isoTimestamp: string, opts: FormatChatStartOptions = {}): string {
   const date = new Date(isoTimestamp)
   const now = opts.now ?? new Date()
   const locale = opts.locale
@@ -80,7 +77,7 @@ export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
   // Pass 2: emit items in source order, with header at the top and a separator
   // after each assistant entry whose uuid has a duration.
   const items: RenderItem[] = []
-  const startTimestamp = entries.find(e => e.timestamp)?.timestamp
+  const startTimestamp = entries.find((e) => e.timestamp)?.timestamp
   if (startTimestamp) {
     items.push({ kind: "header", chatStartIso: startTimestamp })
   }
@@ -126,7 +123,7 @@ function ymdInZone(date: Date, timeZone?: string): Ymd {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date)
-  const get = (t: string) => Number(parts.find(p => p.type === t)?.value)
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value)
   return { y: get("year"), m: get("month"), d: get("day") }
 }
 

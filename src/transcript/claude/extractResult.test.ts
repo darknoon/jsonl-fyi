@@ -3,9 +3,7 @@ import { parseJsonl } from "./parse"
 import { extractResult, getBlocks } from "./extractResult"
 
 test("extractResult on every tool_result in the fixture", async () => {
-  const text = await Bun.file(
-    new URL("../../__fixtures__/sample.jsonl", import.meta.url),
-  ).text()
+  const text = await Bun.file(new URL("../../__fixtures__/sample.jsonl", import.meta.url)).text()
   const { entries } = parseJsonl(text)
 
   const lines: string[] = []
@@ -13,9 +11,7 @@ test("extractResult on every tool_result in the fixture", async () => {
     for (const block of getBlocks(entry)) {
       if (block.type === "tool_result") {
         const r = extractResult(block)
-        lines.push(
-          `${block.tool_use_id} text=${r.text.length}b images=${r.images.length}`,
-        )
+        lines.push(`${block.tool_use_id} text=${r.text.length}b images=${r.images.length}`)
       }
     }
   }
@@ -83,12 +79,10 @@ test("extractResult handles string content, mixed array, and image-only", () => 
     extractResult({
       type: "tool_result",
       tool_use_id: "c",
-      content: [
-        { type: "image", source: { type: "url", url: "https://x/y.png" } },
-      ],
+      content: [{ type: "image", source: { type: "url", url: "https://x/y.png" } }],
     }),
   ]
-    .map(r => `text=${JSON.stringify(r.text)} images=${r.images.length}`)
+    .map((r) => `text=${JSON.stringify(r.text)} images=${r.images.length}`)
     .join("\n")
   expect(summary).toMatchInlineSnapshot(`
     "text="hello" images=0

@@ -5,9 +5,5 @@ type Props = {
 }
 
 export function TranscriptHeader({ startTimestamp }: Props) {
-  return (
-    <div className="transcript-header">
-      {formatChatStart(startTimestamp)}
-    </div>
-  )
+  return <div className="transcript-header">{formatChatStart(startTimestamp)}</div>
 }

@@ -1,10 +1,5 @@
 import { test, expect } from "bun:test"
-import {
-  formatChatStart,
-  formatDuration,
-  buildTranscriptItems,
-  type RenderItem,
-} from "./timing"
+import { formatChatStart, formatDuration, buildTranscriptItems, type RenderItem } from "./timing"
 import type { Entry } from "../types"
 
 // Render the item list as a one-line-per-item string so inline snapshots stay
@@ -12,7 +7,7 @@ import type { Entry } from "../types"
 // (ordering, anchoring, filtering) rather than dumping entry payloads.
 function summarize(items: RenderItem[]): string {
   return items
-    .map(i => {
+    .map((i) => {
       switch (i.kind) {
         case "header":
           return `header  ${i.chatStartIso}`
@@ -50,42 +45,36 @@ test("formatDuration: ≥60s shows m s", () => {
 test("formatChatStart: today renders 'Today, h:mm AM/PM'", () => {
   const now = new Date("2026-04-29T18:00:00Z")
   const ts = "2026-04-29T19:15:00Z" // same day in UTC; test uses UTC tz
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("Today, 7:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe("Today, 7:15 PM")
 })
 
 test("formatChatStart: yesterday", () => {
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2026-04-28T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("Yesterday, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe("Yesterday, 2:15 PM")
 })
 
 test("formatChatStart: within last 6 days uses weekday", () => {
   // 2026-04-24 is a Friday
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2026-04-24T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("Friday, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe("Friday, 2:15 PM")
 })
 
 test("formatChatStart: same year, more than 6 days ago, uses month + day", () => {
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2026-02-16T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("February 16, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe(
+    "February 16, 2:15 PM",
+  )
 })
 
 test("formatChatStart: prior years include the year", () => {
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2024-04-16T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("April 16, 2024, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe(
+    "April 16, 2024, 2:15 PM",
+  )
 })
 
 test("buildTranscriptItems: empty input → empty list", () => {
@@ -222,7 +211,7 @@ test("buildTranscriptItems: attaches usage from the duration-anchor assistant ro
     } as Entry,
   ]
   const items = buildTranscriptItems(entries)
-  const sep = items.find(i => i.kind === "separator")
+  const sep = items.find((i) => i.kind === "separator")
   expect(sep).toBeDefined()
   if (sep?.kind !== "separator") throw new Error("expected separator")
   expect(sep.durationMs).toBe(1234)
@@ -240,7 +229,7 @@ test("buildTranscriptItems: separator usage is null when assistant entry has no 
     } as Entry,
   ]
   const items = buildTranscriptItems(entries)
-  const sep = items.find(i => i.kind === "separator")
+  const sep = items.find((i) => i.kind === "separator")
   if (sep?.kind !== "separator") throw new Error("expected separator")
   expect(sep.usage).toBeNull()
 })

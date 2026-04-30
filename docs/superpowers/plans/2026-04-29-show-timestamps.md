@@ -29,6 +29,7 @@
 ## Task 1: Discriminated `Entry` union
 
 **Files:**
+
 - Modify: `src/types.ts`
 
 - [ ] **Step 1: Replace the `Entry` type with a discriminated union**
@@ -111,6 +112,7 @@ git commit -m "types: discriminate Entry into MessageEntry | SystemEntry"
 ## Task 2: Stop filtering `system` entries in `parseJsonl`
 
 **Files:**
+
 - Modify: `src/parse.ts`
 - Modify: `src/parse.test.ts`
 
@@ -174,6 +176,7 @@ git commit -m "parse: keep system entries (needed for turn_duration)"
 ## Task 3: `timing.ts` helpers (TDD)
 
 **Files:**
+
 - Create: `src/transcript/timing.ts`
 - Create: `src/transcript/timing.test.ts`
 
@@ -185,12 +188,7 @@ This task implements three pure functions with thorough tests. The components in
 
 ```ts
 import { test, expect } from "bun:test"
-import {
-  formatChatStart,
-  formatDuration,
-  buildTranscriptItems,
-  type RenderItem,
-} from "./timing"
+import { formatChatStart, formatDuration, buildTranscriptItems, type RenderItem } from "./timing"
 import type { Entry } from "../types"
 
 // Render the item list as a one-line-per-item string so inline snapshots stay
@@ -198,7 +196,7 @@ import type { Entry } from "../types"
 // (ordering, anchoring, filtering) rather than dumping entry payloads.
 function summarize(items: RenderItem[]): string {
   return items
-    .map(i => {
+    .map((i) => {
       switch (i.kind) {
         case "header":
           return `header  ${i.chatStartIso}`
@@ -236,42 +234,36 @@ test("formatDuration: ≥60s shows m s", () => {
 test("formatChatStart: today renders 'Today, h:mm AM/PM'", () => {
   const now = new Date("2026-04-29T18:00:00Z")
   const ts = "2026-04-29T19:15:00Z" // same day in UTC; test uses UTC tz
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("Today, 7:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe("Today, 7:15 PM")
 })
 
 test("formatChatStart: yesterday", () => {
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2026-04-28T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("Yesterday, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe("Yesterday, 2:15 PM")
 })
 
 test("formatChatStart: within last 6 days uses weekday", () => {
   // 2026-04-24 is a Friday
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2026-04-24T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("Friday, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe("Friday, 2:15 PM")
 })
 
 test("formatChatStart: same year, more than 6 days ago, uses month + day", () => {
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2026-02-16T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("February 16, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe(
+    "February 16, 2:15 PM",
+  )
 })
 
 test("formatChatStart: prior years include the year", () => {
   const now = new Date("2026-04-29T12:00:00Z")
   const ts = "2024-04-16T14:15:00Z"
-  expect(
-    formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" }),
-  ).toBe("April 16, 2024, 2:15 PM")
+  expect(formatChatStart(ts, { now, locale: "en-US", timeZone: "UTC" })).toBe(
+    "April 16, 2024, 2:15 PM",
+  )
 })
 
 test("buildTranscriptItems: empty input → empty list", () => {
@@ -414,10 +406,7 @@ export type FormatChatStartOptions = {
   timeZone?: string
 }
 
-export function formatChatStart(
-  isoTimestamp: string,
-  opts: FormatChatStartOptions = {},
-): string {
+export function formatChatStart(isoTimestamp: string, opts: FormatChatStartOptions = {}): string {
   const date = new Date(isoTimestamp)
   const now = opts.now ?? new Date()
   const locale = opts.locale
@@ -480,7 +469,7 @@ export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
   // Pass 2: emit items in source order, with header at the top and a separator
   // after each assistant entry whose uuid has a duration.
   const items: RenderItem[] = []
-  const startTimestamp = entries.find(e => e.timestamp)?.timestamp
+  const startTimestamp = entries.find((e) => e.timestamp)?.timestamp
   if (startTimestamp) {
     items.push({ kind: "header", chatStartIso: startTimestamp })
   }
@@ -522,7 +511,7 @@ function ymdInZone(date: Date, timeZone?: string): Ymd {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date)
-  const get = (t: string) => Number(parts.find(p => p.type === t)?.value)
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value)
   return { y: get("year"), m: get("month"), d: get("day") }
 }
 
@@ -561,6 +550,7 @@ git commit -m "feat: timing helpers (formatChatStart, formatDuration, buildTurnD
 No React testing harness in this project; verify visually in Task 8.
 
 **Files:**
+
 - Create: `src/transcript/TurnSeparator.tsx`
 
 - [ ] **Step 1: Implement**
@@ -602,6 +592,7 @@ git commit -m "feat: TurnSeparator component"
 ## Task 5: `TranscriptHeader` component
 
 **Files:**
+
 - Create: `src/transcript/TranscriptHeader.tsx`
 
 - [ ] **Step 1: Implement**
@@ -614,11 +605,7 @@ type Props = {
 }
 
 export function TranscriptHeader({ startTimestamp }: Props) {
-  return (
-    <div className="transcript-header">
-      {formatChatStart(startTimestamp)}
-    </div>
-  )
+  return <div className="transcript-header">{formatChatStart(startTimestamp)}</div>
 }
 ```
 
@@ -642,6 +629,7 @@ git commit -m "feat: TranscriptHeader component"
 **Goal:** the Transcript body becomes `items.map(item => <Switch on item.kind>)` with no inline loops or lookups. Per-entry block rendering moves into a small `EntryView` component.
 
 **Files:**
+
 - Modify: `src/transcript/claude/Transcript.tsx`
 - Create: `src/transcript/claude/EntryView.tsx`
 - Modify: `src/transcript/claude/extractResult.ts` (only if `getBlocks` doesn't already return `[]` for system entries)
@@ -654,7 +642,7 @@ Open `src/transcript/claude/extractResult.ts` and check `getBlocks`. It almost c
 
 The existing Pass 1b uses entry index `i` to build `skipKeys` like `${i}:${j}`. Once the renderer is driven by `RenderItem`s, source-array indices are no longer the right addressing. Rekey to `${entry.uuid}:${j}`.
 
-In `Transcript.tsx` Pass 1b, change `skipKeys.add(\`${i}:${j}\`)` to `skipKeys.add(\`${entry.uuid}:${j}\`)`. Skip entries with no `uuid` (defensive — they shouldn't reach absorption logic but bail rather than mis-key).
+In `Transcript.tsx` Pass 1b, change `skipKeys.add(\`${i}:${j}\`)`to`skipKeys.add(\`${entry.uuid}:${j}\`)`. Skip entries with no `uuid` (defensive — they shouldn't reach absorption logic but bail rather than mis-key).
 
 - [ ] **Step 3: Extract `EntryView`**
 
@@ -706,38 +694,28 @@ export function EntryView({ entry, results, skipKeys }: Props) {
 Replace the Pass 2 loop (lines ~57–79 in the current file) with:
 
 ```tsx
-  const items = buildTranscriptItems(entries)
-  return (
-    <div className="transcript">
-      {items.map((item, idx) => {
-        switch (item.kind) {
-          case "header":
-            return (
-              <TranscriptHeader
-                key={`hdr-${idx}`}
-                startTimestamp={item.chatStartIso}
-              />
-            )
-          case "separator":
-            return (
-              <TurnSeparator
-                key={`sep-${item.afterUuid}`}
-                durationMs={item.durationMs}
-              />
-            )
-          case "entry":
-            return (
-              <EntryView
-                key={item.entry.uuid ?? `entry-${idx}`}
-                entry={item.entry}
-                results={results}
-                skipKeys={skipKeys}
-              />
-            )
-        }
-      })}
-    </div>
-  )
+const items = buildTranscriptItems(entries)
+return (
+  <div className="transcript">
+    {items.map((item, idx) => {
+      switch (item.kind) {
+        case "header":
+          return <TranscriptHeader key={`hdr-${idx}`} startTimestamp={item.chatStartIso} />
+        case "separator":
+          return <TurnSeparator key={`sep-${item.afterUuid}`} durationMs={item.durationMs} />
+        case "entry":
+          return (
+            <EntryView
+              key={item.entry.uuid ?? `entry-${idx}`}
+              entry={item.entry}
+              results={results}
+              skipKeys={skipKeys}
+            />
+          )
+      }
+    })}
+  </div>
+)
 ```
 
 Add imports:
@@ -777,6 +755,7 @@ git commit -m "feat: render chat-start header and per-turn separators"
 ## Task 7: Styles
 
 **Files:**
+
 - Modify: `src/styles.css`
 
 - [ ] **Step 1: Append the new rules**
@@ -828,7 +807,6 @@ Confirm at the top of the transcript: a small muted line like `Today, 7:15 PM` (
 Scroll through the transcript. Between turns, you should see small muted centered numbers like `14.9s`, `1m 23s`, etc. They appear after the assistant's last message of a turn, before the next user message.
 
 Spot-check at least one separator value against the fixture: `grep -m1 '"subtype":"turn_duration"' src/__fixtures__/sample.jsonl` and confirm one of the displayed values matches `durationMs / 1000` formatted by the rules (`<1s` → ms, `<60s` → `Xs`, ≥60s → `Xm Ys`).
-
 
 - [ ] **Step 6: Run the full check one more time**
 

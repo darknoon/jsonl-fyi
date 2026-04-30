@@ -56,9 +56,9 @@ Designed for multiple examples from day 1, ships with one:
 
 ```ts
 type Example = {
-  name: string      // short title, e.g. "app header redesign"
-  fileName: string  // what we display in the header after loading
-  content: string   // imported via `with { type: "text" }`
+  name: string // short title, e.g. "app header redesign"
+  fileName: string // what we display in the header after loading
+  content: string // imported via `with { type: "text" }`
 }
 
 const EXAMPLES: Example[] = [
@@ -77,7 +77,7 @@ on the `Example` record:
 
 - **Turns**: count of `system` entries with `subtype: "turn_duration"`. If
   none exist (older transcripts), fall back to the count of user-typed
-  messages (user-role entries whose content is *not* a `tool_result`).
+  messages (user-role entries whose content is _not_ a `tool_result`).
 - **Size**: `content.length` formatted as a human-readable byte string
   (`KB`/`MB`, one decimal).
 
