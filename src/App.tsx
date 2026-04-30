@@ -10,6 +10,7 @@ import type { CodexEntry } from "./transcript/codex/types"
 import { ArrowLeftIcon, CheckIcon, CopyIcon, GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
 import { SettingsPopover, SETTINGS_POPOVER_ID } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
+import { FileIcon } from "./FileIcon"
 import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
 import type { Example } from "./examples"
 
@@ -185,6 +186,7 @@ export function App() {
           )}
           {session ? (
             <div className="filename-group">
+              <FileIcon format={session.format} />
               <span className="filename">{fileName}</span>
               <button
                 className="icon-btn"
@@ -208,7 +210,7 @@ export function App() {
             title="Settings"
             popoverTarget={SETTINGS_POPOVER_ID}
           >
-            <GearIcon size={16} />
+            <GearIcon size={16} weight="fill" />
           </button>
           <SettingsPopover />
         </div>
