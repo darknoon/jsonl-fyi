@@ -44,3 +44,39 @@ test("formatClaudeModel: non-matching id falls back to raw label", () => {
     raw: "not-a-claude-id",
   })
 })
+
+import { formatCodexModel } from "./model"
+
+test("formatCodexModel: brand and version separated by space", () => {
+  expect(formatCodexModel("gpt-5.5")).toEqual({
+    label: "GPT 5.5",
+    raw: "gpt-5.5",
+  })
+})
+
+test("formatCodexModel: suffix preserved with space", () => {
+  expect(formatCodexModel("gpt-5.2-codex")).toEqual({
+    label: "GPT 5.2 codex",
+    raw: "gpt-5.2-codex",
+  })
+})
+
+test("formatCodexModel: effort joined with /", () => {
+  expect(formatCodexModel("gpt-5.5", "high")).toEqual({
+    label: "GPT 5.5/high",
+    raw: "gpt-5.5",
+  })
+  expect(formatCodexModel("gpt-5.2-codex", "medium")).toEqual({
+    label: "GPT 5.2 codex/medium",
+    raw: "gpt-5.2-codex",
+  })
+})
+
+test("formatCodexModel: empty effort omitted", () => {
+  expect(formatCodexModel("gpt-5.5", undefined).label).toBe("GPT 5.5")
+  expect(formatCodexModel("gpt-5.5", "").label).toBe("GPT 5.5")
+})
+
+test("formatCodexModel: non-matching id falls back to raw", () => {
+  expect(formatCodexModel("o1-pro")).toEqual({ label: "o1-pro", raw: "o1-pro" })
+})
