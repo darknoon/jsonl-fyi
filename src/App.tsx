@@ -60,6 +60,7 @@ export function App() {
   const [fileName, setFileName] = useState<string | null>(null)
   const [skipped, setSkipped] = useState(0)
   const [dragOver, setDragOver] = useState(false)
+  const [dropError, setDropError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function loadText(text: string, name: string, persist = true) {
@@ -75,12 +76,15 @@ export function App() {
     const format = classifyJsonl(allLines.slice(0, 10))
     if (format === "codex") {
       setSession({ format: "codex", entries: parseCodexEntries(allLines) })
+      setDropError(null)
     } else if (format === "claude") {
       // parseJsonl re-parses the text; small overhead, fine for now.
       const r = parseJsonl(text)
       setSession({ format: "claude", entries: r.entries })
+      setDropError(null)
     } else {
       setSession(null)
+      setDropError(`Couldn't parse ${name} as a Claude Code or Codex JSONL file`)
     }
     setFileName(name)
     setSkipped(skippedCount)
@@ -213,7 +217,7 @@ export function App() {
       {!session && (
         <>
           <div
-            className={`drop-zone ${dragOver ? "drag-over" : ""}`}
+            className={`drop-zone ${dragOver ? "drag-over" : ""} ${dropError ? "drop-error" : ""}`}
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={e => {
@@ -225,8 +229,17 @@ export function App() {
             onClick={() => inputRef.current?.click()}
           >
             <div className="drop-zone-text">
-              Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
-              <div className="drop-zone-sub">or click to choose a file</div>
+              {dropError ? (
+                <>
+                  {dropError}
+                  <div className="drop-zone-sub">Drop a different file or click to choose</div>
+                </>
+              ) : (
+                <>
+                  Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
+                  <div className="drop-zone-sub">or click to choose a file</div>
+                </>
+              )}
             </div>
             <input
               ref={inputRef}

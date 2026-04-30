@@ -3,7 +3,7 @@
 - [x] Connect skill message w/ Skill tool call
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [x] Show timestamps
-- [ ] *Drag in Codex .jsonl transcripts* wip
+- [x] Drag in Codex .jsonl transcripts
 - [x] Render limited agent markdown
 - [ ] Show tokens used?
 - [ ] Show model used!
