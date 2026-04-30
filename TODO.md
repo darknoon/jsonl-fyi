@@ -4,7 +4,7 @@
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [x] Show timestamps
 - [ ] *Drag in Codex .jsonl transcripts* wip
-- [ ] *Render limited agent markdown* wip
+- [x] Render limited agent markdown
 - [ ] Show tokens used?
 - [ ] Show model used!
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
