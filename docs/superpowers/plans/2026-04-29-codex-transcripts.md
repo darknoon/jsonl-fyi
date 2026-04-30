@@ -7,174 +7,65 @@
 
 **Goal:** Drag-and-drop a Codex `rollout-*.jsonl` file (from `~/.codex/sessions/**`) onto jsonl.fyi and get a faithful transcript view with parity to Claude Code rendering — user/assistant text, reasoning, tool calls (rich for the common ones), tool outputs, plus a session header.
 
-**Architecture:** Auto-classify every dropped file (Codex vs Claude Code) on the first ~10 parsed lines. Route to one of two parallel data models (`Entry` / `CodexEntry`) and two parallel top-level transcript components (`<ClaudeCodeTranscript>` / `<CodexTranscript>`). Both formats share the same low-level building blocks (`ToolCard.*`, `<Header>`, `<Field>`, `<Output>`, `<EditDiff>` / `<PatchDiff>`, `<ImageBlock>`, `<ThinkingBlock>`, `<TranscriptHeader>`, `<TurnSeparator>`). Per-tool components live as siblings under each format's directory; no normalization layer.
+**Architecture:** Auto-classify every dropped file (Codex vs Claude Code) on the first ~10 parsed lines. Route to one of two parallel data models (`Entry` / `CodexEntry`) and two parallel top-level transcript components (`<ClaudeCodeTranscript>` / `<CodexTranscript>`). Both formats share the same low-level building blocks (`ToolCard.*`, `<Header>`, `<ToolTitle>`, `<Field>`, `<Output>`, `<EditDiff>` / `<PatchDiff>`, `<ImageBlock>`, `<ThinkingBlock>`, `<TranscriptHeader>`, `<TurnSeparator>`, shared `<UnknownTool>`). Per-tool components live as siblings under each format's directory; no normalization layer.
 
-**Tech Stack:** React 19, TypeScript (`@typescript/native-preview` via `tsgo`), Bun (`bun:test`), `@phosphor-icons/react`, `@pierre/diffs/react` (existing — both `EditDiff` and the not-yet-used `PatchDiff` ship in this lib). No new dependencies.
+**Tech Stack:** React 19, TypeScript (`@typescript/native-preview` via `tsgo`), Bun (`bun:test`), `@pierre/diffs/react` (existing — both `EditDiff` and the not-yet-used `PatchDiff` ship in this lib). No new dependencies.
+
+**UI conventions to follow** (introduced by recent refactor on main):
+- Tool headers use `<Header><ToolTitle name="..." detail="..." /></Header>`. No icons, no color props.
+- Every `<ToolCard.Root>` passes `status={output.isError ? "error" : "success"}`.
+- `ToolResult.isError: boolean` is required on every output (default `false`).
 
 ---
 
 ## File Structure
 
-**Refactor / rename (Task 2):**
+**Refactor / rename (Task 1):**
 - Move `src/parse.ts` → `src/transcript/claude/parse.ts`
 - Move `src/parse.test.ts` → `src/transcript/claude/parse.test.ts`
 - Rename `src/transcript/claude/Transcript.tsx` (export name `Transcript`) → `src/transcript/claude/ClaudeCodeTranscript.tsx` (export name `ClaudeCodeTranscript`)
 - Update imports in `src/App.tsx`
 
-**Format-agnostic helpers (Tasks 3–5):**
+**Format-agnostic helpers (Tasks 2–4):**
 - Create `src/parse/iter.ts` — `iterJsonlLines` generator
 - Create `src/parse/iter.test.ts`
 - Create `src/parse/classify.ts` — `classifyJsonl`
 - Create `src/parse/classify.test.ts`
 - Create `scripts/validate-classifier.ts`
 
-**Codex parsing (Tasks 6–8):**
+**Codex parsing (Tasks 5–7):**
 - Create `src/transcript/codex/types.ts`
 - Create `src/transcript/codex/parse.ts`
 - Create `src/transcript/codex/parse.test.ts`
 - Create `src/transcript/codex/v4a.ts`
 - Create `src/transcript/codex/v4a.test.ts`
 
-**Shared chrome fix and extraction (Tasks 1, 9):**
-- Modify `src/transcript/shared.tsx` — make `Header` actually accept and render `icon`/`color`
-- Modify `src/styles.css` — add the small icon styling for `.tool-row .icon`
+**Shared extraction (Task 8):**
+- Modify `src/transcript/shared.tsx` — move `ToolTitle` here from `claude/Tool.tsx`
 - Create `src/transcript/UnknownTool.tsx` (extracted from `claude/Tool.tsx`)
-- Modify `src/transcript/claude/Tool.tsx` — import `UnknownTool` from shared location
+- Modify `src/transcript/claude/Tool.tsx` — import `ToolTitle` and `UnknownTool` from shared locations
 
-**Codex tool components (Tasks 10–13):**
+**Codex tool components (Tasks 9–12):**
 - Create `src/transcript/codex/Tool.tsx` — dispatcher + ShellCommand, ExecCommand, Shell components
 - Create `src/transcript/codex/ApplyPatch.tsx` (referenced from `Tool.tsx`)
-- Add UpdatePlan, ViewImage, WebSearchCall components to `src/transcript/codex/Tool.tsx`
-- Add SpawnAgent, WaitAgent components to `src/transcript/codex/Tool.tsx`
+- Modify `src/transcript/codex/Tool.tsx` — add UpdatePlan, ViewImage, WebSearchCall components
+- Modify `src/transcript/codex/Tool.tsx` — add SpawnAgent, WaitAgent components
 
-**Codex top-level rendering (Tasks 14–15):**
+**Codex top-level rendering (Tasks 13–14):**
 - Create `src/transcript/codex/EntryView.tsx`
 - Create `src/transcript/codex/SessionHeader.tsx`
 - Create `src/transcript/codex/CompactedMarker.tsx`
-- Modify `src/styles.css` — `.session-header`, `.compacted-marker`
+- Modify `src/styles.css` — `.session-header`, `.compacted-marker`, plan/apply-patch helpers
 - Create `src/transcript/codex/CodexTranscript.tsx`
 - Modify `src/App.tsx` — classification routing
 
-**Verification (Task 16):**
+**Verification (Task 15):**
 - Run `bun run check`, `bun test`, manual browser test
 - Commit any final tweaks
 
 ---
 
-## Task 1: Pre-flight — fix `<Header>` to accept icon and color
-
-`bun run check` is currently failing on `main` with `TS2322` errors at `claude/Tool.tsx:462,491,518,542,575` because `<Header>` is typed as `{ children: ReactNode }` but every Claude tool component passes `icon` and `color`. The pre-existing UI also doesn't render the intended icon decoration. Fixing this cleans up the type-check before we add ~9 more components that follow the same pattern.
-
-**Files:**
-- Modify: `src/transcript/shared.tsx`
-- Modify: `src/styles.css` (small addition)
-
-- [ ] **Step 1: Update `Header` to render `icon` and `color`**
-
-Replace lines 19–25 of `src/transcript/shared.tsx` with:
-
-```tsx
-import type { ComponentType } from "react"
-import type { Icon as PhosphorIcon } from "@phosphor-icons/react"
-
-export type ToolColor =
-  | "tool-muted"
-  | "tool-blue"
-  | "tool-amber"
-  | "tool-green"
-  | "tool-violet"
-
-export function Header({
-  icon: IconCmp,
-  color,
-  children,
-}: {
-  icon?: PhosphorIcon | ComponentType<{ size?: number; weight?: string }>
-  color?: ToolColor
-  children: ReactNode
-}) {
-  return (
-    <span className="tool-header">
-      {IconCmp && (
-        <IconCmp size={14} weight="regular" />
-      )}
-      <span className={color ? `tool-header-text ${color}` : "tool-header-text"}>
-        {children}
-      </span>
-    </span>
-  )
-}
-```
-
-(Add the `import type { ComponentType } from "react"` at the top if it isn't already imported. The existing `import type { ReactNode }` covers `ReactNode`.)
-
-The fallback `ComponentType<...>` in the union covers any custom non-Phosphor icon component we may pass in the future.
-
-- [ ] **Step 2: Add CSS to color the icon and text consistently**
-
-Append to `src/styles.css`:
-
-```css
-.tool-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.tool-header svg {
-  flex-shrink: 0;
-}
-.tool-header svg.tool-blue,
-.tool-header-text.tool-blue { color: var(--tool-blue, #4a90e2); }
-.tool-header svg.tool-amber,
-.tool-header-text.tool-amber { color: var(--tool-amber, #d99a2b); }
-.tool-header svg.tool-green,
-.tool-header-text.tool-green { color: var(--tool-green, #4caf50); }
-.tool-header svg.tool-violet,
-.tool-header-text.tool-violet { color: var(--tool-violet, #9c27b0); }
-.tool-header svg.tool-muted,
-.tool-header-text.tool-muted { color: var(--muted); }
-```
-
-(The existing `.icon.tool-*` rules at `src/styles.css:268–280` were never wired up because `Header` didn't actually render an icon. Leave them alone — they don't conflict.)
-
-To color the icon itself, the `<Header>` component should also pass `color` down to the icon className. Update `Header` (in shared.tsx) so the rendered icon inherits the color class:
-
-```tsx
-{IconCmp && (
-  <IconCmp size={14} weight="regular" className={color} />
-)}
-```
-
-(Phosphor icon components accept `className` even though it isn't in the typed prop set we widened above; it's part of the underlying `SVGProps`. If TypeScript complains, change the union type's second arm to include `className?: string`.)
-
-- [ ] **Step 3: Type-check**
-
-Run: `bun run check`
-
-Expected: all the `TS2322` errors at `claude/Tool.tsx` resolve. If new errors appear (e.g. about `className` on the IconCmp call), widen the prop type to include `className?: string` and re-run.
-
-- [ ] **Step 4: Run tests**
-
-Run: `bun test`
-
-Expected: green (no test depends on Header's render output).
-
-- [ ] **Step 5: Visual smoke test**
-
-Confirm dev server is running on `http://localhost:3000/`. The user typically has `bun index.html` running already; do NOT start a second instance. If `curl -sI http://localhost:3000/` doesn't respond, ask the user to start it.
-
-Open `http://localhost:3000/?demo`. Confirm tool cards now show their colored icons (terminal for Bash, file for Read, pencil for Edit, etc.). Before this task they were missing.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/transcript/shared.tsx src/styles.css
-git commit -m "fix: Header now renders icon and color, matching tool component callsites"
-```
-
----
-
-## Task 2: Refactor — rename Claude path for symmetry
+## Task 1: Refactor — rename Claude path for symmetry
 
 **Files:**
 - Move: `src/parse.ts` → `src/transcript/claude/parse.ts`
@@ -256,13 +147,13 @@ to:
 
 Run: `grep -rn 'from "\./parse"\|from "\./transcript/claude/Transcript"\|<Transcript ' src/`
 
-Expected: no results. (Comments inside the rendered fixture text don't count — they're inside `*.jsonl` not source code. If grep returns hits in `__fixtures__`, ignore them.)
+Expected: no results outside fixture content.
 
 - [ ] **Step 6: Type-check + tests**
 
 Run: `bun run check && bun test`
 
-Expected: all green. The fixture-stats inline snapshot in `parse.test.ts` should still match (138 entries, types `assistant=71 system=12 user=55`).
+Expected: all green. The fixture-stats inline snapshot in `parse.test.ts` should still match.
 
 - [ ] **Step 7: Commit**
 
@@ -273,9 +164,9 @@ git commit -m "refactor: rename Transcript→ClaudeCodeTranscript, move parser i
 
 ---
 
-## Task 3: `iterJsonlLines` generator
+## Task 2: `iterJsonlLines` generator
 
-Extract the JSONL line-streaming concern from the now-renamed `claude/parse.ts` into a format-agnostic generator. Both formats can then iterate the same source once.
+Extract the JSONL line-streaming concern into a format-agnostic generator. Both formats can iterate the same source.
 
 **Files:**
 - Create: `src/parse/iter.ts`
@@ -374,7 +265,7 @@ git commit -m "feat: iterJsonlLines generator (format-agnostic)"
 
 ---
 
-## Task 4: Format classifier
+## Task 3: Format classifier
 
 Decide whether a dropped JSONL file is Claude Code, Codex, or unknown — based on the first ~10 parsed lines.
 
@@ -382,7 +273,7 @@ Decide whether a dropped JSONL file is Claude Code, Codex, or unknown — based 
 - Create: `src/parse/classify.ts`
 - Create: `src/parse/classify.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing tests**
 
 Create `src/parse/classify.test.ts`:
 
@@ -418,7 +309,7 @@ test("classifyJsonl: claude from user/assistant + content array", () => {
   expect(classifyJsonl(lines)).toBe("claude")
 })
 
-test("classifyJsonl: claude from system entries (Claude Code's turn_duration / file-history-snapshot)", () => {
+test("classifyJsonl: claude from system entries (turn_duration)", () => {
   expect(classifyJsonl([{ type: "system", subtype: "turn_duration", parentUuid: "u1", durationMs: 100 }])).toBe("claude")
 })
 
@@ -431,7 +322,6 @@ test("classifyJsonl: empty input → unknown", () => {
 })
 
 test("classifyJsonl: prefers codex when both signals present (defensive)", () => {
-  // Hypothetical mixed file. Codex signals win because they're more specific.
   expect(
     classifyJsonl([
       { type: "user", message: { role: "user", content: "hi" } },
@@ -471,7 +361,7 @@ export function classifyJsonl(lines: readonly unknown[]): FormatLabel {
 }
 ```
 
-The order matters: any single Codex-typed line wins over Claude signals. This way a file with one Codex-flavored line and ten Claude-flavored lines (which shouldn't exist in practice) classifies as Codex rather than Claude. Defensive against malformed mixed files.
+The order matters: any single Codex-typed line wins over Claude signals. Defensive against malformed mixed files.
 
 - [ ] **Step 4: Run tests**
 
@@ -494,9 +384,7 @@ git commit -m "feat: classifyJsonl format detector"
 
 ---
 
-## Task 5: Validation script — exercise classifier on local logs
-
-Make sure the classifier works against every local file the user has — both Claude (`~/.claude/projects/**`) and Codex (`~/.codex/sessions/**`).
+## Task 4: Validation script — exercise classifier on local logs
 
 **Files:**
 - Create: `scripts/validate-classifier.ts`
@@ -574,7 +462,7 @@ git commit -m "chore: validate-classifier script for local Claude+Codex logs"
 
 ---
 
-## Task 6: Codex types
+## Task 5: Codex types
 
 Define the `CodexEntry` discriminated union mirroring the wire shape.
 
@@ -653,8 +541,6 @@ export type CodexCompacted = {
 }
 
 // `event_msg` lines exist in the wire format but we drop them — see spec §4.
-// The type is captured here for completeness so any future code that wants the
-// raw stream can refer to it.
 export type CodexEventMsg = { type: "event_msg"; payload: unknown }
 
 export type CodexEntry =
@@ -662,15 +548,6 @@ export type CodexEntry =
   | CodexTurnContext
   | CodexResponseItem
   | CodexCompacted
-
-// Output shape we render alongside a tool call. Mirrors the Claude `ToolResult`
-// shape but carries Codex-flavored metadata (e.g. exit_code) when extractable.
-export type CodexToolOutput = {
-  raw: string
-  exitCode: number | null
-}
-
-export const EMPTY_CODEX_OUTPUT: CodexToolOutput = { raw: "", exitCode: null }
 ```
 
 - [ ] **Step 2: Type-check**
@@ -688,9 +565,9 @@ git commit -m "feat: Codex wire-shape types"
 
 ---
 
-## Task 7: Codex parser
+## Task 6: Codex parser
 
-Convert iterated raw line objects (from `iterJsonlLines`) into a typed `CodexEntry[]`. Drop `event_msg` lines (spec §4). Be liberal: unknown payload subtypes are skipped silently, not thrown.
+Convert iterated raw line objects (from `iterJsonlLines`) into a typed `CodexEntry[]`. Drop `event_msg` lines (spec §4). Be liberal: unknown payload subtypes flow through, malformed rows are dropped silently.
 
 **Files:**
 - Create: `src/transcript/codex/parse.ts`
@@ -762,10 +639,7 @@ test("parseCodexEntries: drops response_item lines whose payload is malformed", 
     { type: "response_item", payload: { type: "unknown_subtype" } },
     { type: "response_item", payload: { type: "message", role: "user", content: [] } },
   ]
-  // Unknown subtypes pass through (we don't enumerate every possible Codex
-  // response payload type); only payloads missing the discriminator are
-  // dropped. If the renderer can't handle a subtype, it falls through to a
-  // generic display rather than crashing.
+  // Unknown subtypes pass through; only payloads missing the discriminator are dropped.
   expect(parseCodexEntries(lines).length).toBe(2)
 })
 ```
@@ -796,9 +670,6 @@ export function parseCodexEntries(lines: Iterable<unknown>): CodexEntry[] {
       if (!payload || typeof payload !== "object") continue
       const subtype = (payload as { type?: unknown }).type
       if (typeof subtype !== "string") continue
-      // Beyond that we don't validate — unknown subtypes flow through and the
-      // renderer ignores or generic-renders them. Codex adds payload subtypes
-      // over time; we don't want to drop new ones silently here.
     }
     out.push(line as CodexEntry)
   }
@@ -827,11 +698,11 @@ git commit -m "feat: Codex JSONL parser"
 
 ---
 
-## Task 8: V4A patch parser
+## Task 7: V4A patch parser
 
 Parse OpenAI's V4A patch format (used by `apply_patch`) into per-file unified-diff strings that can be fed to `<PatchDiff>` from `@pierre/diffs/react`.
 
-V4A grammar reminder (see spec §6 V4A parser):
+V4A grammar (see spec §6 V4A parser):
 
 ```
 *** Begin Patch
@@ -879,14 +750,7 @@ test("parseV4A: single-file Update with one hunk", () => {
   const f = result.files[0]
   expect(f.op).toBe("update")
   expect(f.path).toBe("/a/b.json")
-  expect((f as { unifiedDiff: string }).unifiedDiff).toMatchInlineSnapshot(`
-    "--- a//a/b.json
-    +++ b//a/b.json
-    @@ -1,1 +1,1 @@
-    -  "name": "old",
-    +  "name": "new",
-    "
-  `)
+  expect((f as { unifiedDiff: string }).unifiedDiff).toMatchInlineSnapshot()
 })
 
 test("parseV4A: Update with context and multiple hunks", () => {
@@ -1055,7 +919,6 @@ export function parseV4A(input: string): V4AResult {
     }
     const m = /^\*\*\* (Add File|Update File|Delete File): (.+)$/.exec(line)
     if (!m) {
-      // Tolerate stray blank lines between operations.
       if (line.trim() === "") { i++; continue }
       return { error: `unexpected line: ${line}`, raw: input }
     }
@@ -1073,7 +936,6 @@ export function parseV4A(input: string): V4AResult {
       while (i < lines.length && !lines[i].startsWith("*** ")) {
         const ln = lines[i]
         if (ln.startsWith("+")) body.push(ln.slice(1))
-        // Ignore blank/other lines inside Add bodies — V4A only specifies +.
         i++
       }
       const unified = buildUnifiedDiff(path, "add", [{ context: [], removed: [], added: body }])
@@ -1087,7 +949,6 @@ export function parseV4A(input: string): V4AResult {
       movedTo = lines[i].replace(/^\*\*\* Move to: /, "")
       i++
     }
-    // Collect hunks: each one starts with @@ and ends at the next @@ or *** line.
     const hunks: { context: string[]; removed: string[]; added: string[] }[] = []
     if (!lines[i] || !/^@@/.test(lines[i])) {
       return { error: `Update File without @@ hunk: ${path}`, raw: input }
@@ -1100,11 +961,9 @@ export function parseV4A(input: string): V4AResult {
         if (ln.startsWith(" ")) hunk.context.push(ln.slice(1))
         else if (ln.startsWith("-")) hunk.removed.push(ln.slice(1))
         else if (ln.startsWith("+")) hunk.added.push(ln.slice(1))
-        // Ignore stray blank lines.
         i++
       }
       hunks.push(hunk)
-      // Tolerate "*** End of File" marker appearing between hunks or at end.
       if (lines[i] === "*** End of File") i++
     }
     files.push({
@@ -1130,10 +989,8 @@ function buildUnifiedDiff(
     const fromCount = h.context.length + h.removed.length
     const toCount = h.context.length + h.added.length
     out.push(`@@ -1,${fromCount} +1,${toCount} @@`)
-    // Reconstruct the hunk body in the order the lines appeared. We don't
-    // preserve original interleaving exactly (V4A doesn't expose it cleanly
-    // for our parser shape), but for display purposes this is fine: context
-    // first, then removed, then added.
+    // Reconstruct: context first, then removed, then added. Original
+    // interleaving inside a hunk isn't preserved; for *display* this is fine.
     for (const c of h.context) out.push(` ${c}`)
     for (const r of h.removed) out.push(`-${r}`)
     for (const a of h.added) out.push(`+${a}`)
@@ -1142,15 +999,13 @@ function buildUnifiedDiff(
 }
 ```
 
-Note: the parser tracks `context`/`removed`/`added` separately rather than preserving the original line ordering inside each hunk. For *display* this is acceptable — `<PatchDiff>` rebuilds a side-by-side or unified view from the unified-diff syntax and the visual result is functionally equivalent. If, in practice, this produces visibly off diffs (a real concern for hunks that interleave context-removed-context-added), revisit by preserving order; the test fixtures will catch it.
-
 - [ ] **Step 4: Record snapshots and run tests**
 
 Run: `bun test src/transcript/codex/v4a.test.ts -u` once to capture inline snapshots, then `bun test src/transcript/codex/v4a.test.ts` to verify.
 
 Expected: 10 pass, 0 fail. Manually inspect the recorded `unifiedDiff` snapshots — they should look like reasonable unified diffs.
 
-If any recorded snapshot looks visibly broken (e.g. context lines duplicated, removed lines missing), fix the parser, not the snapshot.
+If any recorded snapshot looks visibly broken, fix the parser, not the snapshot.
 
 - [ ] **Step 5: Type-check**
 
@@ -1167,23 +1022,48 @@ git commit -m "feat: V4A patch parser → unified-diff strings"
 
 ---
 
-## Task 9: Extract `UnknownTool` to a shared file
+## Task 8: Extract `ToolTitle` and `UnknownTool` to shared
 
-Currently `UnknownTool` is private to `claude/Tool.tsx`. Both Claude and Codex want to use it as a fallback. Move it to a shared location.
+`ToolTitle` is currently a private helper in `claude/Tool.tsx`. `UnknownTool` is also private. Both will be reused by Codex tool components.
 
 **Files:**
+- Modify: `src/transcript/shared.tsx` — add `ToolTitle` export
 - Create: `src/transcript/UnknownTool.tsx`
-- Modify: `src/transcript/claude/Tool.tsx`
+- Modify: `src/transcript/claude/Tool.tsx` — remove private copies, import from shared
 
-- [ ] **Step 1: Create the shared component**
+- [ ] **Step 1: Add `ToolTitle` to `shared.tsx`**
 
-Create `src/transcript/UnknownTool.tsx`:
+Open `src/transcript/shared.tsx`. Add this export at the bottom of the file (after `hasOutput`):
 
 ```tsx
-import { Terminal } from "@phosphor-icons/react"
+export function ToolTitle({
+  name,
+  detail,
+}: {
+  name: string
+  detail?: ReactNode
+}) {
+  return (
+    <>
+      <strong className="tool-title-name">{name}</strong>
+      {detail != null && (
+        <>
+          (
+          <span>{detail}</span>
+          )
+        </>
+      )}
+    </>
+  )
+}
+```
+
+- [ ] **Step 2: Create `src/transcript/UnknownTool.tsx`**
+
+```tsx
 import type { ToolResult } from "../types"
 import { ToolCard } from "./ToolCard"
-import { Header, Field, Output, Extras, hasOutput } from "./shared"
+import { Header, Field, Output, Extras, ToolTitle, hasOutput } from "./shared"
 
 export function UnknownTool({
   name,
@@ -1197,10 +1077,10 @@ export function UnknownTool({
   const keys = Object.keys(input)
   const hasContent = keys.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Terminal} color="tool-muted">
-          Ran {name}
+        <Header>
+          <ToolTitle name={name} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1226,15 +1106,45 @@ export function UnknownTool({
 }
 ```
 
-- [ ] **Step 2: Replace the private `UnknownTool` in `claude/Tool.tsx` with an import**
+- [ ] **Step 3: Remove the private `ToolTitle` and `UnknownTool` from `claude/Tool.tsx` and import the shared versions**
 
-Open `src/transcript/claude/Tool.tsx`. Delete the private `function UnknownTool(...)` definition (around lines 563–599). Add an import at the top:
+Open `src/transcript/claude/Tool.tsx`.
+
+a) Delete the private `function ToolTitle({...}) { ... }` definition (lines ~41–60 — the helper between the imports and `Bash`).
+
+b) Delete the private `function UnknownTool({...}) { ... }` definition (lines ~580–616 — the section labelled `// MCP / unknown — we don't have a typed shape, so render raw fields.`).
+
+c) Update the imports at the top of the file. Change the import block:
 
 ```tsx
+import {
+  assertExhaustive,
+  Header,
+  Field,
+  Output,
+  Extras,
+  hasOutput,
+  type CardProps,
+} from "../shared"
+```
+
+to:
+
+```tsx
+import {
+  assertExhaustive,
+  Header,
+  Field,
+  Output,
+  Extras,
+  ToolTitle,
+  hasOutput,
+  type CardProps,
+} from "../shared"
 import { UnknownTool } from "../UnknownTool"
 ```
 
-Update the call site (line ~613):
+d) Update the dispatcher's call site. Currently:
 
 ```tsx
 if (!isKnownToolUse(use)) {
@@ -1242,7 +1152,7 @@ if (!isKnownToolUse(use)) {
 }
 ```
 
-The shared component takes `{name, input, output}` — adjust the call site:
+The shared component takes `{name, input, output}`. Change to:
 
 ```tsx
 if (!isKnownToolUse(use)) {
@@ -1250,30 +1160,32 @@ if (!isKnownToolUse(use)) {
 }
 ```
 
-- [ ] **Step 3: Type-check**
+- [ ] **Step 4: Type-check**
 
 Run: `bun run check`
 
 Expected: no errors.
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 5: Run tests**
 
 Run: `bun test`
 
-Expected: green.
+Expected: all green.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/transcript/UnknownTool.tsx src/transcript/claude/Tool.tsx
-git commit -m "refactor: extract UnknownTool into shared file for cross-format reuse"
+git add src/transcript/shared.tsx src/transcript/UnknownTool.tsx src/transcript/claude/Tool.tsx
+git commit -m "refactor: extract ToolTitle and UnknownTool to shared for cross-format reuse"
 ```
 
 ---
 
-## Task 10: Codex Tool dispatcher + shell-family components
+## Task 9: Codex Tool dispatcher + shell-family components
 
-Build the Codex tool dispatcher and the three shell-family components (`ShellCommand`, `ExecCommand`, `Shell`). Apply-patch comes in Task 11.
+Build the Codex tool dispatcher and the three shell-family components (`ShellCommand`, `ExecCommand`, `Shell`). `apply_patch` comes in Task 10.
+
+Codex tool components follow the Claude pattern: `<ToolCard.Root status=...>` → `<ToolCard.Trigger>` with `<Header><ToolTitle name=... detail=... /></Header>` → `<ToolCard.Content>` with the command in `<pre>`, other args as `<Field>`, then `<Output>`.
 
 **Files:**
 - Create: `src/transcript/codex/Tool.tsx`
@@ -1284,33 +1196,24 @@ Create `src/transcript/codex/Tool.tsx`:
 
 ```tsx
 import type { ReactNode } from "react"
-import { Terminal } from "@phosphor-icons/react"
-import { ToolCard } from "../ToolCard"
-import { Header, Field, Output, hasOutput } from "../shared"
-import { UnknownTool } from "../UnknownTool"
 import type { ToolResult } from "../../types"
-import type {
-  CodexToolOutput,
-} from "./types"
+import { ToolCard } from "../ToolCard"
+import { Header, Field, Output, ToolTitle, hasOutput } from "../shared"
+import { UnknownTool } from "../UnknownTool"
 
-// Output adapter — Codex's `function_call_output.output` is a single string;
-// we wrap it into the `ToolResult` shape that <Output> already knows how to
-// render. Exit code is extracted for header decoration when present.
-export function codexOutputToToolResult(out: CodexToolOutput): ToolResult {
-  return { text: out.raw, images: [], toolRefs: [] }
-}
-
+// Helper: extract exit code from a Codex shell-tool output. Used to derive
+// `isError` for the tool result and (optionally) for header decoration.
 export function extractExitCode(raw: string): number | null {
   const m = /^Exit code: (\d+)/m.exec(raw)
   return m ? Number(m[1]) : null
 }
 
 // ---------------------------------------------------------------------------
-// Per-tool components
+// Shell-family components
 // ---------------------------------------------------------------------------
 
 type ShellCommandInput = {
-  command: string
+  command?: string
   workdir?: string
   timeout_ms?: number
   login?: boolean
@@ -1328,10 +1231,10 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
   if (justification) fields.push(["justification", justification])
   const hasContent = !!command || fields.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Terminal} color="tool-muted">
-          <span className="tool-label-mono">{command || "shell_command"}</span>
+        <Header>
+          <ToolTitle name="shell_command" detail={command} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1348,7 +1251,7 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
 }
 
 type ExecCommandInput = {
-  cmd: string
+  cmd?: string
   workdir?: string
   tty?: boolean
   yield_time_ms?: number
@@ -1379,10 +1282,10 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
   if (justification) fields.push(["justification", justification])
   const hasContent = !!cmd || fields.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Terminal} color="tool-muted">
-          <span className="tool-label-mono">{cmd || "exec_command"}</span>
+        <Header>
+          <ToolTitle name="exec_command" detail={cmd} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1399,7 +1302,7 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
 }
 
 type ShellInput = {
-  command: string[]
+  command?: string[]
   workdir?: string
   timeout_ms?: number
   with_escalated_permissions?: boolean
@@ -1416,10 +1319,10 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
   if (justification) fields.push(["justification", justification])
   const hasContent = !!joined || fields.length > 0 || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Terminal} color="tool-muted">
-          <span className="tool-label-mono">{joined || "shell"}</span>
+        <Header>
+          <ToolTitle name="shell" detail={joined} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1436,7 +1339,7 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
 }
 
 // ---------------------------------------------------------------------------
-// Dispatcher — Tasks 11–13 will add more cases.
+// Dispatchers — Tasks 10–12 will add more cases.
 // ---------------------------------------------------------------------------
 
 export function CodexFunctionCall({
@@ -1453,8 +1356,6 @@ export function CodexFunctionCall({
     const v = JSON.parse(argumentsJson)
     if (v && typeof v === "object") parsed = v as Record<string, unknown>
   } catch {
-    // arguments wasn't valid JSON — fall through to UnknownTool which will
-    // render the raw arguments string as a single field.
     parsed = { _raw: argumentsJson }
   }
 
@@ -1479,7 +1380,7 @@ export function CodexCustomToolCall({
   input: string
   output: ToolResult
 }) {
-  // Task 11 will add ApplyPatch handling. For now, fall through.
+  // Task 10 will add ApplyPatch handling. For now, fall through.
   return <UnknownTool name={name} input={{ _raw: input }} output={output} />
 }
 ```
@@ -1499,45 +1400,45 @@ git commit -m "feat: Codex Tool dispatcher with shell-family components"
 
 ---
 
-## Task 11: ApplyPatch component
+## Task 10: ApplyPatch component
 
 Wire V4A parser to `<PatchDiff>`. Replace the placeholder `CodexCustomToolCall` body in `Tool.tsx`.
 
 **Files:**
 - Create: `src/transcript/codex/ApplyPatch.tsx`
 - Modify: `src/transcript/codex/Tool.tsx`
+- Modify: `src/styles.css`
 
 - [ ] **Step 1: Create the component**
 
 Create `src/transcript/codex/ApplyPatch.tsx`:
 
 ```tsx
-import { GitDiff } from "@phosphor-icons/react"
 import { PatchDiff } from "@pierre/diffs/react"
 import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
-import { Header, Field, hasOutput } from "../shared"
+import { Header, Field, ToolTitle } from "../shared"
 import { parseV4A } from "./v4a"
 
 export function ApplyPatch({ patch, output }: { patch: string; output: ToolResult }) {
   const parsed = parseV4A(patch)
   const fileCount = "files" in parsed ? parsed.files.length : 0
-  const headerLabel =
+  const detail =
     fileCount === 0
-      ? "Applied patch"
+      ? undefined
       : fileCount === 1
-        ? `Applied patch to ${shortFile(parsed.files[0].path)}`
-        : `Applied patch (${fileCount} files)`
+        ? shortFile(parsed.files[0].path)
+        : `${fileCount} files`
 
-  // Try to extract the apply_patch metadata that the harness emits as a
-  // JSON-wrapped object: {"output": "...", "metadata": {"exit_code", ...}}.
-  // Fall back to plain output text.
+  // Output may be JSON-wrapped: {"output":"...","metadata":{"exit_code", "duration_seconds"}}.
   const meta = tryParsePatchOutput(output.text)
 
   return (
-    <ToolCard.Root hasContent={true}>
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={GitDiff} color="tool-amber">{headerLabel}</Header>
+        <Header>
+          <ToolTitle name="apply_patch" detail={detail} />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
         {"error" in parsed ? (
@@ -1563,7 +1464,6 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
                     patch={f.unifiedDiff}
                     options={{
                       diffStyle: "unified",
-                      disableFileHeader: false,
                       diffIndicators: "classic",
                     }}
                     disableWorkerPool
@@ -1614,13 +1514,15 @@ function tryParsePatchOutput(raw: string): {
 
 - [ ] **Step 2: Wire ApplyPatch into the dispatcher**
 
-Open `src/transcript/codex/Tool.tsx`. Replace the `CodexCustomToolCall` function body:
+Open `src/transcript/codex/Tool.tsx`. Add the import near the top:
 
 ```tsx
 import { ApplyPatch } from "./ApplyPatch"
+```
 
-// ...
+Replace the `CodexCustomToolCall` body:
 
+```tsx
 export function CodexCustomToolCall({
   name,
   input,
@@ -1639,7 +1541,7 @@ export function CodexCustomToolCall({
 }
 ```
 
-- [ ] **Step 3: Add CSS for the apply-patch container**
+- [ ] **Step 3: Add CSS**
 
 Append to `src/styles.css`:
 
@@ -1664,7 +1566,7 @@ Append to `src/styles.css`:
 
 Run: `bun run check`
 
-Expected: no errors. (If `PatchDiff`'s `options` type complains about `disableFileHeader`, drop that option — `PatchDiff` may set its own header from the `--- a/x` / `+++ b/x` lines.)
+Expected: no errors. If `PatchDiff`'s `options` type complains about a field, drop the offending field — the renderer's defaults are fine.
 
 - [ ] **Step 5: Commit**
 
@@ -1675,43 +1577,41 @@ git commit -m "feat: ApplyPatch component (V4A → PatchDiff per file)"
 
 ---
 
-## Task 12: UpdatePlan, ViewImage, WebSearchCall components
+## Task 11: UpdatePlan, ViewImage, WebSearchCall components
 
-These three are smaller and share the per-tool component template. Add them to `codex/Tool.tsx`.
+`UpdatePlan` and `ViewImage` are dispatched through `CodexFunctionCall`. `WebSearchCall` is dispatched at the `response_item.payload.type` level (Task 13's EntryView), not the function-call dispatcher — but defining it here keeps all Codex tool-component code in one file.
 
 **Files:**
 - Modify: `src/transcript/codex/Tool.tsx`
-- Modify: `src/transcript/codex/ApplyPatch.tsx` (move `shortFile` helper out, optional)
+- Modify: `src/styles.css`
 
-Note: `WebSearchCall` is rendered from `EntryView` (Task 14), not the function-call dispatcher. Define and export it here so `EntryView` can import it.
+- [ ] **Step 1: Add the components**
 
-- [ ] **Step 1: Add the components and dispatcher cases**
-
-Open `src/transcript/codex/Tool.tsx`. Add imports near the top:
+Open `src/transcript/codex/Tool.tsx`. Add the import for `ImageBlock`:
 
 ```tsx
-import { Circle, ImageSquare, MagnifyingGlass } from "@phosphor-icons/react"
 import { ImageBlock } from "../ImageBlock"
 ```
 
-Add these components after the shell-family ones (before the dispatcher):
+Add these components after the shell-family ones (before the dispatchers):
 
 ```tsx
 type UpdatePlanInput = {
   explanation?: string
-  plan: { step: string; status: "pending" | "in_progress" | "completed" }[]
+  plan?: { step: string; status: "pending" | "in_progress" | "completed" }[]
 }
 
 function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolResult }) {
   const { explanation, plan } = input
   const hasContent = !!explanation || (plan && plan.length > 0) || hasOutput(output)
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Circle} color="tool-amber">Updated plan</Header>
+        <Header>
+          <ToolTitle name="update_plan" detail={explanation} />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
-        {explanation && <p className="plan-explanation">{explanation}</p>}
         {plan && plan.length > 0 && (
           <ul className="todo-list">
             {plan.map((p, i) => (
@@ -1728,20 +1628,19 @@ function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolRes
   )
 }
 
-type ViewImageInput = { path: string }
+type ViewImageInput = { path?: string }
 
 function ViewImage({ input, output }: { input: ViewImageInput; output: ToolResult }) {
   const { path } = input
   const basename = path ? path.split("/").pop() : ""
-  // The output text may be a JSON array containing
-  // [{"type":"input_image","image_url":"data:..."}]. If so, render the image
-  // inline. Otherwise render the raw output text.
+  // Output may contain [{"type":"input_image","image_url":"data:..."}].
+  // If so, render the image inline. Otherwise render the raw output.
   const embeddedImage = tryParseEmbeddedImage(output.text)
   return (
-    <ToolCard.Root hasContent={true}>
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={ImageSquare} color="tool-violet">
-          Viewed image{basename ? ` ${basename}` : ""}
+        <Header>
+          <ToolTitle name="view_image" detail={basename} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1792,10 +1691,10 @@ export function WebSearchCall({ query, queries, status }: WebSearchCallProps) {
     : []
   const hasContent = extra.length > 0 || !!status
   return (
-    <ToolCard.Root hasContent={hasContent}>
+    <ToolCard.Root hasContent={hasContent} status="success">
       <ToolCard.Trigger>
-        <Header icon={MagnifyingGlass} color="tool-green">
-          Web search{query ? `: ${query}` : ""}
+        <Header>
+          <ToolTitle name="web_search" detail={query} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1817,7 +1716,7 @@ export function WebSearchCall({ query, queries, status }: WebSearchCallProps) {
 }
 ```
 
-Update the `CodexFunctionCall` switch:
+- [ ] **Step 2: Update the `CodexFunctionCall` switch**
 
 ```tsx
 case "shell_command":
@@ -1834,18 +1733,6 @@ default:
   return <UnknownTool name={name} input={parsed} output={output} />
 ```
 
-- [ ] **Step 2: Add CSS for the plan explanation**
-
-Append to `src/styles.css`:
-
-```css
-.plan-explanation {
-  font-size: var(--fs-sm);
-  color: var(--muted);
-  margin: 0 0 8px;
-}
-```
-
 - [ ] **Step 3: Type-check**
 
 Run: `bun run check`
@@ -1855,26 +1742,20 @@ Expected: no errors.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/transcript/codex/Tool.tsx src/styles.css
+git add src/transcript/codex/Tool.tsx
 git commit -m "feat: UpdatePlan, ViewImage, WebSearchCall components"
 ```
 
 ---
 
-## Task 13: SpawnAgent, WaitAgent components
+## Task 12: SpawnAgent, WaitAgent components
 
 **Files:**
 - Modify: `src/transcript/codex/Tool.tsx`
 
 - [ ] **Step 1: Add components**
 
-Open `src/transcript/codex/Tool.tsx`. Add an import:
-
-```tsx
-import { Robot, Hourglass } from "@phosphor-icons/react"
-```
-
-Add the components alongside the others:
+Open `src/transcript/codex/Tool.tsx`. Add these components alongside the others:
 
 ```tsx
 type SpawnAgentInput = {
@@ -1897,10 +1778,10 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
   if (meta.nickname) fields.push(["nickname", meta.nickname])
   if (meta.agentId) fields.push(["agent_id", meta.agentId])
   return (
-    <ToolCard.Root hasContent={true}>
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Robot} color="tool-violet">
-          Spawned agent{agent_type ? ` (${agent_type})` : ""}
+        <Header>
+          <ToolTitle name="spawn_agent" detail={agent_type} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -1936,9 +1817,11 @@ function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResul
   if (targets && targets.length > 0) fields.push(["targets", targets.join(", ")])
   if (timeout_ms != null) fields.push(["timeout_ms", `${timeout_ms}`])
   return (
-    <ToolCard.Root hasContent={true}>
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header icon={Hourglass} color="tool-violet">Waited for agent</Header>
+        <Header>
+          <ToolTitle name="wait_agent" />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
         {fields.length > 0 && (
@@ -1953,7 +1836,7 @@ function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResul
 }
 ```
 
-Update the `CodexFunctionCall` switch with the new cases:
+- [ ] **Step 2: Update the `CodexFunctionCall` switch**
 
 ```tsx
 case "spawn_agent":
@@ -1962,13 +1845,13 @@ case "wait_agent":
   return <WaitAgent input={parsed as WaitAgentInput} output={output} />
 ```
 
-- [ ] **Step 2: Type-check**
+- [ ] **Step 3: Type-check**
 
 Run: `bun run check`
 
 Expected: no errors.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/transcript/codex/Tool.tsx
@@ -1977,7 +1860,7 @@ git commit -m "feat: SpawnAgent, WaitAgent components"
 
 ---
 
-## Task 14: Codex EntryView + SessionHeader + CompactedMarker
+## Task 13: Codex EntryView + SessionHeader + CompactedMarker
 
 **Files:**
 - Create: `src/transcript/codex/EntryView.tsx`
@@ -2047,7 +1930,7 @@ import { ImageBlock } from "../ImageBlock"
 import { CodexFunctionCall, CodexCustomToolCall, WebSearchCall } from "./Tool"
 import type { ToolResult } from "../../types"
 
-const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [] }
+const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [], isError: false }
 
 type Props = {
   entry: CodexResponseItem
@@ -2107,8 +1990,7 @@ export function EntryView({ entry, results }: Props) {
       )
 
     case "ghost_snapshot":
-      // Not rendered in v1 — see spec §13 (ghost snapshots have only commit
-      // SHAs, no payload to display without local repo access).
+      // Not rendered in v1 — see spec §13.
       return null
 
     default: {
@@ -2128,10 +2010,6 @@ function MessageText({ role, text }: { role: "user" | "assistant"; text: string 
   )
 }
 ```
-
-The `_exhaustive: never` line catches unknown payload subtypes at compile time. If a new payload type lands in the `CodexResponseItemPayload` union without a `case`, the build fails — which is what we want.
-
-Note: the existing Claude path uses `<TextBlock>` for the same purpose. We don't reuse it because it's tightly coupled to Claude `Block`s; a small dedicated `MessageText` keeps both paths honest. The styling uses the existing message/role CSS classes.
 
 - [ ] **Step 4: Add CSS**
 
@@ -2192,12 +2070,6 @@ Append to `src/styles.css`:
   word-break: break-word;
   margin: 0;
 }
-.message-user {
-  color: var(--text);
-}
-.message-assistant {
-  color: var(--text);
-}
 ```
 
 - [ ] **Step 5: Type-check**
@@ -2215,9 +2087,11 @@ git commit -m "feat: Codex EntryView, SessionHeader, CompactedMarker"
 
 ---
 
-## Task 15: `CodexTranscript` top-level + App routing
+## Task 14: `CodexTranscript` top-level + App routing
 
-Tie it all together. Build the top-level Codex renderer and route to it from `App.tsx` based on classification.
+Tie it together. The pre-pass derives `isError` from output text — it's true when:
+- `function_call_output.output` matches `/^Exit code: ([1-9]\d*)/m`, OR
+- `custom_tool_call_output.output` is JSON-wrapped with `metadata.exit_code != 0`
 
 **Files:**
 - Create: `src/transcript/codex/CodexTranscript.tsx`
@@ -2234,15 +2108,44 @@ import { EntryView } from "./EntryView"
 import { SessionHeader } from "./SessionHeader"
 import { CompactedMarker } from "./CompactedMarker"
 
+function deriveIsError(output: string, kind: "function" | "custom"): boolean {
+  if (!output) return false
+  if (kind === "function") {
+    const m = /^Exit code: (\d+)/m.exec(output)
+    if (m && Number(m[1]) !== 0) return true
+    return false
+  }
+  // custom_tool_call_output: try to parse JSON-wrapped metadata.
+  if (output.startsWith("{")) {
+    try {
+      const v = JSON.parse(output) as { metadata?: unknown }
+      const meta = v.metadata && typeof v.metadata === "object" ? (v.metadata as Record<string, unknown>) : null
+      if (meta && typeof meta.exit_code === "number" && meta.exit_code !== 0) return true
+    } catch { /* not json — fall through */ }
+  }
+  return false
+}
+
 export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
-  // Pre-pass: index tool outputs (function_call_output / custom_tool_call_output)
-  // by call_id, mirroring Claude's tool_use_id pairing.
+  // Pre-pass: index tool outputs by call_id with derived isError.
   const results = new Map<string, ToolResult>()
   for (const entry of entries) {
     if (entry.type !== "response_item") continue
     const p = entry.payload
-    if (p.type === "function_call_output" || p.type === "custom_tool_call_output") {
-      results.set(p.call_id, { text: p.output, images: [], toolRefs: [] })
+    if (p.type === "function_call_output") {
+      results.set(p.call_id, {
+        text: p.output,
+        images: [],
+        toolRefs: [],
+        isError: deriveIsError(p.output, "function"),
+      })
+    } else if (p.type === "custom_tool_call_output") {
+      results.set(p.call_id, {
+        text: p.output,
+        images: [],
+        toolRefs: [],
+        isError: deriveIsError(p.output, "custom"),
+      })
     }
   }
 
@@ -2266,7 +2169,7 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
 
 - [ ] **Step 2: Wire routing into `App.tsx`**
 
-Open `src/App.tsx`. Replace the imports near the top:
+Open `src/App.tsx`. Replace the parse/transcript imports near the top:
 
 ```tsx
 import { parseJsonl } from "./transcript/claude/parse"
@@ -2285,13 +2188,7 @@ import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import type { CodexEntry } from "./transcript/codex/types"
 ```
 
-Update the entries state. Currently:
-
-```tsx
-const [entries, setEntries] = useState<Entry[] | null>(null)
-```
-
-Change to:
+Replace the `entries` state with a discriminated session:
 
 ```tsx
 type LoadedSession =
@@ -2300,7 +2197,7 @@ type LoadedSession =
 const [session, setSession] = useState<LoadedSession | null>(null)
 ```
 
-Replace the `loadText` body so it classifies first:
+Replace the body of `loadText` with:
 
 ```tsx
 function loadText(text: string, name: string, persist = true) {
@@ -2317,16 +2214,11 @@ function loadText(text: string, name: string, persist = true) {
   if (format === "codex") {
     setSession({ format: "codex", entries: parseCodexEntries(allLines) })
   } else if (format === "claude") {
-    // parseJsonl re-parses the text; this is fine for now (small overhead).
-    // A future change can let parseClaudeEntries take iterated lines like
-    // parseCodexEntries does.
+    // parseJsonl re-parses the text; small overhead, fine for now.
     const r = parseJsonl(text)
     setSession({ format: "claude", entries: r.entries })
   } else {
     setSession(null)
-    setSkipped(skippedCount)
-    setFileName(name)
-    return
   }
   setFileName(name)
   setSkipped(skippedCount)
@@ -2344,30 +2236,27 @@ function loadText(text: string, name: string, persist = true) {
 }
 ```
 
-Replace `entries` references in `reset`, `useEffect`, and the JSX to use `session`. Specifically:
+Update remaining `entries` references in the file:
 
-- `setEntries(null)` → `setSession(null)`
-- The two existing `if (entries)` and `{!entries && (...)}` JSX checks → use `if (session)` / `{!session && (...)}` accordingly
-- The render call `{entries && <Transcript entries={entries} />}` becomes:
+- `setEntries(null)` (in `reset`) → `setSession(null)`
+- `{entries ? (` (around line 115) → `{session ? (`
+- `{!entries && (` (around line 143) → `{!session && (`
+- `{entries && <Transcript entries={entries} />}` (around line 182) → see below
+
+Replace the render call:
 
 ```tsx
 {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
 {session && session.format === "claude" && <ClaudeCodeTranscript entries={session.entries} />}
 ```
 
-Also update the drop-zone copy. Change:
-
-```tsx
-Drop a Claude session <code>.jsonl</code> here
-```
-
-to:
+Update the drop-zone copy:
 
 ```tsx
 Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
 ```
 
-And update the path hint below it (currently it only mentions `~/.claude/projects/...`). Add a second paragraph:
+Add a paragraph below the existing path-hint paragraph:
 
 ```tsx
 <p className="drop-zone-hint">
@@ -2380,7 +2269,7 @@ And update the path hint below it (currently it only mentions `~/.claude/project
 
 Run: `bun run check`
 
-Expected: no errors. If TS complains about `entries` references that you missed, fix them — every `entries` in the previous code maps to `session.entries` (with format narrowing) or to `session` (for null checks).
+Expected: no errors. Fix any leftover `entries` references that still refer to the deleted state.
 
 - [ ] **Step 4: Run tests**
 
@@ -2397,7 +2286,7 @@ git commit -m "feat: CodexTranscript + App.tsx classification routing"
 
 ---
 
-## Task 16: Manual browser verification
+## Task 15: Manual browser verification
 
 **Files:** none (verify-only, with potential follow-up commits if issues found)
 
@@ -2407,32 +2296,32 @@ git commit -m "feat: CodexTranscript + App.tsx classification routing"
 
 - [ ] **Step 2: Drop a real Codex log**
 
-Pick a recent file, e.g.:
+Pick a recent file:
 
 ```bash
 ls -1t ~/.codex/sessions/2026/04/*/rollout-*.jsonl | head -3
 ```
 
-In the browser, click the drop zone and select one of those files (or drag it in).
+In the browser, click the drop zone and select one (or drag it in).
 
 Verify:
 - Session header appears at the top: branch, short sha, cwd, codex version
-- User and assistant messages render with role-distinguishing styling
+- User and assistant messages render
 - Reasoning blocks render as collapsible thinking blocks
 - `apply_patch` calls show inline file diffs (not raw text)
-- `shell_command` / `exec_command` calls show the command in the trigger and full output when expanded
+- `shell_command` / `exec_command` calls show command in trigger and full output when expanded
+- Failed shell commands (Exit code != 0) render with the error status styling
 - `update_plan` calls render as a TODO-style list
-- `view_image` calls show the basename and the path; if the harness embedded an image (newer logs), the image renders inline
-- Tool icons are visible (Task 1's fix)
+- `view_image` calls show the basename and path; if the harness embedded an image, it renders inline
 - No console errors
 
 - [ ] **Step 3: Drop a Claude Code log**
 
-Drop any file from `~/.claude/projects/**/*.jsonl`. Verify the existing Claude rendering still works — no regressions from the rename or the shared-component refactor.
+Drop any file from `~/.claude/projects/**/*.jsonl`. Verify the existing Claude rendering still works — no regressions from the rename.
 
 - [ ] **Step 4: Drop a corrupted/unknown file**
 
-Quick smoke test: drag in any random text file (not JSONL). Confirm the app handles it gracefully — no crash; either shows the drop zone again with a "malformed" count or renders nothing.
+Drag in any random text file. Confirm graceful handling — no crash.
 
 - [ ] **Step 5: Run full check + tests one more time**
 
@@ -2446,7 +2335,7 @@ Expected: all green.
 
 - [ ] **Step 6: Final commit if any tweaks were needed**
 
-If verification surfaced issues (rendering bugs, console errors, missing styles), fix and commit as normal small commits.
+If verification surfaced issues, fix and commit as normal small commits.
 
 ---
 
@@ -2455,13 +2344,12 @@ If verification surfaced issues (rendering bugs, console errors, missing styles)
 When all tasks land:
 
 - jsonl.fyi auto-detects Codex vs Claude Code on file drop
-- Codex transcripts render with rich tool components (shell-family, apply_patch, update_plan, view_image, spawn/wait_agent, web_search_call)
+- Codex transcripts render with rich tool components
 - Apply-patch shows inline per-file diffs via `<PatchDiff>`
 - Session header surfaces branch / cwd / version
 - Compacted-event markers render inline
 - Existing Claude rendering is unchanged (now reachable via `<ClaudeCodeTranscript>`)
-- `bun run check` is green (a side effect of the Header fix)
-- A validation script confirms classification across all local logs
+- Validation script confirms classification across all local logs
 - Corpus stats doc captures the format conventions for future work
 
 Future follow-ups (out of scope per spec):
