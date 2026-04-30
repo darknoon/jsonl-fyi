@@ -33,3 +33,35 @@ test("TurnSeparator: with usage where cacheRead is 0 still renders the ↻ slot"
   )
   expect(html).toContain("↻ 0")
 })
+
+test("TurnSeparator: with model renders label and raw-id tooltip", () => {
+  const html = renderToStaticMarkup(
+    <TurnSeparator
+      durationMs={1000}
+      usage={null}
+      model={{ label: "Sonnet 4.6", raw: "claude-sonnet-4-6" }}
+    />,
+  )
+  expect(html).toContain("Sonnet 4.6")
+  expect(html).toContain('title="claude-sonnet-4-6"')
+})
+
+test("TurnSeparator: model + usage renders both, model after usage", () => {
+  const html = renderToStaticMarkup(
+    <TurnSeparator
+      durationMs={1000}
+      usage={{ input: 6, cacheRead: 0, output: 10 }}
+      model={{ label: "Opus 4.7", raw: "claude-opus-4-7" }}
+    />,
+  )
+  expect(html).toContain("↑ 6")
+  expect(html).toContain("Opus 4.7")
+  expect(html.indexOf("↑ 6")).toBeLessThan(html.indexOf("Opus 4.7"))
+})
+
+test("TurnSeparator: model=null renders no model label", () => {
+  const html = renderToStaticMarkup(
+    <TurnSeparator durationMs={1000} usage={null} model={null} />,
+  )
+  expect(html).not.toContain("title=")
+})
