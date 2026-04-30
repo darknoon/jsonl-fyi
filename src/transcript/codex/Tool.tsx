@@ -267,6 +267,87 @@ export function WebSearchCall({ query, queries, status }: WebSearchCallProps) {
 }
 
 // ---------------------------------------------------------------------------
+// SpawnAgent, WaitAgent components
+// ---------------------------------------------------------------------------
+
+type SpawnAgentInput = {
+  agent_type?: string
+  fork_context?: boolean
+  model?: string
+  reasoning_effort?: string
+  message?: string
+}
+
+function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolResult }) {
+  const { agent_type, fork_context, model, reasoning_effort, message } = input
+  const fields: Array<[string, ReactNode]> = []
+  if (agent_type) fields.push(["agent_type", agent_type])
+  if (model) fields.push(["model", model])
+  if (reasoning_effort) fields.push(["reasoning_effort", reasoning_effort])
+  if (fork_context != null) fields.push(["fork_context", String(fork_context)])
+  // Output is JSON: {"agent_id":"...","nickname":"..."}; surface those fields.
+  const meta = tryParseAgentSpawnOutput(output.text)
+  if (meta.nickname) fields.push(["nickname", meta.nickname])
+  if (meta.agentId) fields.push(["agent_id", meta.agentId])
+  return (
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="spawn_agent" detail={agent_type} />
+        </Header>
+      </ToolCard.Trigger>
+      <ToolCard.Content>
+        {message && <pre className="output">{message}</pre>}
+        {fields.length > 0 && (
+          <dl className="tool-fields">
+            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+          </dl>
+        )}
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
+function tryParseAgentSpawnOutput(raw: string): { nickname?: string; agentId?: string } {
+  if (!raw || !raw.startsWith("{")) return {}
+  try {
+    const v = JSON.parse(raw) as { agent_id?: unknown; nickname?: unknown }
+    return {
+      nickname: typeof v.nickname === "string" ? v.nickname : undefined,
+      agentId: typeof v.agent_id === "string" ? v.agent_id : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
+type WaitAgentInput = { targets?: string[]; timeout_ms?: number }
+
+function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResult }) {
+  const { targets, timeout_ms } = input
+  const fields: Array<[string, ReactNode]> = []
+  if (targets && targets.length > 0) fields.push(["targets", targets.join(", ")])
+  if (timeout_ms != null) fields.push(["timeout_ms", `${timeout_ms}`])
+  return (
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="wait_agent" />
+        </Header>
+      </ToolCard.Trigger>
+      <ToolCard.Content>
+        {fields.length > 0 && (
+          <dl className="tool-fields">
+            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+          </dl>
+        )}
+        <Output output={output} />
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Dispatchers
 // ---------------------------------------------------------------------------
 
@@ -298,6 +379,10 @@ export function CodexFunctionCall({
       return <UpdatePlan input={parsed as UpdatePlanInput} output={output} />
     case "view_image":
       return <ViewImage input={parsed as ViewImageInput} output={output} />
+    case "spawn_agent":
+      return <SpawnAgent input={parsed as SpawnAgentInput} output={output} />
+    case "wait_agent":
+      return <WaitAgent input={parsed as WaitAgentInput} output={output} />
     default:
       return <UnknownTool name={name} input={parsed} output={output} />
   }
