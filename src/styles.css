@@ -679,6 +679,9 @@ body,
   margin: 0 0 0.5em;
   padding-left: 1.4em;
 }
+.md-content .md-list li > p {
+  margin: 0;
+}
 
 .md-content .md-quote {
   border-left: 3px solid var(--border);
