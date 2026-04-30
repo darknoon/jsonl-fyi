@@ -78,7 +78,8 @@ test("formatChatStart: prior years include the year", () => {
 })
 
 test("buildTranscriptItems: empty input → empty list", () => {
-  expect(buildTranscriptItems([])).toEqual([])
+  expect(buildTranscriptItems([]).items).toEqual([])
+  expect(buildTranscriptItems([]).models).toEqual([])
 })
 
 test("buildTranscriptItems: prefers system.turn_duration when present", () => {
@@ -103,7 +104,7 @@ test("buildTranscriptItems: prefers system.turn_duration when present", () => {
       timestamp: "2026-04-29T20:00:05.500Z",
     },
   ]
-  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot(`
+  expect(summarize(buildTranscriptItems(entries).items)).toMatchInlineSnapshot(`
     "header  2026-04-29T20:00:00Z
     entry   u1
     entry   a1
@@ -127,7 +128,7 @@ test("buildTranscriptItems: assistant turn with no turn_duration row has no sepa
       message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
     },
   ]
-  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot(`
+  expect(summarize(buildTranscriptItems(entries).items)).toMatchInlineSnapshot(`
     "header  2026-04-29T20:00:00Z
     entry   u1
     entry   a1"
@@ -144,7 +145,7 @@ test("buildTranscriptItems: in-progress turn has no separator", () => {
     },
     // no assistant entry yet
   ]
-  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot(`
+  expect(summarize(buildTranscriptItems(entries).items)).toMatchInlineSnapshot(`
     "header  2026-04-29T20:00:00Z
     entry   u1"
   `)
@@ -179,7 +180,7 @@ test("buildTranscriptItems: ignores sidechain entries", () => {
       timestamp: "2026-04-29T20:00:05.500Z",
     },
   ]
-  expect(summarize(buildTranscriptItems(entries))).toMatchInlineSnapshot(`
+  expect(summarize(buildTranscriptItems(entries).items)).toMatchInlineSnapshot(`
     "header  2026-04-29T20:00:00Z
     entry   u1
     entry   a1
@@ -210,7 +211,7 @@ test("buildTranscriptItems: attaches usage from the duration-anchor assistant ro
       parentUuid: "a1",
     } as Entry,
   ]
-  const items = buildTranscriptItems(entries)
+  const { items } = buildTranscriptItems(entries)
   const sep = items.find((i) => i.kind === "separator")
   expect(sep).toBeDefined()
   if (sep?.kind !== "separator") throw new Error("expected separator")
@@ -228,8 +229,100 @@ test("buildTranscriptItems: separator usage is null when assistant entry has no 
       parentUuid: "a1",
     } as Entry,
   ]
-  const items = buildTranscriptItems(entries)
+  const { items } = buildTranscriptItems(entries)
   const sep = items.find((i) => i.kind === "separator")
   if (sep?.kind !== "separator") throw new Error("expected separator")
   expect(sep.usage).toBeNull()
+})
+
+test("buildTranscriptItems: returns models list and items", () => {
+  const entries: Entry[] = [
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: { role: "assistant", content: [], model: "claude-opus-4-7" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 100, parentUuid: "a1" } as Entry,
+  ]
+  const { items, models } = buildTranscriptItems(entries)
+  expect(items.find((i) => i.kind === "separator")).toBeDefined()
+  expect(models).toEqual([{ label: "Opus 4.7", raw: "claude-opus-4-7" }])
+})
+
+test("buildTranscriptItems: single-model session — separator carries no model", () => {
+  const entries: Entry[] = [
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: { role: "assistant", content: [], model: "claude-opus-4-7" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 100, parentUuid: "a1" } as Entry,
+  ]
+  const { items } = buildTranscriptItems(entries)
+  const sep = items.find((i) => i.kind === "separator")
+  if (sep?.kind !== "separator") throw new Error("expected separator")
+  expect(sep.model).toBeNull()
+})
+
+test("buildTranscriptItems: multi-model session — every separator carries its turn's model", () => {
+  const entries: Entry[] = [
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: { role: "assistant", content: [], model: "claude-opus-4-7" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 100, parentUuid: "a1" } as Entry,
+    {
+      type: "assistant",
+      uuid: "a2",
+      message: { role: "assistant", content: [], model: "claude-sonnet-4-6" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 200, parentUuid: "a2" } as Entry,
+    {
+      type: "assistant",
+      uuid: "a3",
+      message: { role: "assistant", content: [], model: "claude-opus-4-7" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 300, parentUuid: "a3" } as Entry,
+  ]
+  const { items, models } = buildTranscriptItems(entries)
+  expect(models).toEqual([
+    { label: "Opus 4.7", raw: "claude-opus-4-7" },
+    { label: "Sonnet 4.6", raw: "claude-sonnet-4-6" },
+  ])
+  const seps = items.filter((i) => i.kind === "separator")
+  expect(seps).toHaveLength(3)
+  expect(seps[0].kind === "separator" && seps[0].model?.raw).toBe("claude-opus-4-7")
+  expect(seps[1].kind === "separator" && seps[1].model?.raw).toBe("claude-sonnet-4-6")
+  expect(seps[2].kind === "separator" && seps[2].model?.raw).toBe("claude-opus-4-7")
+})
+
+test("buildTranscriptItems: synthetic model rows excluded from discovery and per-turn labels", () => {
+  const entries: Entry[] = [
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: { role: "assistant", content: [], model: "claude-opus-4-7" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 100, parentUuid: "a1" } as Entry,
+    {
+      type: "assistant",
+      uuid: "syn",
+      message: { role: "assistant", content: [], model: "<synthetic>" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 50, parentUuid: "syn" } as Entry,
+    {
+      type: "assistant",
+      uuid: "a2",
+      message: { role: "assistant", content: [], model: "claude-sonnet-4-6" },
+    },
+    { type: "system", subtype: "turn_duration", durationMs: 100, parentUuid: "a2" } as Entry,
+  ]
+  const { items, models } = buildTranscriptItems(entries)
+  expect(models.map((m) => m.raw)).toEqual(["claude-opus-4-7", "claude-sonnet-4-6"])
+  const synSep = items.find(
+    (i) => i.kind === "separator" && i.afterUuid === "syn",
+  )
+  if (synSep?.kind !== "separator") throw new Error("expected synthetic separator")
+  expect(synSep.model).toBeNull()
 })

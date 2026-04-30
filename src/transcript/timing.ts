@@ -1,5 +1,6 @@
 import type { Entry, MessageEntry, TurnDurationEntry } from "../types"
 import { extractClaudeTurnUsage, type TurnUsage } from "./usage"
+import { formatClaudeModel, isSyntheticClaudeModel, type ModelDisplay } from "./model"
 
 export type FormatChatStartOptions = {
   now?: Date
@@ -57,13 +58,18 @@ export type RenderItem =
       afterUuid: string
       durationMs: number
       usage: TurnUsage | null
+      model: ModelDisplay | null
     }
 
-export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
-  if (entries.length === 0) return []
+export type BuildResult = {
+  items: RenderItem[]
+  models: ModelDisplay[]
+}
 
-  // Pass 1: index turn durations from system rows by the assistant uuid they
-  // reference (parentUuid).
+export function buildTranscriptItems(entries: Entry[]): BuildResult {
+  if (entries.length === 0) return { items: [], models: [] }
+
+  // Pass 1: index turn durations from system rows.
   const durations = new Map<string, number>()
   for (const entry of entries) {
     if (entry.type === "system" && entry.subtype === "turn_duration") {
@@ -74,8 +80,21 @@ export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
     }
   }
 
-  // Pass 2: emit items in source order, with header at the top and a separator
-  // after each assistant entry whose uuid has a duration.
+  // Pass 2: discovery walk — collect distinct non-synthetic models in order.
+  const seen = new Set<string>()
+  const models: ModelDisplay[] = []
+  for (const entry of entries) {
+    if (entry.type !== "assistant") continue
+    if (entry.isSidechain) continue
+    const raw = entry.message?.model
+    if (!raw || isSyntheticClaudeModel(raw)) continue
+    if (seen.has(raw)) continue
+    seen.add(raw)
+    models.push(formatClaudeModel(raw))
+  }
+  const multiModel = models.length >= 2
+
+  // Pass 3: emit items.
   const items: RenderItem[] = []
   const startTimestamp = entries.find((e) => e.timestamp)?.timestamp
   if (startTimestamp) {
@@ -90,17 +109,21 @@ export function buildTranscriptItems(entries: Entry[]): RenderItem[] {
     if (entry.type === "assistant" && entry.uuid) {
       const ms = durations.get(entry.uuid)
       if (ms != null) {
+        const raw = entry.message?.model
+        const model =
+          multiModel && raw && !isSyntheticClaudeModel(raw) ? formatClaudeModel(raw) : null
         items.push({
           kind: "separator",
           afterUuid: entry.uuid,
           durationMs: ms,
           usage: extractClaudeTurnUsage(entry),
+          model,
         })
       }
     }
   }
 
-  return items
+  return { items, models }
 }
 
 function calendarDayDelta(date: Date, now: Date, timeZone?: string): number {

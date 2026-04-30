@@ -74,13 +74,19 @@ export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
     }
   }
 
-  const items = buildTranscriptItems(entries)
+  const { items, models } = buildTranscriptItems(entries)
   return (
     <div className="transcript">
       {items.map((item, idx) => {
         switch (item.kind) {
           case "header":
-            return <TranscriptHeader key={`hdr-${idx}`} startTimestamp={item.chatStartIso} />
+            return (
+              <TranscriptHeader
+                key={`hdr-${idx}`}
+                startTimestamp={item.chatStartIso}
+                models={models}
+              />
+            )
           case "separator":
             return (
               <TurnSeparator
@@ -88,6 +94,7 @@ export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
                 durationMs={item.durationMs}
                 usage={item.usage}
                 verb={pickVerb(item.afterUuid)}
+                model={item.model}
               />
             )
           case "entry":
