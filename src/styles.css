@@ -11,6 +11,14 @@
   --bullet-gap: 8px;
   --bullet-neutral: var(--muted);
 
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-pill: 999px;
+
   --fs-base: 16px;
   --fs-sm: 13.5px;
   /* Relative size for inline monospaced text — compensates for the optical
@@ -67,7 +75,7 @@ body,
 
 .drop-zone {
   border: 2px dashed var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   padding: 96px 16px;
   min-height: 320px;
   display: flex;
@@ -91,7 +99,7 @@ body,
   display: block;
   padding: 14px 16px;
   background: var(--card);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-weight: 500;
   color: var(--fg);
   cursor: pointer;
@@ -118,7 +126,7 @@ body,
   margin-top: 8px;
   padding: 10px 12px;
   background: var(--code-bg);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-family: ui-monospace, monospace;
   font-size: var(--fs-sm);
 }
@@ -142,7 +150,7 @@ body,
   height: 28px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   color: var(--muted);
   cursor: pointer;
 }
@@ -154,19 +162,20 @@ body,
   font-family: ui-monospace, monospace;
   background: var(--code-bg);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
-.drop-zone:hover {
-  border-color: var(--fg);
-  background: var(--card);
+.drop-zone.drop-error {
+  border-color: #e02b2b;
+  color: #e02b2b;
+  cursor: not-allowed;
 }
 
 .drop-zone code {
   font-family: ui-monospace, monospace;
   background: var(--code-bg);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .user-bubble {
@@ -174,7 +183,7 @@ body,
   max-width: 75%;
   background: var(--user-bubble);
   padding: 10px 14px;
-  border-radius: 16px;
+  border-radius: var(--radius-2xl);
   white-space: pre-wrap;
   margin: 8px 0;
 }
@@ -249,8 +258,7 @@ body,
 .image-block img {
   max-width: 100%;
   max-height: 320px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: block;
 }
 
@@ -264,7 +272,7 @@ body,
   column-gap: var(--bullet-gap);
   align-items: start;
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   width: 100%;
   text-align: left;
   background: none;
@@ -357,8 +365,7 @@ body,
 .output {
   font-size: var(--fs-sm);
   background: var(--code-bg);
-  border: 1px solid var(--code-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
   margin: 0;
   max-height: 480px;
@@ -377,8 +384,7 @@ body,
 .edit-diff {
   display: block;
   font-size: var(--fs-sm);
-  border: 1px solid var(--code-border);
-  border-radius: 4px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   max-height: 480px;
 }
@@ -428,8 +434,8 @@ body,
   min-width: 0;
   height: 34px;
   padding: 0 12px 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  border: none;
+  border-radius: var(--radius-pill);
   background: var(--card);
   color: var(--fg);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
@@ -462,8 +468,7 @@ body,
   max-width: min(52vw, 420px);
   height: 34px;
   padding: 0 7px 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--card);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   color: var(--muted);
@@ -503,12 +508,11 @@ body,
   justify-self: end;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--border);
+  border: none;
   background: var(--card);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
 .settings-btn:hover {
-  border-color: var(--muted);
   background: var(--border);
 }
 .drop-zone-sub {
@@ -555,7 +559,7 @@ body,
   padding: 14px 16px;
   background: var(--card);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -699,7 +703,7 @@ body,
 
 .md-content .md-code-inline {
   background: var(--code-bg);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   padding: 0 0.25em;
   font-size: var(--fs-mono);
   color: var(--muted);
@@ -707,7 +711,7 @@ body,
 
 .md-content .md-code-block {
   background: var(--code-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 0.5em 0.75em;
   margin: 0 0 0.5em;
   overflow-x: auto;
@@ -742,10 +746,10 @@ body,
 /* ---------- Settings popover ---------- */
 
 .settings-popover {
-  border: 1px solid var(--border);
+  border: none;
   background: var(--card);
   color: var(--fg);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 0.5em 0.75em;
   margin: 0;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
