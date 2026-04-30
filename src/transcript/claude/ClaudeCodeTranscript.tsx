@@ -6,6 +6,23 @@ import { TurnSeparator } from "../TurnSeparator"
 import { buildTranscriptItems } from "../timing"
 import { EntryView } from "./EntryView"
 
+const TURN_VERBS = [
+  "Baked",
+  "Brewed",
+  "Churned",
+  "Cogitated",
+  "Cooked",
+  "Crunched",
+  "Sautéed",
+  "Worked",
+] as const
+
+function pickVerb(seed: string): string {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
+  return TURN_VERBS[h % TURN_VERBS.length]
+}
+
 const EMPTY_RESULT: ToolResult = {
   text: "",
   images: [],
@@ -70,6 +87,7 @@ export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
                 key={`sep-${item.afterUuid}`}
                 durationMs={item.durationMs}
                 usage={item.usage}
+                verb={pickVerb(item.afterUuid)}
               />
             )
           case "entry":

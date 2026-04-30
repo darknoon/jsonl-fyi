@@ -651,9 +651,11 @@ body,
   align-items: baseline;
   gap: var(--bullet-gap);
   font-size: var(--fs-sm);
+  font-weight: 500;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   padding: 4px 6px;
+  margin-bottom: 16px;
 }
 .turn-separator-marker {
   flex: 0 0 var(--bullet-size);
@@ -666,7 +668,7 @@ body,
   line-height: 1;
 }
 .turn-separator-label {
-  font-weight: 600;
+  font-weight: 500;
 }
 .turn-separator-usage {
   display: inline-flex;
