@@ -552,8 +552,7 @@ body,
 }
 .example-row {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   width: 100%;
   padding: 14px 16px;
@@ -569,7 +568,21 @@ body,
 .example-row:hover {
   background: var(--border);
 }
+.file-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.file-icon-claude {
+  color: #d8c19a;
+}
+.file-icon-codex {
+  color: #5b6068;
+}
 .example-row-title {
+  flex: 1;
+  min-width: 0;
   font-weight: 500;
   color: var(--fg);
 }

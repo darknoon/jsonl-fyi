@@ -9,6 +9,7 @@ import {
 const stub: Example = {
   name: "demo",
   fileName: "demo.jsonl",
+  format: "claude",
   turns: 0,
   sizeBytes: 0,
   load: async () => "",
@@ -32,7 +33,7 @@ test("findExampleByPath returns the first bundled example by its filename", () =
   const real = findExampleByPath(
     "/examples/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
   )
-  expect(real?.name).toBe("app header redesign")
+  expect(real?.name).toBe("Centering the filename in the header")
 })
 
 test("findExampleByPath ignores non-example and unknown example routes", () => {

@@ -19,6 +19,7 @@ import codexSampleUrl from "./__fixtures__/codex-sample.jsonl" with { type: "fil
 export type Example = {
   name: string
   fileName: string
+  format: "claude" | "codex"
   turns: number
   sizeBytes: number
   load: () => Promise<string>
@@ -32,15 +33,17 @@ async function fetchText(url: string): Promise<string> {
 
 export const EXAMPLES: Example[] = [
   {
-    name: "app header redesign",
+    name: "Centering the filename in the header",
     fileName: "0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
+    format: "claude",
     turns: 8,
     sizeBytes: 437659,
     load: () => fetchText(sampleUrl as string),
   },
   {
-    name: "codex: app header redesign",
+    name: "Implementing the header alignment fixes",
     fileName: "rollout-2026-04-29T21-53-05-019ddc16-f5f2-7940-8892-8495d619b213.jsonl",
+    format: "codex",
     turns: 20,
     sizeBytes: 776298,
     load: () => fetchText(codexSampleUrl as string),
