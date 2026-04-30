@@ -413,11 +413,31 @@ body,
   position: sticky;
   top: 0;
   z-index: 10;
+  isolation: isolate;
+}
+.app-header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: -24px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--bg) 0%,
+    color-mix(in srgb, var(--bg) 92%, transparent) 25%,
+    color-mix(in srgb, var(--bg) 75%, transparent) 50%,
+    color-mix(in srgb, var(--bg) 40%, transparent) 75%,
+    color-mix(in srgb, var(--bg) 0%, transparent) 100%
+  );
 }
 .app-header-inner {
   max-width: 880px;
   margin: 0 auto;
   padding: 10px 16px;
+  min-height: 54px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;

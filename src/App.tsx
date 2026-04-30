@@ -243,12 +243,26 @@ export function App() {
                 {dropError ? (
                   <>
                     {dropError}
-                    <div className="drop-zone-sub">Drop a different file or click to choose</div>
+                    <div className="drop-zone-sub">
+                      Drop a different file or
+                      <div className="drop-zone-button-row">
+                        <span className="drop-zone-button" tabIndex={-1} aria-hidden="true">
+                          Choose a File…
+                        </span>
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>
                     Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
-                    <div className="drop-zone-sub">or click to choose a file</div>
+                    <div className="drop-zone-sub">
+                      or
+                      <div className="drop-zone-button-row">
+                        <span className="drop-zone-button" tabIndex={-1} aria-hidden="true">
+                          Choose a File…
+                        </span>
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
