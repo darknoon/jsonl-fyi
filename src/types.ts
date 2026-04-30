@@ -41,6 +41,7 @@ export type MessageEntry = {
     role?: string
     content?: Block[] | string
     usage?: ClaudeUsage
+    model?: string
   }
 }
 
