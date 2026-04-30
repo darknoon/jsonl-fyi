@@ -9,7 +9,7 @@ Drop a Codex `rollout-*.jsonl` file onto jsonl-fyi and get a transcript that ren
 
 ## Out of scope (v1)
 
-- Per-turn model chip (deferred — TODO entry already exists for "Show model used")
+- Surfacing model info in the UI at all (a TODO exists for "Show model used", but the per-turn-chip approach is explicitly not the chosen treatment — design TBD)
 - Token-usage display (Codex `event_msg.token_count` is null in observed sessions)
 - Ghost-snapshot diff summary (Codex emits commit SHAs only; rendering would require local repo access)
 - Compaction-recovery message rendering — `compacted` events render as a thin "Conversation compacted" inline marker; we don't try to surface the replacement summary or hidden history
@@ -238,7 +238,7 @@ Codex pairs by `call_id` (parallel to Claude's `tool_use_id`). One pre-pass over
 
 ## Open follow-ups (post-v1)
 
-- Per-turn model chip (TODO already filed)
+- Model-info display (TODO filed; treatment not yet decided)
 - Token usage display
 - Markdown rendering of assistant text (TODO already filed; benefits Claude side too)
 - Linked sub-agent transcript navigation
