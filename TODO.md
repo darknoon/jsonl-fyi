@@ -14,3 +14,4 @@
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
 - [ ] Syntax-highlight Write tool calls?
 - [ ] Some way of sharing / upload to cdn from cli? or curl / skill?
+- [ ] Search / highlight matches
