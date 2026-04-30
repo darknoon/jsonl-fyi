@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "check": "tsgo --noEmit && oxlint --type-aware"
+    "check": "tsgo --noEmit && oxlint --type-aware",
+    "check:format": "oxfmt --check"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",
@@ -26,6 +27,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20251024.1",
     "@vitejs/plugin-react": "^6.0.1",
     "agentation": "^3.0.2",
+    "oxfmt": "^0.47.0",
     "oxlint": "^1.0.0",
     "oxlint-tsgolint": "^0.22.1",
     "remark-parse": "^11.0.0",

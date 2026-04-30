@@ -24,7 +24,12 @@ Format, appended to the existing separator:
 ✓ 1.2s ↑6 ↻29.0k ↓165
 ```
 
-- `↑` input (fresh, non-cached)
+- `↑` input the model freshly processed this turn — for Claude this is
+  `input_tokens + cache_creation_input_tokens` (i.e. tokens read for the first
+  time, regardless of whether they were also written to cache); for Codex it
+  is `last_token_usage.input_tokens − cached_input_tokens`. Excluding
+  cache-creation makes ↑ collapse to ~1 on every turn after the first, which
+  is accurate but useless inline.
 - `↻` cache-read input
 - `↓` output
 

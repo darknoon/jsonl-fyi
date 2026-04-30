@@ -600,35 +600,30 @@ body,
 }
 
 .turn-separator {
-  display: grid;
-  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
-  column-gap: var(--bullet-gap);
-  align-items: start;
+  display: flex;
+  align-items: baseline;
+  gap: var(--bullet-gap);
   font-size: var(--fs-sm);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   padding: 4px 6px;
 }
 .turn-separator-marker {
+  flex: 0 0 var(--bullet-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--bullet-size);
-  justify-self: start;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
-  margin-top: 0.22em;
 }
 .turn-separator-label {
-  min-width: 0;
   font-weight: 600;
 }
 .turn-separator-usage {
   display: inline-flex;
   gap: 0.5em;
-  margin-left: 0.5em;
   font-variant-numeric: tabular-nums;
 }
 

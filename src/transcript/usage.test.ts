@@ -49,7 +49,10 @@ function claudeAssistant(usage: Record<string, number> | undefined): MessageEntr
   }
 }
 
-test("extractClaudeTurnUsage: pulls input/output/cache_read", () => {
+test("extractClaudeTurnUsage: input sums input_tokens + cache_creation_input_tokens", () => {
+  // Cache-creation tokens are tokens the model freshly processed this turn
+  // (and stored for later reuse). Bucketing them with input_tokens keeps the
+  // ↑ arrow meaningful — otherwise every cache-write turn shows ↑1.
   const entry = claudeAssistant({
     input_tokens: 6,
     cache_creation_input_tokens: 28960,
@@ -57,9 +60,23 @@ test("extractClaudeTurnUsage: pulls input/output/cache_read", () => {
     output_tokens: 165,
   })
   expect(extractClaudeTurnUsage(entry)).toEqual({
-    input: 6,
+    input: 28966,
     output: 165,
     cacheRead: 0,
+  })
+})
+
+test("extractClaudeTurnUsage: cache-read goes to its own slot, not into input", () => {
+  const entry = claudeAssistant({
+    input_tokens: 1,
+    cache_creation_input_tokens: 525,
+    cache_read_input_tokens: 29267,
+    output_tokens: 96,
+  })
+  expect(extractClaudeTurnUsage(entry)).toEqual({
+    input: 526,
+    output: 96,
+    cacheRead: 29267,
   })
 })
 
