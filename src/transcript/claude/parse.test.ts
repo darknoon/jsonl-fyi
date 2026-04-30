@@ -3,7 +3,7 @@ import { parseJsonl } from "./parse"
 
 test("parseJsonl filters and counts entries from the real fixture", async () => {
   const text = await Bun.file(
-    new URL("./__fixtures__/sample.jsonl", import.meta.url),
+    new URL("../../__fixtures__/sample.jsonl", import.meta.url),
   ).text()
   const { entries, skipped } = parseJsonl(text)
 

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
-import { parseJsonl } from "./parse"
+import { parseJsonl } from "./transcript/claude/parse"
 import type { Entry } from "./types"
-import { Transcript } from "./transcript/claude/Transcript"
+import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
 import { Examples } from "./ExamplesSection"
 import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
@@ -179,7 +179,7 @@ export function App() {
         </>
       )}
 
-      {entries && <Transcript entries={entries} />}
+      {entries && <ClaudeCodeTranscript entries={entries} />}
       <footer className="app-footer">
         <LockIcon size={14} weight="bold" />
         Your data is processed locally in the browser

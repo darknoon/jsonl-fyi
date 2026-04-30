@@ -1,4 +1,4 @@
-import type { Entry } from "./types"
+import type { Entry } from "../../types"
 
 const SKIP_TYPES = new Set([
   "file-history-snapshot",

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { parseJsonl } from "../../parse"
+import { parseJsonl } from "./parse"
 import { extractResult, getBlocks } from "./extractResult"
 
 test("extractResult on every tool_result in the fixture", async () => {

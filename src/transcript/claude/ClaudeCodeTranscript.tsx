@@ -13,7 +13,7 @@ const EMPTY_RESULT: ToolResult = {
   isError: false,
 }
 
-export function Transcript({ entries }: { entries: Entry[] }) {
+export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
   // Pass 1: index tool results by their tool_use_id.
   const results = new Map<string, ToolResult>()
   for (const entry of entries) {
