@@ -80,3 +80,15 @@ test("formatCodexModel: empty effort omitted", () => {
 test("formatCodexModel: non-matching id falls back to raw", () => {
   expect(formatCodexModel("o1-pro")).toEqual({ label: "o1-pro", raw: "o1-pro" })
 })
+
+import { isSyntheticClaudeModel } from "./model"
+
+test("isSyntheticClaudeModel: matches the literal <synthetic> token", () => {
+  expect(isSyntheticClaudeModel("<synthetic>")).toBe(true)
+})
+
+test("isSyntheticClaudeModel: real ids return false", () => {
+  expect(isSyntheticClaudeModel("claude-opus-4-7")).toBe(false)
+  expect(isSyntheticClaudeModel("")).toBe(false)
+  expect(isSyntheticClaudeModel("synthetic")).toBe(false)
+})

@@ -34,3 +34,7 @@ export function formatCodexModel(raw: string, effort?: string): ModelDisplay {
   const label = effort ? `${base}/${effort}` : base
   return { label, raw }
 }
+
+export function isSyntheticClaudeModel(raw: string): boolean {
+  return raw === "<synthetic>"
+}
