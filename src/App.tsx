@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { parseJsonl } from "./transcript/claude/parse"
 import type { Entry } from "./types"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
-import { GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
+import { ArrowLeftIcon, GearIcon, LockIcon, XIcon } from "@phosphor-icons/react"
 import { Examples } from "./ExamplesSection"
 import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
 import type { Example } from "./examples"
@@ -111,7 +111,19 @@ export function App() {
     <>
       <header className="app-header">
         <div className="app-header-inner">
-          <h1>jsonl.fyi</h1>
+          {entries ? (
+            <button
+              className="title-pill"
+              onClick={() => reset(true)}
+              aria-label="Back to file picker"
+              title="Back to file picker"
+            >
+              <ArrowLeftIcon className="title-pill-icon" size={16} weight="bold" />
+              <span>jsonl.fyi</span>
+            </button>
+          ) : (
+            <h1 className="title-logo">jsonl.fyi</h1>
+          )}
           {entries ? (
             <div className="filename-group">
               <span className="filename">{fileName}</span>
