@@ -42,3 +42,21 @@ test("safe link gets target=_blank rel", () => {
   expect(html).toContain('target="_blank"')
   expect(html).toContain('rel="noreferrer noopener"')
 })
+
+test("inline mode: heading and list render as literal source", () => {
+  const html = render(<Markdown source="# Heading\n- one\n- two" inline />)
+  expect(html).not.toMatch(/<h1/)
+  expect(html).not.toMatch(/<ul/)
+  expect(html).toContain("# Heading")
+  expect(html).toContain("- one")
+})
+
+test("inline mode: emphasis and inline code still render", () => {
+  const html = render(<Markdown source="**b** and `c`" inline />)
+  expect(html).toMatch(/<strong>b<\/strong>/)
+  expect(html).toMatch(/<code [^>]*>c<\/code>/)
+})
+
+test("inline mode snapshot of fixture", () => {
+  expect(render(<Markdown source={FIXTURE} inline />)).toMatchSnapshot()
+})

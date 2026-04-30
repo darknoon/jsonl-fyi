@@ -1,6 +1,7 @@
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { remarkKeepDisallowed } from "./remarkKeepDisallowed"
+import { remarkInlineOnly } from "./remarkInlineOnly"
 import { useSettings } from "../settings"
 
 const COMPONENTS: Components = {
@@ -60,13 +61,23 @@ export function Markdown({
     )
   }
 
-  // Inline mode handled in Task 4. For now both modes use the same render.
+  const plugins = inline
+    ? [remarkGfm, remarkKeepDisallowed, remarkInlineOnly]
+    : [remarkGfm, remarkKeepDisallowed]
+
+  if (inline) {
+    return (
+      <span className="md-content md-inline">
+        <ReactMarkdown remarkPlugins={plugins} components={COMPONENTS}>
+          {source}
+        </ReactMarkdown>
+      </span>
+    )
+  }
+
   return (
     <div className="md-content">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkKeepDisallowed]}
-        components={COMPONENTS}
-      >
+      <ReactMarkdown remarkPlugins={plugins} components={COMPONENTS}>
         {source}
       </ReactMarkdown>
     </div>

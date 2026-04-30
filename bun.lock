@@ -7,6 +7,8 @@
       "dependencies": {
         "@phosphor-icons/react": "^2.1.7",
         "@pierre/diffs": "^1.1.19",
+        "mdast-util-gfm": "^3.1.0",
+        "mdast-util-to-markdown": "^2.1.2",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "react-markdown": "^9",

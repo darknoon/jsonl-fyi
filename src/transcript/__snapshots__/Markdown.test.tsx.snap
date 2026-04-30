@@ -26,3 +26,24 @@ exports[`block mode renders fixture 1`] = `
 <p>A <a href="https://example.com" class="md-link" target="_blank" rel="noreferrer noopener">safe link</a>, an ![image](https://ex.com/i.png), a [bad link](javascript:alert(1)), and some &lt;b&gt;raw HTML&lt;/b&gt;.</p>
 <table class="md-table"><thead><tr><th>col a</th><th>col b</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table></div>"
 `;
+
+exports[`inline mode snapshot of fixture 1`] = `
+"<span class="md-content md-inline"><p>A paragraph with <strong>strong</strong>, <em>emphasis</em>, <del>strike</del>, and <code class="md-code-inline">inline code</code>.</p>
+# H1
+## H2
+* item one
+* item two
+* nested
+* [x] done task
+* [ ] pending task
+1. first
+2. second
+&gt; a quote
+\`\`\`ts
+const x: number = 1
+\`\`\`
+<p>A <a href="https://example.com" class="md-link" target="_blank" rel="noreferrer noopener">safe link</a>, an ![image](https://ex.com/i.png), a [bad link](javascript:alert(1)), and some &lt;b&gt;raw HTML&lt;/b&gt;.</p>
+| col a | col b |
+| ----- | ----- |
+| 1     | 2     |</span>"
+`;
