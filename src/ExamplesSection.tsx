@@ -1,4 +1,4 @@
-import { EXAMPLES, exampleHref, exampleStats, formatBytes } from "./examples"
+import { EXAMPLES, exampleHref, formatBytes } from "./examples"
 import type { Example } from "./examples"
 
 type Props = {
@@ -11,26 +11,23 @@ export function Examples({ onSelect }: Props) {
     <section className="examples">
       <h2 className="examples-header">Examples</h2>
       <ul className="examples-list">
-        {EXAMPLES.map(example => {
-          const { turns, sizeBytes } = exampleStats(example.content)
-          return (
-            <li key={example.fileName}>
-              <a
-                href={exampleHref(example)}
-                className="example-row"
-                onClick={event => {
-                  event.preventDefault()
-                  onSelect(example)
-                }}
-              >
-                <span className="example-row-title">{example.name}</span>
-                <span className="example-row-meta">
-                  {turns} turns • {formatBytes(sizeBytes)}
-                </span>
-              </a>
-            </li>
-          )
-        })}
+        {EXAMPLES.map(example => (
+          <li key={example.fileName}>
+            <a
+              href={exampleHref(example)}
+              className="example-row"
+              onClick={event => {
+                event.preventDefault()
+                onSelect(example)
+              }}
+            >
+              <span className="example-row-title">{example.name}</span>
+              <span className="example-row-meta">
+                {example.turns} turns • {formatBytes(example.sizeBytes)}
+              </span>
+            </a>
+          </li>
+        ))}
       </ul>
     </section>
   )

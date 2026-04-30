@@ -90,18 +90,19 @@ export function App() {
     }
   }
 
-  function loadExample(example: Example, updateHistory = true) {
+  async function loadExample(example: Example, updateHistory = true) {
     if (updateHistory) {
       window.history.pushState(null, "", exampleHref(example))
     }
-    loadText(example.content, example.fileName, false)
+    const text = await example.load()
+    loadText(text, example.fileName, false)
   }
 
   useEffect(() => {
-    function loadCurrentLocation(restoreSession: boolean) {
+    async function loadCurrentLocation(restoreSession: boolean) {
       const routeExample = findExampleByPath(window.location.pathname)
       if (routeExample) {
-        loadExample(routeExample, false)
+        await loadExample(routeExample, false)
         return
       }
 
@@ -113,7 +114,8 @@ export function App() {
       const params = new URLSearchParams(window.location.search)
       if (params.has("demo") && EXAMPLES.length > 0) {
         const first = EXAMPLES[0]
-        loadText(first.content, first.fileName, false)
+        const text = await first.load()
+        loadText(text, first.fileName, false)
         return
       }
       try {
@@ -127,8 +129,8 @@ export function App() {
       }
     }
 
-    loadCurrentLocation(true)
-    const handlePopState = () => loadCurrentLocation(false)
+    void loadCurrentLocation(true)
+    const handlePopState = () => { void loadCurrentLocation(false) }
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
   }, [])
