@@ -84,3 +84,63 @@ test("extractClaudeTurnUsage: returns null for user entries", () => {
   }
   expect(extractClaudeTurnUsage(entry)).toBeNull()
 })
+
+import { extractCodexTurnUsage } from "./usage"
+import type { CodexEventMsgTokenCount } from "./codex/types"
+
+function tokenCountEvent(last: Record<string, number>): CodexEventMsgTokenCount {
+  return {
+    type: "event_msg",
+    payload: {
+      type: "token_count",
+      info: {
+        last_token_usage: last,
+        total_token_usage: last,
+      },
+    },
+  }
+}
+
+test("extractCodexTurnUsage: maps last_token_usage", () => {
+  const ev = tokenCountEvent({
+    input_tokens: 18872,
+    cached_input_tokens: 6528,
+    output_tokens: 158,
+  })
+  expect(extractCodexTurnUsage(ev)).toEqual({
+    input: 18872 - 6528, // fresh-only input — matches Claude semantics
+    output: 158,
+    cacheRead: 6528,
+  })
+})
+
+test("extractCodexTurnUsage: tolerates missing fields", () => {
+  const ev: CodexEventMsgTokenCount = {
+    type: "event_msg",
+    payload: { type: "token_count", info: null },
+  }
+  expect(extractCodexTurnUsage(ev)).toBeNull()
+})
+
+test("extractCodexTurnUsage: zero cache means input passes through unchanged", () => {
+  const ev = tokenCountEvent({
+    input_tokens: 100,
+    cached_input_tokens: 0,
+    output_tokens: 50,
+  })
+  expect(extractCodexTurnUsage(ev)).toEqual({
+    input: 100,
+    output: 50,
+    cacheRead: 0,
+  })
+})
+
+test("extractCodexTurnUsage: never returns negative input if cached > input (defensive)", () => {
+  const ev = tokenCountEvent({
+    input_tokens: 5,
+    cached_input_tokens: 10,
+    output_tokens: 1,
+  })
+  const u = extractCodexTurnUsage(ev)
+  expect(u?.input).toBe(0)
+})

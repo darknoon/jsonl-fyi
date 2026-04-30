@@ -5,6 +5,8 @@ import { EntryView } from "./EntryView"
 import { CompactedMarker } from "./CompactedMarker"
 import { TurnSeparator } from "../TurnSeparator"
 import { TranscriptHeader } from "../TranscriptHeader"
+import { extractCodexTurnUsage } from "../usage"
+import type { TurnUsage } from "../usage"
 
 // Codex doesn't emit a `turn_duration` row like Claude. Derive per-turn
 // duration from response_item timestamps: a turn runs from a user-authored
@@ -96,6 +98,31 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
 
   const durations = buildCodexTurnDurations(entries)
 
+  // Map per-turn usage to the index of the entry where the separator renders.
+  // Strategy: for each separator end-index, the next `event_msg` of subtype
+  // `token_count` at or after that index carries this turn's `last_token_usage`.
+  // If no such event exists (truncated file), the entry stays usage-less.
+  function buildCodexTurnUsage(
+    _entries: CodexEntry[],
+    separatorIndices: Iterable<number>,
+  ): Map<number, TurnUsage> {
+    const out = new Map<number, TurnUsage>()
+    for (const sepIdx of separatorIndices) {
+      for (let i = sepIdx; i < _entries.length; i++) {
+        const e = _entries[i]
+        if (e.type !== "event_msg") continue
+        const usage = extractCodexTurnUsage(e)
+        if (usage) {
+          out.set(sepIdx, usage)
+          break
+        }
+      }
+    }
+    return out
+  }
+
+  const usages = buildCodexTurnUsage(entries, durations.keys())
+
   return (
     <div className="transcript">
       {startTimestamp && <TranscriptHeader startTimestamp={startTimestamp} />}
@@ -111,7 +138,9 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
         return (
           <React.Fragment key={`row-${i}`}>
             {node}
-            {ms != null && <TurnSeparator durationMs={ms} />}
+            {ms != null && (
+              <TurnSeparator durationMs={ms} usage={usages.get(i) ?? null} />
+            )}
           </React.Fragment>
         )
       })}

@@ -1,4 +1,5 @@
 import type { MessageEntry } from "../types"
+import type { CodexEventMsgTokenCount } from "./codex/types"
 
 export type TurnUsage = {
   input: number
@@ -14,6 +15,21 @@ export function extractClaudeTurnUsage(entry: MessageEntry): TurnUsage | null {
     input: u.input_tokens ?? 0,
     output: u.output_tokens ?? 0,
     cacheRead: u.cache_read_input_tokens ?? 0,
+  }
+}
+
+export function extractCodexTurnUsage(
+  ev: CodexEventMsgTokenCount,
+): TurnUsage | null {
+  const last = ev.payload.info?.last_token_usage
+  if (!last) return null
+  const totalIn = last.input_tokens ?? 0
+  const cached = last.cached_input_tokens ?? 0
+  const fresh = Math.max(0, totalIn - cached)
+  return {
+    input: fresh,
+    output: last.output_tokens ?? 0,
+    cacheRead: cached,
   }
 }
 
