@@ -1,8 +1,20 @@
-// Examples are loaded asynchronously so the JSONL fixture text isn't shipped
-// in the initial JS bundle. Each example carries pre-computed `turns` and
-// `sizeBytes` so the row can render before the content is fetched. Bun
-// code-splits each dynamic `import(..., { with: { type: "text" } })` into its
-// own chunk, which the browser fetches only after the user clicks the row.
+// Examples load asynchronously so JSONL fixture text isn't shipped in the
+// initial JS bundle. Each `import ... with { type: "file" }` makes Bun copy
+// the fixture into the build output as a static asset and replaces the
+// import with the asset's URL string. The asset is fetched only when the
+// user clicks the row.
+//
+// We previously used `import(..., { with: { type: "text" } })` which works
+// in dev but emits a native dynamic import in production — browsers don't
+// support `type: "text"` natively, so the live site failed with
+// `TypeError: "text" is not a valid module type`.
+
+// eslint-disable-next-line
+// @ts-ignore — Bun handles `with { type: "file" }` at bundle time
+import sampleUrl from "./__fixtures__/sample.jsonl" with { type: "file" }
+// eslint-disable-next-line
+// @ts-ignore — Bun handles `with { type: "file" }` at bundle time
+import codexSampleUrl from "./__fixtures__/codex-sample.jsonl" with { type: "file" }
 
 export type Example = {
   name: string
@@ -12,9 +24,10 @@ export type Example = {
   load: () => Promise<string>
 }
 
-async function loadText(promise: Promise<{ default: string }>): Promise<string> {
-  const mod = await promise
-  return mod.default
+async function fetchText(url: string): Promise<string> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to load example: ${res.status}`)
+  return res.text()
 }
 
 export const EXAMPLES: Example[] = [
@@ -23,24 +36,14 @@ export const EXAMPLES: Example[] = [
     fileName: "0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
     turns: 8,
     sizeBytes: 437659,
-    load: () =>
-      loadText(
-        // eslint-disable-next-line
-        // @ts-ignore — Bun handles dynamic `with { type: "text" }` at bundle time
-        import("./__fixtures__/sample.jsonl", { with: { type: "text" } }),
-      ),
+    load: () => fetchText(sampleUrl as string),
   },
   {
     name: "codex: app header redesign",
     fileName: "rollout-2026-04-29T21-53-05-019ddc16-f5f2-7940-8892-8495d619b213.jsonl",
     turns: 20,
     sizeBytes: 776298,
-    load: () =>
-      loadText(
-        // eslint-disable-next-line
-        // @ts-ignore — Bun handles dynamic `with { type: "text" }` at bundle time
-        import("./__fixtures__/codex-sample.jsonl", { with: { type: "text" } }),
-      ),
+    load: () => fetchText(codexSampleUrl as string),
   },
 ]
 
