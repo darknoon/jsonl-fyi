@@ -46,10 +46,20 @@ body,
   line-height: 1.5;
 }
 
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 .app {
   max-width: 880px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .drop-zone {
@@ -64,10 +74,78 @@ body,
   color: var(--muted);
   cursor: pointer;
   margin-top: 32px;
+  flex: 1;
 }
 .drop-zone-hint {
   margin: 24px 0 0;
   color: var(--muted);
+}
+.drop-zone-defined {
+  margin-top: 24px;
+  color: var(--muted);
+}
+.drop-zone-defined > summary {
+  display: block;
+  padding: 14px 16px;
+  background: var(--card);
+  border-radius: 8px;
+  font-weight: 500;
+  color: var(--fg);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.drop-zone-defined > summary::-webkit-details-marker {
+  display: none;
+}
+.drop-zone-defined > summary:hover {
+  background: var(--border);
+}
+.drop-zone-defined[open] > summary {
+  margin-bottom: 8px;
+}
+.drop-zone-defined .drop-zone-hint {
+  margin-top: 12px;
+}
+
+.terminal-cmd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: var(--fs-sm);
+}
+.terminal-cmd-prompt {
+  color: var(--muted);
+  user-select: none;
+}
+.terminal-cmd-text {
+  flex: 1;
+  color: var(--fg);
+  background: transparent;
+  padding: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+.terminal-cmd-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.terminal-cmd-copy:hover {
+  background: var(--border);
+  color: var(--fg);
 }
 .drop-zone-hint code {
   font-family: ui-monospace, monospace;
@@ -562,4 +640,121 @@ body,
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
+}
+
+/* ---------- Markdown content ---------- */
+
+.md-content {
+  /* Inherit text color/size from parent (assistant-text, tool body, etc.) */
+}
+
+.md-content > :first-child {
+  margin-top: 0;
+}
+.md-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* Headings: semantic tags only — no size or extra margin. */
+.md-content h1,
+.md-content h2,
+.md-content h3,
+.md-content h4,
+.md-content h5,
+.md-content h6 {
+  font-size: inherit;
+  font-weight: bold;
+  margin: 0;
+  line-height: inherit;
+}
+
+.md-content p {
+  margin: 0 0 0.5em;
+}
+.md-content p:last-child {
+  margin-bottom: 0;
+}
+
+.md-content .md-list {
+  margin: 0 0 0.5em;
+  padding-left: 1.4em;
+}
+
+.md-content .md-quote {
+  border-left: 3px solid var(--border);
+  margin: 0 0 0.5em;
+  padding: 0 0.8em;
+  color: var(--muted);
+}
+
+.md-content .md-code-inline {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  padding: 0 0.25em;
+  font-size: 0.95em;
+}
+
+.md-content .md-code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 0.5em 0.75em;
+  margin: 0 0 0.5em;
+  overflow-x: auto;
+}
+.md-content .md-code-block .md-code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.md-content .md-link {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.md-content .md-table {
+  border-collapse: collapse;
+  margin: 0 0 0.5em;
+}
+.md-content .md-table th,
+.md-content .md-table td {
+  border: 1px solid var(--border);
+  padding: 0.25em 0.5em;
+}
+
+/* Inline mode: unwrap react-markdown's default <p> wrapper so flow is preserved. */
+.md-inline > p {
+  display: inline;
+  margin: 0;
+}
+
+/* ---------- Settings popover ---------- */
+
+.settings-popover {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  border-radius: 6px;
+  padding: 0.5em 0.75em;
+  margin: 0;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  /* Anchor positioning where supported; fallback uses default popover placement. */
+  position-anchor: --settings-anchor;
+  top: anchor(bottom);
+  right: anchor(right);
+  inset-area: bottom span-left;
+}
+
+.settings-btn {
+  anchor-name: --settings-anchor;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  cursor: pointer;
+  user-select: none;
 }
