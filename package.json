@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun index.html",
-    "build": "bun build ./index.html --outdir=dist --production",
+    "build": "bun build ./index.html --outdir=dist --production --public-path=/",
     "check": "tsgo --noEmit && oxlint --type-aware"
   },
   "dependencies": {
