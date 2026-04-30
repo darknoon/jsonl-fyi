@@ -3,6 +3,7 @@ import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
 import { Header, Field, Output, ToolTitle, hasOutput } from "../shared"
 import { UnknownTool } from "../UnknownTool"
+import { ImageBlock } from "../ImageBlock"
 import { ApplyPatch } from "./ApplyPatch"
 
 // Helper: extract exit code from a Codex shell-tool output. Used to derive
@@ -143,7 +144,130 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
 }
 
 // ---------------------------------------------------------------------------
-// Dispatchers — Tasks 10–12 will add more cases.
+// UpdatePlan, ViewImage, WebSearchCall components
+// ---------------------------------------------------------------------------
+
+type UpdatePlanInput = {
+  explanation?: string
+  plan?: { step: string; status: "pending" | "in_progress" | "completed" }[]
+}
+
+function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolResult }) {
+  const { explanation, plan } = input
+  const hasContent = !!explanation || (plan && plan.length > 0) || hasOutput(output)
+  return (
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="update_plan" detail={explanation} />
+        </Header>
+      </ToolCard.Trigger>
+      <ToolCard.Content>
+        {plan && plan.length > 0 && (
+          <ul className="todo-list">
+            {plan.map((p, i) => (
+              <li key={i} className={`todo todo-${p.status}`}>
+                <span className="todo-status">{p.status}</span>
+                <span>{p.step}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Output output={output} />
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
+type ViewImageInput = { path?: string }
+
+function ViewImage({ input, output }: { input: ViewImageInput; output: ToolResult }) {
+  const { path } = input
+  const basename = path ? path.split("/").pop() : ""
+  // Output may contain [{"type":"input_image","image_url":"data:..."}].
+  // If so, render the image inline. Otherwise render the raw output.
+  const embeddedImage = tryParseEmbeddedImage(output.text)
+  return (
+    <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="view_image" detail={basename} />
+        </Header>
+      </ToolCard.Trigger>
+      <ToolCard.Content>
+        {path && (
+          <dl className="tool-fields">
+            <Field name="path" value={path} />
+          </dl>
+        )}
+        {embeddedImage ? (
+          <ImageBlock source={embeddedImage} />
+        ) : (
+          <Output output={output} />
+        )}
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
+function tryParseEmbeddedImage(
+  raw: string,
+): { type: "url"; url: string } | null {
+  if (!raw || !raw.startsWith("[")) return null
+  try {
+    const arr = JSON.parse(raw) as unknown
+    if (!Array.isArray(arr)) return null
+    for (const item of arr) {
+      if (
+        item && typeof item === "object" &&
+        (item as { type?: unknown }).type === "input_image" &&
+        typeof (item as { image_url?: unknown }).image_url === "string"
+      ) {
+        return { type: "url", url: (item as { image_url: string }).image_url }
+      }
+    }
+  } catch { /* not json — fall through */ }
+  return null
+}
+
+type WebSearchCallProps = {
+  query?: string
+  queries?: string[]
+  status?: string
+}
+
+export function WebSearchCall({ query, queries, status }: WebSearchCallProps) {
+  const extra = queries && queries.length > 1
+    ? queries.filter(q => q !== query)
+    : []
+  const hasContent = extra.length > 0 || !!status
+  return (
+    <ToolCard.Root hasContent={hasContent} status="success">
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="web_search" detail={query} />
+        </Header>
+      </ToolCard.Trigger>
+      <ToolCard.Content>
+        {extra.length > 0 && (
+          <dl className="tool-fields">
+            {extra.map((q, i) => (
+              <Field key={i} name={`query ${i + 1}`} value={q} />
+            ))}
+          </dl>
+        )}
+        {status && (
+          <dl className="tool-fields">
+            <Field name="status" value={status} />
+          </dl>
+        )}
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Dispatchers
 // ---------------------------------------------------------------------------
 
 export function CodexFunctionCall({
@@ -170,6 +294,10 @@ export function CodexFunctionCall({
       return <ExecCommand input={parsed as ExecCommandInput} output={output} />
     case "shell":
       return <Shell input={parsed as ShellInput} output={output} />
+    case "update_plan":
+      return <UpdatePlan input={parsed as UpdatePlanInput} output={output} />
+    case "view_image":
+      return <ViewImage input={parsed as ViewImageInput} output={output} />
     default:
       return <UnknownTool name={name} input={parsed} output={output} />
   }
