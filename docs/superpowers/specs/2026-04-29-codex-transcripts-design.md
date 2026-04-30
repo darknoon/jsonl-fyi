@@ -10,7 +10,7 @@ Drop a Codex `rollout-*.jsonl` file onto jsonl-fyi and get a transcript that ren
 ## Out of scope (v1)
 
 - Surfacing model info in the UI at all (a TODO exists for "Show model used", but the per-turn-chip approach is explicitly not the chosen treatment — design TBD)
-- Token-usage display (Codex `event_msg.token_count` is null in observed sessions)
+- Token-usage display — covered by a separate cross-format spec (applies to both Codex and Claude Code)
 - Ghost-snapshot diff summary (Codex emits commit SHAs only; rendering would require local repo access)
 - Compaction-recovery message rendering — `compacted` events render as a thin "Conversation compacted" inline marker; we don't try to surface the replacement summary or hidden history
 
@@ -44,10 +44,10 @@ The top-level entry point in `App.tsx` becomes:
 const lines = [...iterJsonlLines(text)] // or stream once for classify, once for parse
 const format = classifyJsonl(lines.slice(0, 10))
 if (format === "codex") return <CodexTranscript entries={parseCodexEntries(lines)} />
-if (format === "claude") return <Transcript entries={parseClaudeEntries(lines)} />
+if (format === "claude") return <ClaudeCodeTranscript entries={parseClaudeEntries(lines)} />
 ```
 
-(Claude and Codex use parallel data-model types — see §3 — and parallel top-level transcript components that share the same building blocks.)
+The existing `<Transcript>` component (in `src/transcript/claude/Transcript.tsx`) is renamed to `<ClaudeCodeTranscript>` and its file to `ClaudeCodeTranscript.tsx`, for symmetry with `<CodexTranscript>`. (Claude and Codex use parallel data-model types — see §3 — and parallel top-level transcript components that share the same building blocks.)
 
 ### 3. Parallel types, shared rendering
 
@@ -121,28 +121,38 @@ The injected `<environment_context>` user blocks are filtered before display (te
 
 ```
 src/parse/
-  classify.ts                  # NEW — classifyJsonl
+  classify.ts                  # NEW — classifyJsonl (format-agnostic)
   classify.test.ts             # NEW
-  iter.ts                      # NEW — iterJsonlLines (generator)
-src/parse.ts                   # MODIFIED — re-export + parseClaudeEntries
+  iter.ts                      # NEW — iterJsonlLines (format-agnostic generator)
+src/parse.ts                   # DELETE — replaced; current contents are Claude-specific
 src/transcript/
+  claude/
+    parse.ts                   # NEW (moved from src/parse.ts) — parseClaudeEntries
+    parse.test.ts              # MOVED from src/parse.test.ts
+    Transcript.tsx             # RENAMED → ClaudeCodeTranscript.tsx
+    ClaudeCodeTranscript.tsx   # MODIFIED — exports ClaudeCodeTranscript
+    Tool.tsx                   # unchanged (Claude tool dispatcher already lives here)
+    EntryView.tsx              # unchanged
+    ...                        # unchanged
   codex/
     types.ts                   # NEW — CodexEntry union
-    parseCodex.ts              # NEW — line objects → CodexEntry[]
-    parseCodex.test.ts         # NEW
+    parse.ts                   # NEW — line objects → CodexEntry[]
+    parse.test.ts              # NEW
     v4a.ts                     # NEW — V4A patch parser → unified-diff strings
     v4a.test.ts                # NEW
     CodexTranscript.tsx        # NEW — top-level renderer
-    CodexEntryView.tsx         # NEW — per-entry renderer (parallel to claude/EntryView)
-    CodexTool.tsx              # NEW — dispatcher + per-tool components
+    EntryView.tsx              # NEW — per-entry renderer (parallel to claude/EntryView)
+    Tool.tsx                   # NEW — dispatcher + per-tool components (parallel to claude/Tool.tsx)
     SessionHeader.tsx          # NEW — session_meta header card
     CompactedMarker.tsx        # NEW
 src/App.tsx                    # MODIFIED — route to Codex vs Claude on classification
 scripts/
   validate-classifier.ts       # NEW
 docs/
-  codex-corpus-stats.md        # NEW — observed counts/types from local corpus
+  codex-corpus-stats.md        # already landed alongside this spec
 ```
+
+The Claude path's parser moves into `src/transcript/claude/parse.ts` to mirror Codex's location at `src/transcript/codex/parse.ts`. Top-level `src/parse.ts` is deleted; the new `src/parse/` directory holds only format-agnostic helpers (`classifyJsonl`, `iterJsonlLines`). `App.tsx` updates its imports accordingly.
 
 ### 6. Tool components
 
@@ -239,7 +249,6 @@ Codex pairs by `call_id` (parallel to Claude's `tool_use_id`). One pre-pass over
 ## Open follow-ups (post-v1)
 
 - Model-info display (TODO filed; treatment not yet decided)
-- Token usage display
 - Markdown rendering of assistant text (TODO already filed; benefits Claude side too)
 - Linked sub-agent transcript navigation
 - Compaction history surfacing
