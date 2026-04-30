@@ -33,3 +33,54 @@ test("formatTokens: negative or NaN falls back to '0'", () => {
   expect(formatTokens(-1)).toBe("0")
   expect(formatTokens(Number.NaN)).toBe("0")
 })
+
+import { extractClaudeTurnUsage } from "./usage"
+import type { MessageEntry } from "../types"
+
+function claudeAssistant(usage: Record<string, number> | undefined): MessageEntry {
+  return {
+    type: "assistant",
+    uuid: "u",
+    message: {
+      role: "assistant",
+      content: [],
+      ...(usage ? { usage } : {}),
+    } as MessageEntry["message"],
+  }
+}
+
+test("extractClaudeTurnUsage: pulls input/output/cache_read", () => {
+  const entry = claudeAssistant({
+    input_tokens: 6,
+    cache_creation_input_tokens: 28960,
+    cache_read_input_tokens: 0,
+    output_tokens: 165,
+  })
+  expect(extractClaudeTurnUsage(entry)).toEqual({
+    input: 6,
+    output: 165,
+    cacheRead: 0,
+  })
+})
+
+test("extractClaudeTurnUsage: handles missing cache fields", () => {
+  const entry = claudeAssistant({ input_tokens: 10, output_tokens: 20 })
+  expect(extractClaudeTurnUsage(entry)).toEqual({
+    input: 10,
+    output: 20,
+    cacheRead: 0,
+  })
+})
+
+test("extractClaudeTurnUsage: returns null when usage missing", () => {
+  expect(extractClaudeTurnUsage(claudeAssistant(undefined))).toBeNull()
+})
+
+test("extractClaudeTurnUsage: returns null for user entries", () => {
+  const entry: MessageEntry = {
+    type: "user",
+    uuid: "u",
+    message: { role: "user", content: "hi" },
+  }
+  expect(extractClaudeTurnUsage(entry)).toBeNull()
+})

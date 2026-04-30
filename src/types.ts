@@ -29,13 +29,24 @@ export type Block =
   | ToolUseBlock
   | ToolResultBlock
 
+export type ClaudeUsage = {
+  input_tokens?: number
+  output_tokens?: number
+  cache_creation_input_tokens?: number
+  cache_read_input_tokens?: number
+}
+
 export type MessageEntry = {
   type: "user" | "assistant"
   uuid?: string
   parentUuid?: string | null
   isSidechain?: boolean
   timestamp?: string
-  message?: { role?: string; content?: Block[] | string }
+  message?: {
+    role?: string
+    content?: Block[] | string
+    usage?: ClaudeUsage
+  }
 }
 
 export type TurnDurationEntry = {
