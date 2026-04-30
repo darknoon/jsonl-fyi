@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Markdown } from "../Markdown"
 
 export function SkillBlock({ name, body }: { name: string; body: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -12,7 +13,7 @@ export function SkillBlock({ name, body }: { name: string; body: string }) {
       </button>
       {expanded && (
         <div className="tool-body">
-          <pre className="output">{body}</pre>
+          <Markdown source={body} />
         </div>
       )}
     </div>

@@ -34,6 +34,7 @@ import {
   type CardProps,
 } from "../shared"
 import { UnknownTool } from "../UnknownTool"
+import { Markdown } from "../Markdown"
 
 // ---------------------------------------------------------------------------
 // Per-tool components — each destructures every input field; `assertExhaustive`
@@ -378,7 +379,7 @@ function Agent({
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
-        {prompt && <pre className="output">{prompt}</pre>}
+        {prompt && <Markdown source={prompt} />}
         {opts.length > 0 && (
           <dl className="tool-fields">
             {opts.map(([k, v]) => (
@@ -411,7 +412,9 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
             return (
               <li key={i} className={`todo todo-${status}`}>
                 <span className="todo-status">{status}</span>
-                <span>{status === "in_progress" ? activeForm : content}</span>
+                <span>
+                  <Markdown source={status === "in_progress" ? activeForm : content} inline />
+                </span>
               </li>
             )
           })}
@@ -459,7 +462,7 @@ function ExitPlanMode({
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
-        {plan && <pre className="output">{plan}</pre>}
+        {plan && <Markdown source={plan} />}
         <Output output={output} />
         <Extras output={output} />
       </ToolCard.Content>
