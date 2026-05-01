@@ -3,6 +3,7 @@ import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
 import { Header, Field, ToolTitle } from "../shared"
 import { parseV4A } from "./v4a"
+import { CopyButton } from "../CopyButton"
 
 export function ApplyPatch({ patch, output }: { patch: string; output: ToolResult }) {
   const parsed = parseV4A(patch)
@@ -23,7 +24,10 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
       </ToolCard.Trigger>
       <ToolCard.Preview>
         {"error" in parsed ? (
-          <pre className="output">{patch}</pre>
+          <pre className="output copy-host">
+            {patch}
+            <CopyButton text={patch} ariaLabel="Copy patch" />
+          </pre>
         ) : (
           <div className="apply-patch-files">
             {parsed.files.map((f, i) => {
@@ -69,7 +73,12 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
             {meta.duration != null && <Field name="duration_seconds" value={`${meta.duration}`} />}
           </dl>
         )}
-        {meta.text && <pre className="output">{meta.text}</pre>}
+        {meta.text && (
+          <pre className="output copy-host">
+            {meta.text}
+            <CopyButton text={meta.text} ariaLabel="Copy output" />
+          </pre>
+        )}
       </ToolCard.Preview>
     </ToolCard.Root>
   )

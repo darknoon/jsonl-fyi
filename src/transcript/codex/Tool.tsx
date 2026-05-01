@@ -7,6 +7,7 @@ import { ImageBlock } from "../ImageBlock"
 import { ApplyPatch } from "./ApplyPatch"
 import { tailLines } from "../preview"
 import { MoreHint } from "../MoreHint"
+import { CopyButton } from "../CopyButton"
 
 function shellTailPreview(output: ToolResult): {
   text: string
@@ -64,7 +65,12 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {command && <pre className="output cmd">{command}</pre>}
+        {command && (
+          <pre className="output cmd copy-host">
+            {command}
+            <CopyButton text={command} ariaLabel="Copy command" />
+          </pre>
+        )}
         {fields.length > 0 && (
           <dl className="tool-fields">
             {fields.map(([k, v]) => (
@@ -124,7 +130,12 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {cmd && <pre className="output cmd">{cmd}</pre>}
+        {cmd && (
+          <pre className="output cmd copy-host">
+            {cmd}
+            <CopyButton text={cmd} ariaLabel="Copy command" />
+          </pre>
+        )}
         {fields.length > 0 && (
           <dl className="tool-fields">
             {fields.map(([k, v]) => (
@@ -170,7 +181,12 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {joined && <pre className="output cmd">{joined}</pre>}
+        {joined && (
+          <pre className="output cmd copy-host">
+            {joined}
+            <CopyButton text={joined} ariaLabel="Copy command" />
+          </pre>
+        )}
         {fields.length > 0 && (
           <dl className="tool-fields">
             {fields.map(([k, v]) => (
@@ -220,7 +236,12 @@ function WriteStdin({ input, output }: { input: WriteStdinInput; output: ToolRes
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {chars && <pre className="output cmd">{chars}</pre>}
+        {chars && (
+          <pre className="output cmd copy-host">
+            {chars}
+            <CopyButton text={chars} ariaLabel="Copy stdin" />
+          </pre>
+        )}
         {fields.length > 0 && (
           <dl className="tool-fields">
             {fields.map(([k, v]) => (
@@ -400,7 +421,12 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {message && <pre className="output">{message}</pre>}
+        {message && (
+          <pre className="output copy-host">
+            {message}
+            <CopyButton text={message} ariaLabel="Copy message" />
+          </pre>
+        )}
         {fields.length > 0 && (
           <dl className="tool-fields">
             {fields.map(([k, v]) => (

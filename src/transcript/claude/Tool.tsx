@@ -38,6 +38,7 @@ import {
 } from "../shared"
 import { UnknownTool } from "../UnknownTool"
 import { Markdown } from "../Markdown"
+import { CopyButton } from "../CopyButton"
 
 // ---------------------------------------------------------------------------
 // Per-tool components — each destructures every input field; `assertExhaustive`
@@ -100,7 +101,12 @@ function Bash({ input, output }: CardProps<BashInput>) {
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {command && <pre className="output cmd">{command}</pre>}
+        {command && (
+          <pre className="output cmd copy-host">
+            {command}
+            <CopyButton text={command} ariaLabel="Copy command" />
+          </pre>
+        )}
         {(description || timeout != null || run_in_background || dangerouslyDisableSandbox) && (
           <dl className="tool-fields">
             {description && <Field name="description" value={description} />}
@@ -221,7 +227,12 @@ function Write({ input, output }: CardProps<WriteInput>) {
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {content && <pre className="output">{content}</pre>}
+        {content && (
+          <pre className="output copy-host">
+            {content}
+            <CopyButton text={content} ariaLabel="Copy contents" />
+          </pre>
+        )}
         <Output output={output} />
         <Extras output={output} />
       </ToolCard.Content>
@@ -540,7 +551,12 @@ function NotebookEdit({ input, output }: CardProps<NotebookEditInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview>
-        {new_source && <pre className="output">{new_source}</pre>}
+        {new_source && (
+          <pre className="output copy-host">
+            {new_source}
+            <CopyButton text={new_source} ariaLabel="Copy source" />
+          </pre>
+        )}
         {opts.length > 0 && (
           <dl className="tool-fields">
             {opts.map(([k, v]) => (
@@ -606,7 +622,12 @@ function Skill({ input, output }: CardProps<SkillInput>) {
             <Field name="args" value={args} />
           </dl>
         )}
-        {output.injectedText && <pre className="output">{output.injectedText}</pre>}
+        {output.injectedText && (
+          <pre className="output copy-host">
+            {output.injectedText}
+            <CopyButton text={output.injectedText} ariaLabel="Copy skill body" />
+          </pre>
+        )}
         <Output output={output} />
         <Extras output={output} />
       </ToolCard.Content>
