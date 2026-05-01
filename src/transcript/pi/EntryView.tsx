@@ -114,33 +114,14 @@ export function PiEntryView({
   results: Map<string, PiResultWithDetails>
 }) {
   if (entry.type === "message") return <MessageEntryView entry={entry} results={results} />
-  if (entry.type === "model_change") {
-    return (
-      <div className="pi-meta-row">
-        Model: <code>{entry.provider}/{entry.modelId}</code>
-      </div>
-    )
-  }
-  if (entry.type === "thinking_level_change") {
-    return (
-      <div className="pi-meta-row">
-        Thinking: <code>{entry.thinkingLevel}</code>
-      </div>
-    )
-  }
+  if (entry.type === "model_change" || entry.type === "thinking_level_change") return null
   if (entry.type === "branch_summary") return <TextBlock role="assistant" text={entry.summary} />
   if (entry.type === "compaction") return <TextBlock role="assistant" text={entry.summary} />
   if (entry.type === "custom_message") {
     if (!entry.display) return null
     return renderMessageContent(entry.content, "assistant", results)
   }
-  if (entry.type === "session_info") {
-    return entry.name ? (
-      <div className="pi-meta-row">
-        Session: <code>{entry.name}</code>
-      </div>
-    ) : null
-  }
+  if (entry.type === "session_info") return null
   if (entry.type === "label" || entry.type === "custom") return null
   return <UnknownEntry entry={entry} />
 }
