@@ -146,6 +146,15 @@ export type SkillInput = {
 }
 
 // ---------------------------------------------------------------------------
+// Background tasks
+// ---------------------------------------------------------------------------
+
+export type TaskCreateInput = {
+  subject: string
+  description?: string
+}
+
+// ---------------------------------------------------------------------------
 // Discriminated union
 // ---------------------------------------------------------------------------
 
@@ -167,6 +176,7 @@ export type KnownToolUse =
   | { name: "NotebookEdit"; input: NotebookEditInput }
   | { name: "ToolSearch"; input: ToolSearchInput }
   | { name: "Skill"; input: SkillInput }
+  | { name: "TaskCreate"; input: TaskCreateInput }
 
 // MCP tools follow the convention `mcp__<server>__<tool>` and have
 // server-defined inputs we can't statically type. Any unrecognized name
@@ -196,6 +206,7 @@ const KNOWN_NAMES = new Set<KnownToolUse["name"]>([
   "NotebookEdit",
   "ToolSearch",
   "Skill",
+  "TaskCreate",
 ])
 
 // Narrow an untyped tool_use block (raw from JSONL) into the discriminated

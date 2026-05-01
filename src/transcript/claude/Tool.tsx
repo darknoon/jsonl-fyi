@@ -19,6 +19,7 @@ import type {
   NotebookEditInput,
   ToolSearchInput,
   SkillInput,
+  TaskCreateInput,
 } from "./toolTypes"
 import { EditDiff } from "../EditDiff"
 import { ToolCard } from "../ToolCard"
@@ -606,6 +607,35 @@ function Skill({ input, output }: CardProps<SkillInput>) {
   )
 }
 
+function TaskCreate({ input, output }: CardProps<TaskCreateInput>) {
+  const { subject, description, ...rest } = input
+  assertExhaustive(rest)
+  const hasContent = !!description || hasOutput(output)
+  return (
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="TaskCreate" detail={subject} />
+        </Header>
+      </ToolCard.Trigger>
+      {output.text && (
+        <ToolCard.Preview>
+          <div className="tool-preview-prose">{output.text}</div>
+        </ToolCard.Preview>
+      )}
+      <ToolCard.Content>
+        {output.text && <div className="tool-preview-prose">{output.text}</div>}
+        {description && (
+          <dl className="tool-fields">
+            <Field name="description" value={description} />
+          </dl>
+        )}
+        <Extras output={output} />
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Dispatcher component — exhaustive on KnownToolUse (TS errors on missing case).
 // ---------------------------------------------------------------------------
@@ -648,5 +678,7 @@ export function Tool({ use, output }: { use: ToolUse; output: ToolResult }) {
       return <ToolSearch input={use.input} output={output} />
     case "Skill":
       return <Skill input={use.input} output={output} />
+    case "TaskCreate":
+      return <TaskCreate input={use.input} output={output} />
   }
 }
