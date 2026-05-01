@@ -6,7 +6,6 @@
   --card: #161922;
   --code-bg: #0b0d12;
   --code-fg: var(--muted);
-  --code-border: rgba(255, 255, 255, 0.1);
   --user-bubble: #2a2f3d;
   --bullet-size: 7.5px;
   --bullet-gap: 8px;
@@ -36,7 +35,6 @@
     --card: #f7f8fa;
     --code-bg: #f4f5f7;
     --code-fg: var(--muted);
-    --code-border: rgba(0, 0, 0, 0.12);
     --user-bubble: #f2f4f6;
     --bullet-neutral: #b5bbc5;
   }
