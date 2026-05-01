@@ -52,12 +52,13 @@ This keeps pi-specific tree traversal and message shapes isolated while reusing 
 
 ## Parsing and Branch Selection
 
-`classifyJsonl()` should return `"pi"` when the first lines contain a pi session header or pi entry types, for example:
+`classifyJsonl()` should return `"pi"` only when the first lines contain pi-specific evidence, for example:
 
-- `type: "session"` with `version` and `cwd`
+- `type: "session"` with numeric `version`, string `id`, and string `cwd`
 - `type: "model_change"`
 - `type: "thinking_level_change"`
-- `type: "message"` with `message.role`
+
+Do not classify pi from `type: "message"` with `message.role` alone; that shape is too generic and appears in multiple agent formats. Message entries can be used as supporting evidence only after a pi-specific header or entry type has been seen.
 
 `parsePiEntries(lines)` should:
 
