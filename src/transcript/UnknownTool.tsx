@@ -12,16 +12,19 @@ export function UnknownTool({
   name,
   input,
   output,
+  previewInputKeys = false,
 }: {
   name: string
   input: Record<string, unknown>
   output: ToolResult
+  previewInputKeys?: boolean
 }) {
   const keys = Object.keys(input)
   const hasContent = keys.length > 0 || hasOutput(output)
   const text = toolResultText(output)
   const hasMixedContent = output.content.some((item) => item.type === "image")
   const head = !hasMixedContent && text ? headLines(text, 3) : null
+  const inputKeysPreview = previewInputKeys && keys.length > 0 ? keys.join(", ") : null
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -31,18 +34,18 @@ export function UnknownTool({
       </ToolCard.Trigger>
       {hasMixedContent ? (
         <ToolCard.Preview>
-          {keys.length > 0 && <div className="tool-preview-line">{keys.join(", ")}</div>}
+          {inputKeysPreview && <div className="tool-preview-line">{inputKeysPreview}</div>}
           <ToolResultContent output={output} />
         </ToolCard.Preview>
       ) : head ? (
         <ToolCard.Preview>
-          {keys.length > 0 && <div className="tool-preview-line">{keys.join(", ")}</div>}
+          {inputKeysPreview && <div className="tool-preview-line">{inputKeysPreview}</div>}
           <div className="tool-preview-prose">{head.text}</div>
           <MoreHint count={head.remaining} />
         </ToolCard.Preview>
-      ) : keys.length > 0 ? (
+      ) : inputKeysPreview ? (
         <ToolCard.Preview>
-          <div className="tool-preview-line">{keys.join(", ")}</div>
+          <div className="tool-preview-line">{inputKeysPreview}</div>
         </ToolCard.Preview>
       ) : null}
       <ToolCard.Content>

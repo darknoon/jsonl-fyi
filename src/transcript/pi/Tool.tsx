@@ -275,6 +275,6 @@ export function PiTool({
     case "subagent":
       return <SubagentTool call={call} output={output} details={details} />
     default:
-      return <UnknownTool name={call.name} input={call.arguments} output={output} />
+      return <UnknownTool name={call.name} input={call.arguments} output={output} previewInputKeys />
   }
 }
