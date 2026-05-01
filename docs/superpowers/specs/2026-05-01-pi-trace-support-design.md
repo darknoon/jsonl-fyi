@@ -27,7 +27,7 @@ Subsequent entries are append-only tree entries with `id`, `parentId`, and `time
 
 Assistant content can include `text`, `thinking`, and `toolCall` blocks. Tool results use `toolCallId`/`toolName` and optional tool-specific `details`.
 
-Pi tools are pi-defined, not model-specific. Built-in tools are `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls`. Extensions can register arbitrary tools with `pi.registerTool()`, so the renderer must include a generic fallback for custom tools such as `plan_tracker` and `subagent`.
+Pi tools are pi-defined, not model-specific. Built-in tools are `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls`. Extensions can register arbitrary tools with `pi.registerTool()`, so the renderer must include a generic fallback for custom or unknown tools such as `plan_tracker` and `subagent`.
 
 ## Architecture
 
@@ -92,7 +92,7 @@ Content block rendering:
 - `thinking` → shared `ThinkingBlock`
 - `image` → shared `ImageBlock`
 - `toolCall` → `pi/Tool.tsx`
-- unknown block → JSON fallback
+- unknown block → shared integrated fallback block with a normal transcript header, concise label, and expandable raw JSON details
 
 ## Tool Rendering
 
@@ -108,7 +108,7 @@ Known first-pass tools:
 - `plan_tracker`: compact task/status rendering, with text fallback.
 - `subagent`: agent/mode summary and final text output, with details available in extras/fallback.
 
-Unknown extension/custom tools use the generic `UnknownTool` path with name, JSON arguments, text/image result content, and optional details extras.
+Unknown extension/custom tools use the generic `UnknownTool` path with name, JSON arguments, text/image result content, and optional details extras. The fallback should be format-agnostic and visually integrated with the rest of the transcript: a normal card/header, a short human-readable summary when possible, and raw JSON only in an expandable details area.
 
 ## Fixture Strategy
 
@@ -153,7 +153,7 @@ Add tests next to the relevant files:
 
 - Malformed JSON remains handled by existing `iterJsonlLines()` skipped count.
 - Unknown entry types and message roles render generically instead of crashing.
-- Unknown content blocks render JSON fallback.
+- Unknown content blocks render through a shared, visually integrated fallback component rather than an unstyled dump. The fallback shows a header such as `Unknown content block: progress`, preserves surrounding message context, and puts raw JSON in expandable details.
 - Missing tool result renders the call as having no result.
 - Orphan tool result renders as a generic result card.
 - Missing parent links do not abort parsing.
