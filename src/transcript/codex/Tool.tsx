@@ -328,10 +328,15 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
   if (model) fields.push(["model", model])
   if (reasoning_effort) fields.push(["reasoning_effort", reasoning_effort])
   if (fork_context != null) fields.push(["fork_context", String(fork_context)])
-  // Output is JSON: {"agent_id":"...","nickname":"..."}; surface those fields.
   const meta = tryParseAgentSpawnOutput(output.text)
   if (meta.nickname) fields.push(["nickname", meta.nickname])
   if (meta.agentId) fields.push(["agent_id", meta.agentId])
+
+  const previewLine =
+    meta.nickname && message
+      ? `${meta.nickname} · ${message}`
+      : meta.nickname || (message ? message : null)
+
   return (
     <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -339,6 +344,11 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
           <ToolTitle name="spawn_agent" detail={agent_type} />
         </Header>
       </ToolCard.Trigger>
+      {previewLine && (
+        <ToolCard.Preview>
+          <div className="tool-preview-line">{previewLine}</div>
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {message && <pre className="output">{message}</pre>}
         {fields.length > 0 && (

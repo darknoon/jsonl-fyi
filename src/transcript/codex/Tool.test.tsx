@@ -121,3 +121,39 @@ test("update_plan preview: empty plan shows 0 / 0 complete", () => {
   const html = renderFnHtml("update_plan", { explanation: "Starting" }, okOutput)
   expect(html).toContain("0 / 0 complete")
 })
+
+test("spawn_agent preview: nickname · message line", () => {
+  const html = renderFnHtml(
+    "spawn_agent",
+    { agent_type: "explorer", message: "Inspect commit b29189..." },
+    { ...okOutput, text: '{"agent_id":"019d","nickname":"Bacon"}' },
+  )
+  expect(html).toContain("tool-preview-line")
+  expect(html).toContain("Bacon · Inspect commit b29189...")
+})
+
+test("spawn_agent preview: nickname only when message missing", () => {
+  const html = renderFnHtml(
+    "spawn_agent",
+    { agent_type: "worker" },
+    { ...okOutput, text: '{"agent_id":"019d","nickname":"Faraday"}' },
+  )
+  expect(html).toContain("tool-preview-line")
+  expect(html).toContain("Faraday")
+  expect(html).not.toContain("·")
+})
+
+test("spawn_agent preview: message only when output missing nickname", () => {
+  const html = renderFnHtml(
+    "spawn_agent",
+    { agent_type: "worker", message: "do thing" },
+    okOutput,
+  )
+  expect(html).toContain("tool-preview-line")
+  expect(html).toContain("do thing")
+})
+
+test("spawn_agent preview: no preview when nothing to show", () => {
+  const html = renderFnHtml("spawn_agent", { agent_type: "worker" }, okOutput)
+  expect(html).not.toContain("tool-preview-line")
+})
