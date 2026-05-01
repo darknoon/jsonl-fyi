@@ -50,7 +50,7 @@ Update shared app entry points:
 
 This keeps pi-specific tree traversal and message shapes isolated while reusing shared transcript building blocks such as `ToolCard`, `Markdown`, `ThinkingBlock`, `ImageBlock`, `EditDiff`, and `UnknownTool`.
 
-As part of the shared renderer contract, `ToolResult` should preserve ordered text/image output content in addition to its existing summary fields. This is not pi-specific: Claude, Codex, pi, MCP, and extension tools can all produce mixed text/image results where normalization must not move all images after all text.
+As part of the shared renderer contract, `ToolResult` should use one canonical ordered `content` list for text/image output. This is not pi-specific: Claude, Codex, pi, MCP, and extension tools can all produce mixed text/image results where normalization must not move all images after all text. Avoid duplicate normalized fields such as both `images` and `content` containing the same image data.
 
 ## Parsing and Branch Selection
 
@@ -108,7 +108,7 @@ type ToolResultContent =
   | { type: "image"; source: ImageSource }
 ```
 
-`ToolResult` may keep existing `text`, `images`, and `toolRefs` summary fields for compatibility, but renderers that display full tool output should prefer ordered `content` so `text → image → text` remains in that order. Claude and Codex should populate this shared field where possible; pi support should use it from the start.
+`ToolResult` should make `content` the canonical representation rather than storing duplicate `text` or `images` summaries. Shared helpers can derive plain text previews or image counts from `content` when existing UI needs summaries. Claude and Codex should be updated to populate this shared field; pi support should use it from the start.
 
 Known first-pass tools:
 

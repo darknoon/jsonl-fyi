@@ -544,44 +544,49 @@ git commit -m "feat(pi): parse active session branch"
 
 ---
 
-### Task 3: Add shared ordered ToolResult content
+### Task 3: Replace ToolResult summaries with canonical ordered content
 
 **Files:**
 - Modify: `src/types.ts`
-- Modify: `src/transcript/claude/extractResult.ts`
-- Modify: `src/transcript/claude/extractResult.test.ts`
-- Modify: `src/transcript/codex/CodexTranscript.tsx`
-- Modify: `src/transcript/codex/EntryView.tsx`
 - Modify: `src/transcript/shared.tsx`
 - Modify: `src/transcript/UnknownTool.tsx`
+- Modify: `src/transcript/claude/extractResult.ts`
+- Modify: `src/transcript/claude/extractResult.test.ts`
+- Modify: `src/transcript/claude/ClaudeCodeTranscript.tsx`
+- Modify: `src/transcript/claude/EntryView.tsx`
+- Modify: `src/transcript/claude/Tool.tsx`
+- Modify: `src/transcript/claude/Tool.test.tsx`
+- Modify: `src/transcript/codex/CodexTranscript.tsx`
+- Modify: `src/transcript/codex/EntryView.tsx`
+- Modify: `src/transcript/codex/Tool.tsx`
+- Modify: `src/transcript/codex/Tool.test.tsx`
 
-- [ ] **Step 1: Write failing tests for ordered normalized results**
+- [ ] **Step 1: Write failing tests for canonical ordered results**
 
-In `src/transcript/claude/extractResult.test.ts`, change the mixed-array test assertion so it proves ordered content is preserved:
+In `src/transcript/claude/extractResult.test.ts`, replace the mixed array test with:
 
 ```ts
-test("extractResult handles string content, mixed array, and image-only", () => {
+test("extractResult preserves ordered text/image content", () => {
+  const image = { type: "base64" as const, media_type: "image/png", data: "X" }
   const mixed = extractResult({
     type: "tool_result",
     tool_use_id: "b",
     content: [
       { type: "text", text: "out" },
-      { type: "image", source: { type: "base64", media_type: "image/png", data: "X" } },
+      { type: "image", source: image },
       { type: "text", text: "more" },
     ],
   })
 
-  expect(mixed.text).toBe("out\nmore")
-  expect(mixed.images).toHaveLength(1)
   expect(mixed.content).toEqual([
     { type: "text", text: "out" },
-    { type: "image", source: { type: "base64", media_type: "image/png", data: "X" } },
+    { type: "image", source: image },
     { type: "text", text: "more" },
   ])
 })
 ```
 
-Add a render test to `src/transcript/claude/Tool.test.tsx` or a new shared test if preferred:
+Add a shared rendering test to `src/transcript/claude/Tool.test.tsx` or a new shared test file:
 
 ```tsx
 test("UnknownTool renders ordered mixed text and image output", () => {
@@ -592,9 +597,6 @@ test("UnknownTool renders ordered mixed text and image output", () => {
         name="mixed_tool"
         input={{}}
         output={{
-          text: "before\nafter",
-          images: [image],
-          toolRefs: [],
           content: [
             { type: "text", text: "before" },
             { type: "image", source: image },
@@ -618,11 +620,11 @@ Run:
 bun test src/transcript/claude/extractResult.test.ts src/transcript/claude/Tool.test.tsx
 ```
 
-Expected: fails because `ToolResult` has no ordered normalized `content` and `UnknownTool` does not render it.
+Expected: fails because `ToolResult` is still summary-field based and renderers do not use canonical ordered content.
 
-- [ ] **Step 3: Add ordered content to the shared ToolResult type**
+- [ ] **Step 3: Replace the shared ToolResult type**
 
-In `src/types.ts`, add a shared normalized content type and make `ToolResult.content` required:
+In `src/types.ts`, replace `ToolResult` with a canonical ordered shape:
 
 ```ts
 export type ToolResultContent =
@@ -630,72 +632,41 @@ export type ToolResultContent =
   | { type: "image"; source: ImageSource }
 
 export type ToolResult = {
-  text: string
-  images: ImageSource[]
-  toolRefs: string[]
   content: ToolResultContent[]
   isError: boolean
+  // Text the harness emits as a sibling user message right after the
+  // tool_result, related to this tool call. Today only the Skill tool uses
+  // it (the injected skill markdown body); see Transcript.tsx pre-pass.
   injectedText?: string
 }
 ```
 
-Update every `ToolResult` literal in existing code/tests to include `content: []` when there is no ordered content.
+Remove `text`, `images`, and `toolRefs` from the normalized type. They duplicate data that belongs in `content` or in tool-specific rendering.
 
-- [ ] **Step 4: Populate shared ordered content for Claude**
+- [ ] **Step 4: Add shared helper functions and ordered renderer**
 
-In `src/transcript/claude/extractResult.ts`, keep the existing `text`, `images`, and `toolRefs` summaries, but also populate `content` for text and image items in original order:
-
-```ts
-export function extractResult(block: ToolResultBlock): ToolResult {
-  const c = block.content
-  const isError = block.is_error === true
-  if (typeof c === "string") {
-    return {
-      text: c,
-      images: [],
-      toolRefs: [],
-      content: c ? [{ type: "text", text: c }] : [],
-      isError,
-    }
-  }
-  const text: string[] = []
-  const images: ImageSource[] = []
-  const toolRefs: string[] = []
-  const content: ToolResult["content"] = []
-  for (const item of c) {
-    if (item.type === "text") {
-      text.push(item.text)
-      content.push({ type: "text", text: item.text })
-    } else if (item.type === "image") {
-      images.push(item.source)
-      content.push({ type: "image", source: item.source })
-    } else if (item.type === "tool_reference") {
-      toolRefs.push(item.tool_name)
-    }
-  }
-  return { text: text.join("\n"), images, toolRefs, content, isError }
-}
-```
-
-`tool_reference` remains a Claude ToolSearch-specific detail and is not part of ordered text/image output.
-
-- [ ] **Step 5: Populate shared ordered content for Codex**
-
-In `src/transcript/codex/CodexTranscript.tsx`, every created `ToolResult` should include text output as ordered content:
-
-```ts
-content: p.output ? [{ type: "text", text: p.output }] : [],
-```
-
-In `src/transcript/codex/EntryView.tsx`, update `EMPTY_RESULT` to include `content: []`.
-
-- [ ] **Step 6: Add shared ordered result renderer and use it in UnknownTool**
-
-In `src/transcript/shared.tsx`, add:
+In `src/transcript/shared.tsx`, replace `Output`, `Extras`, and `hasOutput` with helpers derived from `content`:
 
 ```tsx
+export function toolResultText(output: ToolResult): string {
+  return output.content
+    .filter((item): item is Extract<ToolResult["content"][number], { type: "text" }> => item.type === "text")
+    .map((item) => item.text)
+    .join("\n")
+}
+
+export function toolResultImages(output: ToolResult): ImageSource[] {
+  return output.content
+    .filter((item): item is Extract<ToolResult["content"][number], { type: "image" }> => item.type === "image")
+    .map((item) => item.source)
+}
+
+export function Output({ output }: { output: ToolResult }) {
+  const text = toolResultText(output)
+  return text ? <pre className="output">{text}</pre> : null
+}
+
 export function ToolResultContent({ output }: { output: ToolResult }) {
-  if (output.content.length === 0) return <Output output={output} />
   return (
     <>
       {output.content.map((item, i) => {
@@ -705,35 +676,118 @@ export function ToolResultContent({ output }: { output: ToolResult }) {
     </>
   )
 }
+
+export function Extras({ output }: { output: ToolResult }) {
+  return (
+    <>
+      {toolResultImages(output).map((src, i) => (
+        <ImageBlock key={i} source={src} />
+      ))}
+    </>
+  )
+}
+
+export function hasOutput(output: ToolResult): boolean {
+  return output.content.length > 0
+}
 ```
 
-In `src/transcript/UnknownTool.tsx`, render ordered content and keep `Extras` for tool refs only:
+Also import `ImageSource` from `../types` at the top of `shared.tsx`:
+
+```ts
+import type { ImageSource, ToolResult } from "../types"
+```
+
+- [ ] **Step 5: Update Claude extraction**
+
+In `src/transcript/claude/extractResult.ts`, return only ordered `content` plus `isError`:
+
+```ts
+export function extractResult(block: ToolResultBlock): ToolResult {
+  const c = block.content
+  const isError = block.is_error === true
+  if (typeof c === "string") {
+    return { content: c ? [{ type: "text", text: c }] : [], isError }
+  }
+  const content: ToolResult["content"] = []
+  for (const item of c) {
+    if (item.type === "text") content.push({ type: "text", text: item.text })
+    else if (item.type === "image") content.push({ type: "image", source: item.source })
+  }
+  return { content, isError }
+}
+```
+
+Do not carry Claude `tool_reference` into the canonical shared result. It is specific to Claude `ToolSearch`; keep that behavior in the specific ToolSearch renderer if needed later.
+
+- [ ] **Step 6: Update existing renderers to use helper-derived summaries**
+
+Replace all direct reads of old summary fields with helpers in known tool renderers. Use `toolResultText(output)` for text previews/output and `toolResultImages(output)` only when a component specifically needs image counts or image-only summaries. Files to update include:
+
+- `src/transcript/UnknownTool.tsx`
+- `src/transcript/claude/Tool.tsx`
+- `src/transcript/codex/Tool.tsx`
+
+For unknown/custom tool output, render full output with ordered content:
 
 ```tsx
-import { Header, Field, Extras, ToolTitle, hasOutput, ToolResultContent } from "./shared"
-
 <ToolResultContent output={output} />
-<Extras output={{ ...output, images: [] }} />
 ```
 
-This makes unknown/custom tools across formats preserve mixed text/image ordering without rewriting every known tool renderer in this task.
+For known tools that intentionally show text-only shell output, use:
 
-- [ ] **Step 7: Run tests and verify pass**
+```ts
+const text = toolResultText(output)
+const tail = text ? tailLines(text, 3) : null
+```
+
+- [ ] **Step 7: Update ToolResult literals across Claude and Codex paths**
+
+Update empty results to:
+
+```ts
+const EMPTY_RESULT: ToolResult = { content: [], isError: false }
+```
+
+Update Codex result construction in `src/transcript/codex/CodexTranscript.tsx` to:
+
+```ts
+results.set(p.call_id, {
+  content: p.output ? [{ type: "text", text: p.output }] : [],
+  isError: deriveIsError(p.output, "function"),
+})
+```
+
+Use the same shape for `custom_tool_call_output`.
+
+Update tests in `src/transcript/claude/Tool.test.tsx` and `src/transcript/codex/Tool.test.tsx` so `okOutput` is:
+
+```ts
+export const okOutput: ToolResult = { content: [], isError: false }
+```
+
+When a test needs output text, use:
+
+```ts
+{ ...okOutput, content: [{ type: "text", text: "line 1\nline 2" }] }
+```
+
+- [ ] **Step 8: Run tests and verify pass**
 
 Run:
 
 ```bash
-bun test src/transcript/claude/extractResult.test.ts src/transcript/claude/Tool.test.tsx src/transcript/codex/CodexTranscript.test.tsx
+bun test src/transcript/claude/extractResult.test.ts src/transcript/claude/Tool.test.tsx src/transcript/codex/Tool.test.tsx src/transcript/codex/CodexTranscript.test.tsx
 bun run check
 ```
 
 Expected: tests and checks pass.
 
-- [ ] **Step 8: Commit shared normalization**
+- [ ] **Step 9: Commit shared normalization**
 
 ```bash
-git add src/types.ts src/transcript/shared.tsx src/transcript/UnknownTool.tsx src/transcript/claude/extractResult.ts src/transcript/claude/extractResult.test.ts src/transcript/claude/Tool.test.tsx src/transcript/codex/CodexTranscript.tsx src/transcript/codex/EntryView.tsx
-git commit -m "feat(transcript): preserve ordered tool result content"
+git add src/types.ts src/transcript/shared.tsx src/transcript/UnknownTool.tsx src/transcript/claude/extractResult.ts src/transcript/claude/extractResult.test.ts src/transcript/claude/ClaudeCodeTranscript.tsx src/transcript/claude/EntryView.tsx src/transcript/claude/Tool.tsx src/transcript/claude/Tool.test.tsx src/transcript/codex/CodexTranscript.tsx src/transcript/codex/EntryView.tsx src/transcript/codex/Tool.tsx src/transcript/codex/Tool.test.tsx
+git commit -m "feat(transcript): use ordered tool result content"
 ```
 
 ---
@@ -764,7 +818,7 @@ function result(overrides: Partial<PiToolResultMessage>): PiToolResultMessage {
   }
 }
 
-test("extractPiToolResult: joins text blocks into compatibility output", () => {
+test("extractPiToolResult: preserves text blocks", () => {
   const out = extractPiToolResult(
     result({
       content: [
@@ -773,8 +827,6 @@ test("extractPiToolResult: joins text blocks into compatibility output", () => {
       ],
     }),
   )
-  expect(out.text).toBe("hello\nworld")
-  expect(out.images).toEqual([])
   expect(out.content).toEqual([
     { type: "text", text: "hello" },
     { type: "text", text: "world" },
@@ -792,8 +844,6 @@ test("extractPiToolResult: preserves mixed text/image order", () => {
       ],
     }),
   )
-  expect(out.text).toBe("before\nafter")
-  expect(out.images).toEqual([{ type: "base64", media_type: "image/png", data: "abc" }])
   expect(out.content).toEqual([
     { type: "text", text: "before" },
     { type: "image", source: { type: "base64", media_type: "image/png", data: "abc" } },
@@ -826,28 +876,17 @@ import type { PiToolResultMessage } from "./types"
 import { piImageToSource } from "./types"
 
 export function extractPiToolResult(message: PiToolResultMessage): ToolResult {
-  const text: string[] = []
-  const images: ToolResult["images"] = []
   const content: ToolResult["content"] = []
 
   for (const item of message.content) {
     if (item.type === "text") {
-      text.push(item.text)
       content.push({ type: "text", text: item.text })
     } else if (item.type === "image") {
-      const source = piImageToSource(item)
-      images.push(source)
-      content.push({ type: "image", source })
+      content.push({ type: "image", source: piImageToSource(item) })
     }
   }
 
-  return {
-    text: text.join("\n"),
-    images,
-    toolRefs: [],
-    content,
-    isError: !!message.isError,
-  }
+  return { content, isError: !!message.isError }
 }
 ```
 
@@ -887,7 +926,7 @@ import { SettingsProvider, type Settings } from "../../settings"
 import type { ToolResult } from "../../types"
 import { PiTool } from "./Tool"
 
-const okOutput: ToolResult = { text: "", images: [], toolRefs: [], content: [], isError: false }
+const okOutput: ToolResult = { content: [], isError: false }
 
 function renderTool(
   name: string,
@@ -904,14 +943,14 @@ function renderTool(
 }
 
 test("PiTool: bash renders command and tail preview", () => {
-  const html = renderTool("bash", { command: "ls -la", timeout: 10 }, { ...okOutput, text: "1\n2\n3\n4" })
+  const html = renderTool("bash", { command: "ls -la", timeout: 10 }, { ...okOutput, content: [{ type: "text", text: "1\n2\n3\n4" }] })
   expect(html).toContain("bash")
   expect(html).toContain("ls -la")
   expect(html).toContain("2\n3\n4")
 })
 
 test("PiTool: read renders path and output summary", () => {
-  const html = renderTool("read", { path: "/tmp/file.ts", offset: 1, limit: 20 }, { ...okOutput, text: "a\nb" })
+  const html = renderTool("read", { path: "/tmp/file.ts", offset: 1, limit: 20 }, { ...okOutput, content: [{ type: "text", text: "a\nb" }] })
   expect(html).toContain("read")
   expect(html).toContain("file.ts")
   expect(html).toContain("Read 2 lines")
@@ -932,7 +971,7 @@ test("PiTool: subagent renders mode and result preview", () => {
   const html = renderTool(
     "subagent",
     { agent: "scout", task: "inspect" },
-    { ...okOutput, text: "Scout found parser files" },
+    { ...okOutput, content: [{ type: "text", text: "Scout found parser files" }] },
     { mode: "single", results: [{ agent: "scout", exitCode: 0 }] },
   )
   expect(html).toContain("subagent")
@@ -947,8 +986,6 @@ test("PiTool: read preserves ordered mixed text and image result content", () =>
     { path: "/tmp/file.ts" },
     {
       ...okOutput,
-      text: "before\nafter",
-      images: [image],
       content: [
         { type: "text", text: "before" },
         { type: "image", source: image },
@@ -961,7 +998,7 @@ test("PiTool: read preserves ordered mixed text and image result content", () =>
 })
 
 test("PiTool: unknown tool uses integrated fallback", () => {
-  const html = renderTool("my_extension_tool", { action: "go" }, { ...okOutput, text: "Done" })
+  const html = renderTool("my_extension_tool", { action: "go" }, { ...okOutput, content: [{ type: "text", text: "Done" }] })
   expect(html).toContain("my_extension_tool")
   expect(html).toContain("action")
   expect(html).toContain("Done")
@@ -986,7 +1023,7 @@ Create `src/transcript/pi/Tool.tsx`:
 import type { ReactNode } from "react"
 import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
-import { Header, Field, ToolResultContent, ToolTitle, hasOutput } from "../shared"
+import { Header, Field, ToolResultContent, ToolTitle, hasOutput, toolResultText } from "../shared"
 import { UnknownTool } from "../UnknownTool"
 import { MoreHint } from "../MoreHint"
 import { headLines, tailLines } from "../preview"
@@ -1013,7 +1050,8 @@ function objectDetails(details: unknown): Record<string, unknown> | null {
 function ShellTool({ call, output }: { call: PiToolCallContent; output: ToolResult }) {
   const command = typeof call.arguments.command === "string" ? call.arguments.command : undefined
   const timeout = typeof call.arguments.timeout === "number" ? call.arguments.timeout : undefined
-  const tail = output.text ? tailLines(output.text, output.isError ? 10 : 3) : null
+  const outputText = toolResultText(output)
+  const tail = outputText ? tailLines(outputText, output.isError ? 10 : 3) : null
   const snippetClass = output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"
   return (
     <ToolCard.Root hasContent={!!command || timeout != null || hasOutput(output)} status={output.isError ? "error" : "success"}>
@@ -1039,7 +1077,7 @@ function ReadTool({ call, output }: { call: PiToolCallContent; output: ToolResul
       <ToolCard.Trigger>
         <Header><ToolTitle name="read" detail={path && shortPath(path)} /></Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview><div className="tool-preview-line">{readSummary(output.text)}</div></ToolCard.Preview>
+      <ToolCard.Preview><div className="tool-preview-line">{readSummary(toolResultText(output))}</div></ToolCard.Preview>
       <ToolCard.Content>
         {(offset != null || limit != null) && (
           <dl className="tool-fields">
@@ -1055,7 +1093,8 @@ function ReadTool({ call, output }: { call: PiToolCallContent; output: ToolResul
 
 function GenericFileTool({ call, output }: { call: PiToolCallContent; output: ToolResult }) {
   const path = typeof call.arguments.path === "string" ? call.arguments.path : undefined
-  const head = output.text ? headLines(output.text, 3) : null
+  const outputText = toolResultText(output)
+  const head = outputText ? headLines(outputText, 3) : null
   return (
     <ToolCard.Root hasContent={Object.keys(call.arguments).length > 0 || hasOutput(output)} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -1106,7 +1145,8 @@ function PlanTrackerTool({ call, output, details }: { call: PiToolCallContent; o
 function SubagentTool({ call, output, details }: { call: PiToolCallContent; output: ToolResult; details?: unknown }) {
   const d = objectDetails(details)
   const mode = typeof d?.mode === "string" ? d.mode : undefined
-  const head = output.text ? headLines(output.text, 3) : null
+  const outputText = toolResultText(output)
+  const head = outputText ? headLines(outputText, 3) : null
   const fields: Array<[string, ReactNode]> = []
   if (typeof call.arguments.agent === "string") fields.push(["agent", call.arguments.agent])
   if (typeof call.arguments.task === "string") fields.push(["task", call.arguments.task])
@@ -1119,7 +1159,7 @@ function SubagentTool({ call, output, details }: { call: PiToolCallContent; outp
       {head && <ToolCard.Preview><div className="tool-preview-prose">{head.text}</div><MoreHint count={head.remaining} /></ToolCard.Preview>}
       <ToolCard.Content>
         {fields.length > 0 && <dl className="tool-fields">{fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}</dl>}
-        {output.text && <div className="tool-output-prose">{output.text}</div>}
+        {outputText && <div className="tool-output-prose">{outputText}</div>}
       </ToolCard.Content>
     </ToolCard.Root>
   )
@@ -1189,7 +1229,7 @@ import { PiTool } from "./Tool"
 import type { PiContent, PiMessageEntry, PiTreeEntry, PiToolResultMessage } from "./types"
 import { piImageToSource } from "./types"
 
-const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [], content: [], isError: false }
+const EMPTY_RESULT: ToolResult = { content: [], isError: false }
 
 function isToolResultMessage(message: unknown): message is PiToolResultMessage {
   return !!message && typeof message === "object" && (message as { role?: unknown }).role === "toolResult"
