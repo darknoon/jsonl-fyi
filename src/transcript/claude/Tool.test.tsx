@@ -340,3 +340,14 @@ test("Skill preview: no preview when injectedText missing", () => {
   )
   expect(html).not.toContain("tool-preview-line")
 })
+
+test("UnknownTool preview: first 3 lines of output + MoreHint", () => {
+  const html = renderToolHtml(
+    { name: "mcp__custom__do_thing", input: {} } as ToolUse,
+    { ...okOutput, text: "a\nb\nc\nd\ne" },
+  )
+  expect(html).toContain("tool-preview-snippet")
+  expect(html).toContain("a\nb\nc")
+  expect(html).not.toMatch(/snippet[^"]*">[^<]*d/)
+  expect(html).toContain("+2 lines")
+})
