@@ -440,6 +440,9 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
 function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
   const { todos, ...rest } = input
   assertExhaustive(rest)
+  const total = todos.length
+  const done = todos.filter((t) => t.status === "completed").length
+  const inProgress = todos.find((t) => t.status === "in_progress")
   return (
     <ToolCard.Root
       hasContent={todos.length > 0 || hasOutput(output)}
@@ -447,9 +450,14 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
     >
       <ToolCard.Trigger>
         <Header>
-          <ToolTitle name="TodoWrite" />
+          <ToolTitle name="TodoWrite" detail={inProgress?.activeForm} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">
+          {done} / {total} complete
+        </div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         <ul className="todo-list">
           {todos.map((t, i) => {

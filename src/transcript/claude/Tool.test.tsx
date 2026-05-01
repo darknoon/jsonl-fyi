@@ -267,3 +267,54 @@ test("Agent preview: no MoreHint when output fits", () => {
   expect(html).toContain("tool-preview-snippet")
   expect(html).not.toContain("tool-more-hint")
 })
+
+test("TodoWrite preview: detail = activeForm of in-progress todo, body = M / N complete", () => {
+  const html = renderToolHtml(
+    {
+      name: "TodoWrite",
+      input: {
+        todos: [
+          { content: "Do A", activeForm: "Doing A", status: "completed" },
+          { content: "Do B", activeForm: "Doing B", status: "in_progress" },
+          { content: "Do C", activeForm: "Doing C", status: "pending" },
+        ],
+      },
+    } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("Doing B")
+  expect(html).toContain("1 / 3 complete")
+})
+
+test("TodoWrite preview: no in-progress → no parens in header", () => {
+  const html = renderToolHtml(
+    {
+      name: "TodoWrite",
+      input: {
+        todos: [
+          { content: "Do A", activeForm: "Doing A", status: "completed" },
+          { content: "Do B", activeForm: "Doing B", status: "pending" },
+        ],
+      },
+    } as ToolUse,
+    okOutput,
+  )
+  expect(html).not.toContain("Doing")
+  expect(html).toContain("1 / 2 complete")
+})
+
+test("TodoWrite preview: all complete shows N / N complete", () => {
+  const html = renderToolHtml(
+    {
+      name: "TodoWrite",
+      input: {
+        todos: [
+          { content: "A", activeForm: "Aing", status: "completed" },
+          { content: "B", activeForm: "Bing", status: "completed" },
+        ],
+      },
+    } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("2 / 2 complete")
+})
