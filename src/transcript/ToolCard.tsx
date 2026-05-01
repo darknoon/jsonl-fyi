@@ -87,8 +87,17 @@ function Trigger({ children }: { children: ReactNode }) {
   )
 }
 
-function Preview({ children }: { children: ReactNode }) {
-  return <div className="tool-body tool-preview">{children}</div>
+function Preview({ children, clickable = false }: { children: ReactNode; clickable?: boolean }) {
+  const ctx = useContext(Ctx)
+  const canToggle = clickable && ctx?.hasContent === true
+  return (
+    <div
+      className={`tool-body tool-preview${canToggle ? " tool-preview-clickable" : ""}`}
+      onClick={canToggle ? ctx?.toggle : undefined}
+    >
+      {children}
+    </div>
+  )
 }
 
 function Content({ children }: { children: ReactNode }) {

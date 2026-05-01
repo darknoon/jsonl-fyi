@@ -905,6 +905,13 @@ textarea {
   color: var(--color-muted);
 }
 
+.tool-preview-clickable {
+  cursor: pointer;
+}
+.tool-preview-clickable:hover .tool-preview-line {
+  color: var(--color-fg);
+}
+
 .tool-preview-prose,
 .tool-output-prose {
   white-space: pre-wrap;

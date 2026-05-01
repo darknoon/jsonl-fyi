@@ -127,7 +127,7 @@ function Read({ input, output }: CardProps<ReadInput>) {
           <ToolTitle name="Read" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">{readSummary(output.text)}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
@@ -241,7 +241,7 @@ function Glob({ input, output }: CardProps<GlobInput>) {
           <ToolTitle name="Glob" detail={pattern && shortPath(pattern)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">Found {n} {n === 1 ? "file" : "files"}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
@@ -298,7 +298,7 @@ function Grep({ input, output }: CardProps<GrepInput>) {
           <ToolTitle name="Grep" detail={pattern && shortPath(pattern)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">Found {grepN} {grepLabel}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
@@ -328,7 +328,7 @@ function WebFetch({ input, output }: CardProps<WebFetchInput>) {
           <ToolTitle name="WebFetch" detail={url && shortPath(url)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">{summary}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
@@ -363,7 +363,7 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
           <ToolTitle name="WebSearch" detail={query && shortPath(query)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">{summary}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
@@ -454,7 +454,7 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
           <ToolTitle name="TodoWrite" detail={inProgress?.activeForm} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">
           {done} / {total} complete
         </div>
@@ -559,7 +559,7 @@ function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
           <ToolTitle name="ToolSearch" detail={query && shortPath(query)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
+      <ToolCard.Preview clickable>
         <div className="tool-preview-line">{summary}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
@@ -589,7 +589,7 @@ function Skill({ input, output }: CardProps<SkillInput>) {
         </Header>
       </ToolCard.Trigger>
       {description && (
-        <ToolCard.Preview>
+        <ToolCard.Preview clickable>
           <div className="tool-preview-line">{description}</div>
         </ToolCard.Preview>
       )}
