@@ -2,6 +2,7 @@
   - [ ] Viewing subagent .jsonl
 - [x] Drag in Codex .jsonl transcripts
   - [ ] Research how subagents work here?
+- [ ] Drag in pi agent traces
 - [x] Connect skill message w/ Skill tool call
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [x] Show timestamps
