@@ -8,10 +8,11 @@
 - [x] Render limited agent markdown
 - [x] Show tokens used? (per-turn only; session totals deferred)
 - [x] Show model used!
+- [ ] Add copy buttons to messages
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
   - [x] **Compact** tool calls are hidden, click to expand
-  - [ ] **Normal** shows a snippet of code changes, a concise output, mimics claude code [spec](docs/superpowers/specs/2026-04-30-view-modes-design.md)
+  - [x] **Normal** shows a snippet of code changes, a concise output, mimics claude code
   - [ ] **Expanded** shows all content
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
 - [ ] Syntax-highlight Write tool calls?
