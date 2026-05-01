@@ -298,6 +298,19 @@ export function App() {
                 Codex stores sessions in <code>~/.codex/sessions/</code>:
               </p>
               <TerminalCommand command="open ~/.codex/sessions/" />
+              <p className="drop-zone-hint">
+                Note: since Claude Code{" "}
+                <a
+                  href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#2189"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  2.1.89
+                </a>{" "}
+                (2026-04-01), thinking summaries are off by default — set{" "}
+                <code>"showThinkingSummaries": true</code> in <code>~/.claude/settings.json</code>{" "}
+                to restore.
+              </p>
             </details>
             <Examples onSelect={loadExample} />
           </>
