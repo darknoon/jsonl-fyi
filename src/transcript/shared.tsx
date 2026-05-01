@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import type { ToolResult } from "../types"
+import { CopyButton } from "./CopyButton"
 import { ImageBlock } from "./ImageBlock"
 
 // Compile-time check that a tool component handles every field of its input
@@ -21,18 +22,32 @@ export function Header({ children }: { children: ReactNode }) {
 }
 
 export function Field({ name, value }: { name: string; value: ReactNode }) {
+  const copyable = typeof value === "string" || typeof value === "number"
   return (
     <div className="tool-field">
       <dt>{name}</dt>
-      <dd>
+      <dd className={copyable ? "copy-host" : undefined}>
         <code>{value}</code>
+        {copyable && (
+          <CopyButton
+            text={String(value)}
+            ariaLabel={`Copy ${name}`}
+            className="copy-button-field"
+          />
+        )}
       </dd>
     </div>
   )
 }
 
 export function Output({ output }: { output: ToolResult }) {
-  return output.text ? <pre className="output">{output.text}</pre> : null
+  if (!output.text) return null
+  return (
+    <pre className="output copy-host">
+      {output.text}
+      <CopyButton text={output.text} ariaLabel="Copy output" />
+    </pre>
+  )
 }
 
 export function Extras({ output }: { output: ToolResult }) {

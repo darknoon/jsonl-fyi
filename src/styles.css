@@ -398,6 +398,11 @@ textarea {
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+}
+.cmd.copy-host,
+.output.copy-host {
+  padding-right: 40px;
 }
 .multi-edit {
   display: flex;
@@ -1007,4 +1012,17 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   .copy-button,
   .copy-button-icon { transition: none; }
+}
+
+/* Field rows: <dd> hosts the button so it overlays the row's right edge. */
+.tool-field dd.copy-host {
+  position: relative;
+  padding-right: 32px;
+}
+.copy-button-field {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
 }
