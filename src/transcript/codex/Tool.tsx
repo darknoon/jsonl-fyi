@@ -186,6 +186,52 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
   )
 }
 
+type WriteStdinInput = {
+  session_id?: number | string
+  chars?: string
+  yield_time_ms?: number
+  max_output_tokens?: number
+}
+
+function WriteStdin({ input, output }: { input: WriteStdinInput; output: ToolResult }) {
+  const { session_id, chars, yield_time_ms, max_output_tokens } = input
+  const fields: Array<[string, ReactNode]> = []
+  if (session_id != null) fields.push(["session_id", String(session_id)])
+  if (yield_time_ms != null) fields.push(["yield_time_ms", `${yield_time_ms}`])
+  if (max_output_tokens != null) fields.push(["max_output_tokens", `${max_output_tokens}`])
+  const hasContent = !!chars || fields.length > 0 || hasOutput(output)
+  const tail = shellTailPreview(output)
+  // chars is empty for poll-style invocations; show session id instead so
+  // the trigger isn't blank.
+  const detail = chars ? JSON.stringify(chars) : session_id != null ? `session ${session_id}` : undefined
+  return (
+    <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="write_stdin" detail={detail} />
+        </Header>
+      </ToolCard.Trigger>
+      {tail && (
+        <ToolCard.Preview>
+          <pre className={tail.className}>{tail.text}</pre>
+          <MoreHint count={tail.remaining} />
+        </ToolCard.Preview>
+      )}
+      <ToolCard.Content>
+        {chars && <pre className="output cmd">{chars}</pre>}
+        {fields.length > 0 && (
+          <dl className="tool-fields">
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
+          </dl>
+        )}
+        <Output output={output} />
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // UpdatePlan, ViewImage, WebSearchCall components
 // ---------------------------------------------------------------------------
@@ -508,6 +554,8 @@ export function CodexFunctionCall({
       return <ShellCommand input={parsed as ShellCommandInput} output={output} />
     case "exec_command":
       return <ExecCommand input={parsed as ExecCommandInput} output={output} />
+    case "write_stdin":
+      return <WriteStdin input={parsed as WriteStdinInput} output={output} />
     case "shell":
       return <Shell input={parsed as ShellInput} output={output} />
     case "update_plan":
