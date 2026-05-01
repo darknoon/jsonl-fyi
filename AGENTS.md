@@ -149,5 +149,21 @@ Don't need a whole spec/ plan/ process, but you should consider the approach and
 
 ### Worktrees
 
-In ./.worktrees/ to avoid conflicts with other agents running concurrently
-We should default to doing it this way for feature work but might not
+In ./.worktrees/ to avoid conflicts with other agents running concurrently.
+Default to worktrees for feature work.
+
+Hard rules:
+
+- The repository root (`/Users/andrew/Developer/Prefix/jsonl-fyi`) is the main
+  workspace. Do **not** check out feature branches, start rebases, cherry-pick
+  feature commits, or resolve feature conflicts there.
+- Before any `git checkout`, `git switch`, `git rebase`, `git merge`, or
+  `git cherry-pick`, run `pwd` and `git rev-parse --show-toplevel`. If the
+  top-level path is the main workspace, stop unless the user explicitly asked
+  you to operate on main.
+- Feature branch integration/rebase work must happen in a separate worktree
+  under `.worktrees/`, e.g. `.worktrees/<feature-name>`.
+- Never create merge commits for feature integration. Rebase/cherry-pick to a
+  linear branch, verify, then check with Andrew before updating `main`.
+- If you accidentally put the main workspace into a rebase/merge/conflict
+  state, stop immediately and ask before running more git commands.
