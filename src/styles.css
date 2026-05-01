@@ -950,3 +950,60 @@ textarea {
 .tool-preview-snippet.snippet-error {
   -webkit-line-clamp: 12;
 }
+
+/* ---- copy button ----------------------------------------------------- */
+
+.copy-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: var(--color-card);
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 1;
+}
+
+.copy-button:hover { color: var(--color-fg); }
+.copy-button:focus-visible {
+  outline: 2px solid var(--color-fg);
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+/* Reveal on hover/focus of any container that hosts a copy button. */
+.copy-host:hover > .copy-button,
+.copy-host:focus-within > .copy-button { opacity: 1; }
+
+/* Touch / no hover: always visible. */
+@media (hover: none) {
+  .copy-button { opacity: 1; }
+}
+
+/* Stay opaque while showing the success state, regardless of hover. */
+.copy-button[data-copied] { opacity: 1; color: var(--color-success); }
+
+/* Blur-fade cross-dissolve between copy/check icons. Both icons share the
+   same grid cell so they overlap; only their opacity/blur changes. */
+.copy-button-icon {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+.copy-button-icon-copy   { opacity: 1; filter: blur(0); }
+.copy-button-icon-check  { opacity: 0; filter: blur(4px); }
+.copy-button[data-copied] .copy-button-icon-copy  { opacity: 0; filter: blur(4px); }
+.copy-button[data-copied] .copy-button-icon-check { opacity: 1; filter: blur(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-button,
+  .copy-button-icon { transition: none; }
+}
