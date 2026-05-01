@@ -8,6 +8,7 @@ import { TranscriptHeader } from "../TranscriptHeader"
 import { extractCodexTurnUsage } from "../usage"
 import type { TurnUsage } from "../usage"
 import { buildCodexModelLabels } from "./modelLabeling"
+import { tryParseAgentSpawnOutput } from "./Tool"
 
 // Codex doesn't emit a `turn_duration` row like Claude. Derive per-turn
 // duration from response_item timestamps: a turn runs from a user-authored
@@ -88,6 +89,24 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
     }
   }
 
+  // Pre-pass: build agent_id → nickname map by walking spawn_agent calls
+  // and parsing their outputs. Used by WaitAgent to render friendly names
+  // instead of UUIDs in the header.
+  const agentNicknames = new Map<string, string>()
+  for (const entry of entries) {
+    if (entry.type !== "response_item") continue
+    const p = entry.payload
+    if (p.type === "function_call" && p.name === "spawn_agent") {
+      const out = results.get(p.call_id)
+      if (out?.text) {
+        const meta = tryParseAgentSpawnOutput(out.text)
+        if (meta.agentId && meta.nickname) {
+          agentNicknames.set(meta.agentId, meta.nickname)
+        }
+      }
+    }
+  }
+
   // Use the first available timestamp (session_meta or earliest response_item)
   // for the chat-start header — same treatment as the Claude path.
   let startTimestamp: string | undefined
@@ -142,7 +161,7 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
         else if (entry.type === "turn_context") node = null
         else if (entry.type === "compacted") node = <CompactedMarker key={`comp-${i}`} />
         else if (entry.type === "event_msg") node = null
-        else node = <EntryView key={i} entry={entry} results={results} />
+        else node = <EntryView key={i} entry={entry} results={results} agentNicknames={agentNicknames} />
 
         const ms = durations.get(i)
         return (

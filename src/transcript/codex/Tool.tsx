@@ -363,7 +363,7 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
   )
 }
 
-function tryParseAgentSpawnOutput(raw: string): { nickname?: string; agentId?: string } {
+export function tryParseAgentSpawnOutput(raw: string): { nickname?: string; agentId?: string } {
   if (!raw || !raw.startsWith("{")) return {}
   try {
     const v = JSON.parse(raw) as { agent_id?: unknown; nickname?: unknown }
@@ -378,8 +378,19 @@ function tryParseAgentSpawnOutput(raw: string): { nickname?: string; agentId?: s
 
 type WaitAgentInput = { targets?: string[]; timeout_ms?: number }
 
-function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResult }) {
+function WaitAgent({
+  input,
+  output,
+  agentNicknames,
+}: {
+  input: WaitAgentInput
+  output: ToolResult
+  agentNicknames?: Map<string, string>
+}) {
   const { targets, timeout_ms } = input
+  const labels = (targets ?? []).map((id) => agentNicknames?.get(id) ?? id.slice(0, 8))
+  const detail = labels.join(", ") || undefined
+
   const fields: Array<[string, ReactNode]> = []
   if (targets && targets.length > 0) fields.push(["targets", targets.join(", ")])
   if (timeout_ms != null) fields.push(["timeout_ms", `${timeout_ms}`])
@@ -387,7 +398,7 @@ function WaitAgent({ input, output }: { input: WaitAgentInput; output: ToolResul
     <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
         <Header>
-          <ToolTitle name="wait_agent" />
+          <ToolTitle name="wait_agent" detail={detail} />
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
@@ -412,10 +423,12 @@ export function CodexFunctionCall({
   name,
   argumentsJson,
   output,
+  agentNicknames,
 }: {
   name: string
   argumentsJson: string
   output: ToolResult
+  agentNicknames?: Map<string, string>
 }) {
   let parsed: Record<string, unknown> = {}
   try {
@@ -439,7 +452,7 @@ export function CodexFunctionCall({
     case "spawn_agent":
       return <SpawnAgent input={parsed as SpawnAgentInput} output={output} />
     case "wait_agent":
-      return <WaitAgent input={parsed as WaitAgentInput} output={output} />
+      return <WaitAgent input={parsed as WaitAgentInput} output={output} agentNicknames={agentNicknames} />
     default:
       return <UnknownTool name={name} input={parsed} output={output} />
   }

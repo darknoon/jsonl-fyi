@@ -11,9 +11,10 @@ const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [], isError: 
 type Props = {
   entry: CodexResponseItem
   results: Map<string, ToolResult>
+  agentNicknames?: Map<string, string>
 }
 
-export function EntryView({ entry, results }: Props) {
+export function EntryView({ entry, results, agentNicknames }: Props) {
   const p = entry.payload
 
   switch (p.type) {
@@ -48,7 +49,7 @@ export function EntryView({ entry, results }: Props) {
 
     case "function_call": {
       const out = results.get(p.call_id) ?? EMPTY_RESULT
-      return <CodexFunctionCall name={p.name} argumentsJson={p.arguments} output={out} />
+      return <CodexFunctionCall name={p.name} argumentsJson={p.arguments} output={out} agentNicknames={agentNicknames} />
     }
 
     case "custom_tool_call": {
