@@ -806,10 +806,12 @@ textarea {
   overflow-x: auto;
   font-size: var(--fs-mono);
 }
-.md-content .md-code-block .md-code {
+.md-content .md-code-block .md-code,
+.md-content .md-code-block .md-code-inline {
   background: transparent;
   border: 0;
   padding: 0;
+  font-size: inherit;
 }
 
 .md-content .md-link {
@@ -900,6 +902,7 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-muted);
 }
 
 .tool-preview-prose,
@@ -915,6 +918,7 @@ textarea {
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  color: var(--color-muted);
 }
 
 .tool-preview-snippet {
