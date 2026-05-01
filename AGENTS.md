@@ -83,6 +83,22 @@ Project fixtures live in `src/__fixtures__/` and `src/transcript/__fixtures__/`.
   `assertExhaustive(rest)` (in `transcript/shared.tsx`) — this catches
   silent dropped fields when input types grow.
 
+### Styling tokens
+
+CSS values must reference tokens defined in `src/styles.css :root`:
+
+- Colors → `var(--color-*)` (e.g. `--color-bg`, `--color-fg`,
+  `--color-muted`, `--color-border`, `--color-card`, `--color-code-bg`,
+  `--color-code-fg`, `--color-success`, `--color-error`, …)
+- Font sizes → `var(--fs-base | --fs-sm | --fs-xs | --fs-mono)`
+- Monospace font → `var(--font-mono)` (matches `@pierre/diffs` stack so
+  inline code reads consistently with diff bodies)
+- Border radii → `var(--radius-xs | sm | md | lg | xl | 2xl | pill)`
+  (`--radius-pill` doubles as a circle on square elements)
+
+If no token fits, add one — don't hardcode. Spacing is not yet
+tokenized; literal px values are OK for now.
+
 ## Verification
 
 UI verification happens via the `agent-browser` skill: start `bun dev`,

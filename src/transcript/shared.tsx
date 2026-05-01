@@ -65,7 +65,9 @@ export function ToolTitle({ name, detail }: { name: string; detail?: ReactNode }
       <strong className="tool-title-name">{name}</strong>
       {detail != null && (
         <>
-          (<span>{detail}</span>)
+          <span className="tool-title-paren">(</span>
+          <span className="tool-title-detail">{detail}</span>
+          <span className="tool-title-paren">)</span>
         </>
       )}
     </>
