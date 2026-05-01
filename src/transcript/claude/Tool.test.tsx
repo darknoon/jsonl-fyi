@@ -101,3 +101,53 @@ test("Read preview: empty output", () => {
   )
   expect(html).toContain("(no output)")
 })
+
+test("Edit: diff renders inside Preview slot in normal mode", () => {
+  const html = renderToolHtml(
+    {
+      name: "Edit",
+      input: { file_path: "/foo.ts", old_string: "old line", new_string: "new line" },
+    } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("tool-preview")
+  // EditDiff renders as a web component (diffs-container) in SSR
+  expect(html).toContain("edit-diff")
+})
+
+test("Edit: in compact mode collapsed shows nothing below trigger", () => {
+  const html = renderToolHtml(
+    {
+      name: "Edit",
+      input: { file_path: "/foo.ts", old_string: "a", new_string: "b" },
+    } as ToolUse,
+    okOutput,
+    { viewMode: "compact" },
+  )
+  // Trigger is rendered (button)
+  expect(html).toContain("tool-row")
+  // No preview/content shown
+  expect(html).not.toContain("tool-preview")
+})
+
+test("ExitPlanMode: plan markdown renders inside Preview slot", () => {
+  const html = renderToolHtml(
+    { name: "ExitPlanMode", input: { plan: "# Title\n\nbody text" } } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("tool-preview")
+  // Markdown rendered the heading
+  expect(html).toMatch(/<h1[^>]*>Title<\/h1>/)
+})
+
+test("NotebookEdit: new_source renders inside Preview slot", () => {
+  const html = renderToolHtml(
+    {
+      name: "NotebookEdit",
+      input: { notebook_path: "/n.ipynb", new_source: "print('hi')", cell_id: "c1" },
+    } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("tool-preview")
+  expect(html).toContain("print(&#x27;hi&#x27;)")  // single quotes get HTML-escaped by React
+})

@@ -137,16 +137,14 @@ function Edit({ input, output }: CardProps<EditInput>) {
           <ToolTitle name="Edit" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Content>
+      <ToolCard.Preview>
         {hasDiff && <EditDiff filePath={file_path} oldString={old_string} newString={new_string} />}
         {replace_all && (
           <dl className="tool-fields">
             <Field name="replace_all" value="true" />
           </dl>
         )}
-        <Output output={output} />
-        <Extras output={output} />
-      </ToolCard.Content>
+      </ToolCard.Preview>
     </ToolCard.Root>
   )
 }
@@ -162,7 +160,7 @@ function MultiEdit({ input, output }: CardProps<MultiEditInput>) {
           <ToolTitle name="MultiEdit" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Content>
+      <ToolCard.Preview>
         <div className="multi-edit">
           {edits.map((e, i) => {
             const { old_string, new_string, replace_all, ...editRest } = e
@@ -179,9 +177,7 @@ function MultiEdit({ input, output }: CardProps<MultiEditInput>) {
             )
           })}
         </div>
-        <Output output={output} />
-        <Extras output={output} />
-      </ToolCard.Content>
+      </ToolCard.Preview>
     </ToolCard.Root>
   )
 }
@@ -449,11 +445,9 @@ function ExitPlanMode({ input, output }: CardProps<ExitPlanModeInput>) {
           <ToolTitle name="ExitPlanMode" />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Content>
+      <ToolCard.Preview>
         {plan && <Markdown source={plan} />}
-        <Output output={output} />
-        <Extras output={output} />
-      </ToolCard.Content>
+      </ToolCard.Preview>
     </ToolCard.Root>
   )
 }
@@ -473,7 +467,7 @@ function NotebookEdit({ input, output }: CardProps<NotebookEditInput>) {
           <ToolTitle name="NotebookEdit" detail={notebook_path && shortPath(notebook_path)} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Content>
+      <ToolCard.Preview>
         {new_source && <pre className="output">{new_source}</pre>}
         {opts.length > 0 && (
           <dl className="tool-fields">
@@ -482,9 +476,7 @@ function NotebookEdit({ input, output }: CardProps<NotebookEditInput>) {
             ))}
           </dl>
         )}
-        <Output output={output} />
-        <Extras output={output} />
-      </ToolCard.Content>
+      </ToolCard.Preview>
     </ToolCard.Root>
   )
 }
