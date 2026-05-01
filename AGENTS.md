@@ -138,7 +138,13 @@ To check deploy status:
 5. User reviews plan. may request changes
 6. We start working on it
    1. we always use sub-agent-driven development
-   2. sometimes we use worktrees (ask me) in ./.worktrees/ to avoid conflicts with other agents running concurrently
+   2. sometimes we use worktrees (ask me)
 
 ### Quick design tweaks
 Don't need a whole spec/ plan/ process, but you should consider the approach and consult the user before editing the code.
+
+
+### Worktrees
+
+In ./.worktrees/ to avoid conflicts with other agents running concurrently
+We should default to doing it this way for feature work but might not
