@@ -17,5 +17,6 @@
   - [ ] **Expanded** shows all content
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
 - [ ] Syntax-highlight Write tool calls?
+- [ ] Have a nice affordance for compactions, eg a hr + summary card?
 - [ ] Some way of sharing / upload to cdn from cli? or curl / skill?
 - [ ] Search / highlight matches
