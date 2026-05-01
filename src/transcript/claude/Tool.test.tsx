@@ -173,3 +173,76 @@ test("Write preview: no MoreHint when content fits", () => {
   expect(html).toContain("tool-preview-snippet snippet-tall")
   expect(html).not.toContain("tool-more-hint")
 })
+
+test("Glob preview: file count, plural", () => {
+  const html = renderToolHtml(
+    { name: "Glob", input: { pattern: "*.ts" } } as ToolUse,
+    { ...okOutput, text: "/a.ts\n/b.ts\n/c.ts" },
+  )
+  expect(html).toContain("Found 3 files")
+})
+
+test("Glob preview: singular", () => {
+  const html = renderToolHtml(
+    { name: "Glob", input: { pattern: "*.ts" } } as ToolUse,
+    { ...okOutput, text: "/a.ts" },
+  )
+  expect(html).toContain("Found 1 file")
+  expect(html).not.toContain("Found 1 files")
+})
+
+test("Grep preview: matches count", () => {
+  const html = renderToolHtml(
+    { name: "Grep", input: { pattern: "foo" } } as ToolUse,
+    { ...okOutput, text: "match1\nmatch2" },
+  )
+  expect(html).toContain("Found 2 matches")
+})
+
+test("Grep preview: files_with_matches mode says 'files'", () => {
+  const html = renderToolHtml(
+    { name: "Grep", input: { pattern: "foo", output_mode: "files_with_matches" } } as ToolUse,
+    { ...okOutput, text: "/a.ts\n/b.ts" },
+  )
+  expect(html).toContain("Found 2 files")
+})
+
+test("ToolSearch preview: loaded count", () => {
+  const html = renderToolHtml(
+    { name: "ToolSearch", input: { query: "x" } } as ToolUse,
+    { ...okOutput, toolRefs: ["Read", "Edit"] },
+  )
+  expect(html).toContain("Loaded 2 tools")
+})
+
+test("ToolSearch preview: zero loaded", () => {
+  const html = renderToolHtml(
+    { name: "ToolSearch", input: { query: "x" } } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("No tools loaded")
+})
+
+test("WebFetch preview: first non-empty line", () => {
+  const html = renderToolHtml(
+    { name: "WebFetch", input: { url: "https://x", prompt: "summarize" } } as ToolUse,
+    { ...okOutput, text: "\nFirst content line\nrest..." },
+  )
+  expect(html).toContain("First content line")
+})
+
+test("WebFetch preview: fallback when output empty", () => {
+  const html = renderToolHtml(
+    { name: "WebFetch", input: { url: "https://x", prompt: "y" } } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("Fetched")
+})
+
+test("WebSearch preview: counts markdown links", () => {
+  const html = renderToolHtml(
+    { name: "WebSearch", input: { query: "x" } } as ToolUse,
+    { ...okOutput, text: "Some [first](http://a) [second](http://b) result" },
+  )
+  expect(html).toContain("2 results")
+})

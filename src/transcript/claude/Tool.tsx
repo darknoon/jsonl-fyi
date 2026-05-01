@@ -43,6 +43,25 @@ import { Markdown } from "../Markdown"
 // guarantees no field is silently dropped if the input type grows.
 // ---------------------------------------------------------------------------
 
+function nonEmptyLines(text: string): string[] {
+  if (!text) return []
+  return text.split("\n").filter((l) => l.trim().length > 0)
+}
+
+function firstNonEmptyLine(text: string): string | null {
+  if (!text) return null
+  for (const l of text.split("\n")) {
+    const t = l.trim()
+    if (t.length > 0) return t
+  }
+  return null
+}
+
+function countMarkdownLinks(text: string): number {
+  if (!text) return 0
+  return (text.match(/\[[^\]]+\]\([^)]+\)/g) || []).length
+}
+
 function readSummary(text: string): string {
   if (!text) return "(no output)"
   const trimmed = text.endsWith("\n") ? text.slice(0, -1) : text
@@ -213,6 +232,7 @@ function Glob({ input, output }: CardProps<GlobInput>) {
   const { pattern, path, ...rest } = input
   assertExhaustive(rest)
   const hasContent = !!path || hasOutput(output)
+  const n = nonEmptyLines(output.text).length
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -220,6 +240,9 @@ function Glob({ input, output }: CardProps<GlobInput>) {
           <ToolTitle name="Glob" detail={pattern && shortPath(pattern)} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">Found {n} {n === 1 ? "file" : "files"}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {path && (
           <dl className="tool-fields">
@@ -263,6 +286,10 @@ function Grep({ input, output }: CardProps<GrepInput>) {
   if (head_limit != null) opts.push(["head_limit", head_limit])
   if (multiline) opts.push(["multiline", "true"])
   const hasContent = opts.length > 0 || hasOutput(output)
+  const grepN = nonEmptyLines(output.text).length
+  const grepLabel = output_mode === "files_with_matches"
+    ? (grepN === 1 ? "file" : "files")
+    : (grepN === 1 ? "match" : "matches")
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -270,6 +297,9 @@ function Grep({ input, output }: CardProps<GrepInput>) {
           <ToolTitle name="Grep" detail={pattern && shortPath(pattern)} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">Found {grepN} {grepLabel}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {opts.length > 0 && (
           <dl className="tool-fields">
@@ -289,6 +319,7 @@ function WebFetch({ input, output }: CardProps<WebFetchInput>) {
   const { url, prompt, ...rest } = input
   assertExhaustive(rest)
   const hasContent = !!prompt || hasOutput(output)
+  const summary = firstNonEmptyLine(output.text) ?? "Fetched"
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -296,6 +327,9 @@ function WebFetch({ input, output }: CardProps<WebFetchInput>) {
           <ToolTitle name="WebFetch" detail={url && shortPath(url)} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">{summary}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {prompt && (
           <dl className="tool-fields">
@@ -316,6 +350,11 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
     (allowed_domains && allowed_domains.length > 0) ||
     (blocked_domains && blocked_domains.length > 0) ||
     hasOutput(output)
+  const linkCount = countMarkdownLinks(output.text)
+  const summary =
+    linkCount > 0
+      ? `${linkCount} ${linkCount === 1 ? "result" : "results"}`
+      : firstNonEmptyLine(output.text) ?? "Searched"
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -323,6 +362,9 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
           <ToolTitle name="WebSearch" detail={query && shortPath(query)} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">{summary}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {((allowed_domains && allowed_domains.length > 0) ||
           (blocked_domains && blocked_domains.length > 0)) && (
@@ -492,6 +534,8 @@ function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
   const { query, max_results, ...rest } = input
   assertExhaustive(rest)
   const hasContent = max_results != null || hasOutput(output)
+  const n = output.toolRefs.length
+  const summary = n === 0 ? "No tools loaded" : `Loaded ${n} ${n === 1 ? "tool" : "tools"}`
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -499,6 +543,9 @@ function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
           <ToolTitle name="ToolSearch" detail={query && shortPath(query)} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">{summary}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {max_results != null && (
           <dl className="tool-fields">
