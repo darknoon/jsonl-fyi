@@ -9,7 +9,17 @@ export type PiToolCallContent = {
   name: string
   arguments: Record<string, unknown>
 }
-export type PiContent = PiTextContent | PiImageContent | PiThinkingContent | PiToolCallContent
+export type PiKnownContentType = "text" | "image" | "thinking" | "toolCall"
+// Unknown content block type strings are preserved at runtime, but use `never`
+// for the discriminant type so this fallback member does not overlap known
+// content shapes and weaken narrowing.
+export type PiUnknownContent = { type: never; [key: string]: unknown }
+export type PiContent =
+  | PiTextContent
+  | PiImageContent
+  | PiThinkingContent
+  | PiToolCallContent
+  | PiUnknownContent
 
 export type PiUsage = {
   input?: number

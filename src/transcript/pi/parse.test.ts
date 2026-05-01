@@ -98,3 +98,25 @@ test("parsePiEntries: drops malformed known entries instead of treating them as 
 
   expect(parsed.entries.map((e) => e.type) as string[]).toEqual(["surprise"])
 })
+
+test("parsePiEntries: preserves assistant messages with unknown content blocks", () => {
+  const parsed = parsePiEntries([
+    header,
+    {
+      type: "message",
+      id: "a1",
+      parentId: null,
+      timestamp: "2026-05-01T00:00:01.000Z",
+      message: {
+        role: "assistant",
+        content: [
+          { type: "text", text: "before" },
+          { type: "surprise", payload: { ok: true } },
+        ],
+      },
+    },
+  ])
+
+  expect(parsed.entries).toHaveLength(1)
+  expect(parsed.activeEntries.map((e) => e.id)).toEqual(["a1"])
+})

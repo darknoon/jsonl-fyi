@@ -10,6 +10,7 @@ import type {
   PiCustomMessage,
   PiCustomMessageEntry,
   PiImageContent,
+  PiKnownContentType,
   PiKnownEntryType,
   PiKnownMessageRole,
   PiLabelEntry,
@@ -48,6 +49,8 @@ const knownMessageRoles = new Set<PiKnownMessageRole>([
   "branchSummary",
   "compactionSummary",
 ])
+
+const knownContentTypes = new Set<PiKnownContentType>(["text", "image", "thinking", "toolCall"])
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object"
@@ -111,7 +114,7 @@ function isAssistantContent(value: unknown): value is PiContent {
         typeof value.id === "string" && typeof value.name === "string" && isObject(value.arguments)
       )
     default:
-      return false
+      return !knownContentTypes.has(value.type as PiKnownContentType)
   }
 }
 
