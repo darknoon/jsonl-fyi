@@ -1,7 +1,7 @@
 import { PatchDiff } from "@pierre/diffs/react"
 import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
-import { Header, Field, ToolTitle } from "../shared"
+import { Header, Field, ToolTitle, toolResultText } from "../shared"
 import { parseV4A } from "./v4a"
 import { CopyButton } from "../CopyButton"
 
@@ -13,7 +13,7 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
     fileCount === 0 ? undefined : fileCount === 1 ? shortFile(files[0].path) : `${fileCount} files`
 
   // Output may be JSON-wrapped: {"output":"...","metadata":{"exit_code", "duration_seconds"}}.
-  const meta = tryParsePatchOutput(output.text)
+  const meta = tryParsePatchOutput(toolResultText(output))
 
   return (
     <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>

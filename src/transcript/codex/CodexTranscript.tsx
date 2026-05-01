@@ -74,16 +74,12 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
     const p = entry.payload
     if (p.type === "function_call_output") {
       results.set(p.call_id, {
-        text: p.output,
-        images: [],
-        toolRefs: [],
+        content: p.output ? [{ type: "text", text: p.output }] : [],
         isError: deriveIsError(p.output, "function"),
       })
     } else if (p.type === "custom_tool_call_output") {
       results.set(p.call_id, {
-        text: p.output,
-        images: [],
-        toolRefs: [],
+        content: p.output ? [{ type: "text", text: p.output }] : [],
         isError: deriveIsError(p.output, "custom"),
       })
     }
@@ -98,8 +94,9 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
     const p = entry.payload
     if (p.type === "function_call" && p.name === "spawn_agent") {
       const out = results.get(p.call_id)
-      if (out?.text) {
-        const meta = tryParseAgentSpawnOutput(out.text)
+      const text = out ? out.content.filter((item) => item.type === "text").map((item) => item.text).join("\n") : ""
+      if (text) {
+        const meta = tryParseAgentSpawnOutput(text)
         if (meta.agentId && meta.nickname) {
           agentNicknames.set(meta.agentId, meta.nickname)
         }

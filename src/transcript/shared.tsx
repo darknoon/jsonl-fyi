@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import type { ToolResult } from "../types"
+import type { ImageSource, ToolResult } from "../types"
 import { CopyButton } from "./CopyButton"
 import { ImageBlock } from "./ImageBlock"
 
@@ -40,30 +40,52 @@ export function Field({ name, value }: { name: string; value: ReactNode }) {
   )
 }
 
+export function toolResultText(output: ToolResult): string {
+  return output.content
+    .filter((item): item is Extract<ToolResult["content"][number], { type: "text" }> => item.type === "text")
+    .map((item) => item.text)
+    .join("\n")
+}
+
+export function toolResultImages(output: ToolResult): ImageSource[] {
+  return output.content
+    .filter((item): item is Extract<ToolResult["content"][number], { type: "image" }> => item.type === "image")
+    .map((item) => item.source)
+}
+
 export function Output({ output }: { output: ToolResult }) {
-  if (!output.text) return null
+  const text = toolResultText(output)
+  if (!text) return null
   return (
     <pre className="output copy-host">
-      {output.text}
-      <CopyButton text={output.text} ariaLabel="Copy output" />
+      {text}
+      <CopyButton text={text} ariaLabel="Copy output" />
     </pre>
+  )
+}
+
+export function ToolResultContent({ output }: { output: ToolResult }) {
+  return (
+    <>
+      {output.content.map((item, i) => {
+        if (item.type === "text") {
+          return (
+            <pre key={i} className="output copy-host">
+              {item.text}
+              <CopyButton text={item.text} ariaLabel="Copy output" />
+            </pre>
+          )
+        }
+        return <ImageBlock key={i} source={item.source} />
+      })}
+    </>
   )
 }
 
 export function Extras({ output }: { output: ToolResult }) {
   return (
     <>
-      {output.toolRefs.length > 0 && (
-        <div className="tool-refs">
-          <div className="tool-refs-label">Loaded tools</div>
-          <ul>
-            {output.toolRefs.map((name, i) => (
-              <li key={i}>{name}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {output.images.map((src, i) => (
+      {toolResultImages(output).map((src, i) => (
         <ImageBlock key={i} source={src} />
       ))}
     </>
@@ -71,7 +93,7 @@ export function Extras({ output }: { output: ToolResult }) {
 }
 
 export function hasOutput(output: ToolResult): boolean {
-  return !!output.text || output.images.length > 0 || output.toolRefs.length > 0
+  return output.content.length > 0
 }
 
 export function ToolTitle({ name, detail }: { name: string; detail?: ReactNode }) {

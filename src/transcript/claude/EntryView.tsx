@@ -7,20 +7,18 @@ import { ImageBlock } from "../ImageBlock"
 import { Tool } from "./Tool"
 import { narrowToolUse } from "./toolTypes"
 
-const EMPTY_RESULT: ToolResult = {
-  text: "",
-  images: [],
-  toolRefs: [],
-  isError: false,
-}
+const EMPTY_RESULT: ToolResult = { content: [], isError: false }
+
+export type ToolRefsById = Map<string, string[]>
 
 type Props = {
   entry: MessageEntry
   results: Map<string, ToolResult>
+  toolRefsById?: ToolRefsById
   skipKeys: Set<string>
 }
 
-export function EntryView({ entry, results, skipKeys }: Props) {
+export function EntryView({ entry, results, toolRefsById, skipKeys }: Props) {
   const role = entry.message?.role ?? entry.type
   const blocks = getBlocks(entry)
   const nodes: ReactNode[] = []
@@ -36,7 +34,7 @@ export function EntryView({ entry, results, skipKeys }: Props) {
     } else if (block.type === "tool_use") {
       const use = narrowToolUse(block)
       const output = results.get(block.id) ?? EMPTY_RESULT
-      nodes.push(<Tool key={j} use={use} output={output} />)
+      nodes.push(<Tool key={j} use={use} output={output} toolRefs={toolRefsById?.get(block.id)} />)
     }
   }
   return <>{nodes}</>

@@ -69,10 +69,12 @@ export type SystemEntry = TurnDurationEntry | UnknownSystemEntry
 
 export type Entry = MessageEntry | SystemEntry
 
+export type ToolResultContent =
+  | { type: "text"; text: string }
+  | { type: "image"; source: ImageSource }
+
 export type ToolResult = {
-  text: string
-  images: ImageSource[]
-  toolRefs: string[]
+  content: ToolResultContent[]
   isError: boolean
   // Text the harness emits as a sibling user message right after the
   // tool_result, related to this tool call. Today only the Skill tool uses

@@ -1,6 +1,6 @@
 import type { ToolResult } from "../types"
 import { ToolCard } from "./ToolCard"
-import { Header, Field, Extras, ToolTitle, hasOutput } from "./shared"
+import { Header, Field, ToolResultContent, ToolTitle, hasOutput, toolResultText } from "./shared"
 import { headLines } from "./preview"
 import { MoreHint } from "./MoreHint"
 
@@ -19,7 +19,9 @@ export function UnknownTool({
 }) {
   const keys = Object.keys(input)
   const hasContent = keys.length > 0 || hasOutput(output)
-  const head = output.text ? headLines(output.text, 3) : null
+  const text = toolResultText(output)
+  const hasMixedContent = output.content.some((item) => item.type === "image")
+  const head = !hasMixedContent && text ? headLines(text, 3) : null
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -27,12 +29,16 @@ export function UnknownTool({
           <ToolTitle name={name} />
         </Header>
       </ToolCard.Trigger>
-      {head && (
+      {hasMixedContent ? (
+        <ToolCard.Preview>
+          <ToolResultContent output={output} />
+        </ToolCard.Preview>
+      ) : head ? (
         <ToolCard.Preview>
           <div className="tool-preview-prose">{head.text}</div>
           <MoreHint count={head.remaining} />
         </ToolCard.Preview>
-      )}
+      ) : null}
       <ToolCard.Content>
         {keys.length > 0 && (
           <dl className="tool-fields">
@@ -48,8 +54,7 @@ export function UnknownTool({
             })}
           </dl>
         )}
-        {output.text && <div className="tool-output-prose">{output.text}</div>}
-        <Extras output={output} />
+        <ToolResultContent output={output} />
       </ToolCard.Content>
     </ToolCard.Root>
   )

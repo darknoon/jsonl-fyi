@@ -30,12 +30,7 @@ export function renderCustomHtml(
   )
 }
 
-export const okOutput: ToolResult = {
-  text: "",
-  images: [],
-  toolRefs: [],
-  isError: false,
-}
+export const okOutput: ToolResult = { content: [], isError: false }
 
 test("Codex Tool.test.tsx scaffolding loads", () => {
   expect(typeof renderFnHtml).toBe("function")
@@ -47,7 +42,7 @@ test("shell_command preview: last 3 lines tail", () => {
   const html = renderFnHtml(
     "shell_command",
     { command: "ls" },
-    { ...okOutput, text: "1\n2\n3\n4\n5" },
+    { ...okOutput, content: [{ type: "text", text: "1\n2\n3\n4\n5" }] },
   )
   expect(html).toContain('class="tool-preview-snippet copy-host"')
   expect(html).toContain("3\n4\n5")
@@ -56,7 +51,13 @@ test("shell_command preview: last 3 lines tail", () => {
 
 test("exec_command preview: last 10 lines on error with snippet-error class", () => {
   const text = Array.from({ length: 12 }, (_, i) => String(i + 1)).join("\n")
-  const html = renderFnHtml("exec_command", { cmd: "fail" }, { ...okOutput, text, isError: true })
+
+  const html = renderFnHtml(
+    "exec_command",
+    { cmd: "fail" },
+    { ...okOutput, content: [{ type: "text", text }], isError: true },
+  )
+
   expect(html).toContain("snippet-error")
   expect(html).toContain("3\n4\n5\n6\n7\n8\n9\n10\n11\n12")
 })
@@ -65,7 +66,7 @@ test("shell preview: last 3 lines tail with array command", () => {
   const html = renderFnHtml(
     "shell",
     { command: ["ls", "-la"] },
-    { ...okOutput, text: "a\nb\nc\nd" },
+    { ...okOutput, content: [{ type: "text", text: "a\nb\nc\nd" }] },
   )
   expect(html).toContain("ls -la")
   expect(html).toContain('class="tool-preview-snippet copy-host"')
@@ -122,7 +123,7 @@ test("spawn_agent preview: nickname · message line", () => {
   const html = renderFnHtml(
     "spawn_agent",
     { agent_type: "explorer", message: "Inspect commit b29189..." },
-    { ...okOutput, text: '{"agent_id":"019d","nickname":"Bacon"}' },
+    { ...okOutput, content: [{ type: "text", text: '{"agent_id":"019d","nickname":"Bacon"}' }] },
   )
   expect(html).toContain("tool-preview-line")
   expect(html).toContain("Bacon · Inspect commit b29189...")
@@ -132,7 +133,7 @@ test("spawn_agent preview: nickname only when message missing", () => {
   const html = renderFnHtml(
     "spawn_agent",
     { agent_type: "worker" },
-    { ...okOutput, text: '{"agent_id":"019d","nickname":"Faraday"}' },
+    { ...okOutput, content: [{ type: "text", text: '{"agent_id":"019d","nickname":"Faraday"}' }] },
   )
   expect(html).toContain("tool-preview-line")
   expect(html).toContain("Faraday")
@@ -154,7 +155,7 @@ test("wait_agent preview: string output (abort) shown as one line", () => {
   const html = renderFnHtml(
     "wait_agent",
     { targets: ["019d"], timeout_ms: 60000 },
-    { ...okOutput, text: '"aborted by user after 274.4s"' },
+    { ...okOutput, content: [{ type: "text", text: '"aborted by user after 274.4s"' }] },
   )
   expect(html).toContain("tool-preview-line")
   expect(html).toContain("aborted by user after 274.4s")
@@ -164,7 +165,7 @@ test("wait_agent preview: empty status + timed_out → 'Timed out after Ns'", ()
   const html = renderFnHtml(
     "wait_agent",
     { targets: ["019d"], timeout_ms: 600000 },
-    { ...okOutput, text: '{"status":{},"timed_out":true}' },
+    { ...okOutput, content: [{ type: "text", text: '{"status":{},"timed_out":true}' }] },
   )
   expect(html).toContain("Timed out after 600s")
 })
@@ -173,7 +174,7 @@ test("wait_agent preview: empty status + not timed out → '(no agent results)'"
   const html = renderFnHtml(
     "wait_agent",
     { targets: ["019d"], timeout_ms: 60000 },
-    { ...okOutput, text: '{"status":{},"timed_out":false}' },
+    { ...okOutput, content: [{ type: "text", text: '{"status":{},"timed_out":false}' }] }
   )
   expect(html).toContain("(no agent results)")
 })
@@ -189,7 +190,7 @@ test("wait_agent preview: populated status renders one row per agent", () => {
   const html = renderFnHtml(
     "wait_agent",
     { targets: ["019d-A", "019d-B"], timeout_ms: 60000 },
-    { ...okOutput, text: out },
+    { ...okOutput, content: [{ type: "text", text: out }] },
   )
   expect(html).toContain("Completed")
   expect(html).toContain("Refactor done")
@@ -205,7 +206,7 @@ test("wait_agent preview: simple string status (InProgress) renders without dash
   const html = renderFnHtml(
     "wait_agent",
     { targets: ["019d-X"], timeout_ms: 60000 },
-    { ...okOutput, text: out },
+    { ...okOutput, content: [{ type: "text", text: out }] },
   )
   expect(html).toContain("InProgress")
   expect(html).not.toMatch(/InProgress\s*—/)

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import type { ToolResult } from "../../types"
 import { ToolCard } from "../ToolCard"
-import { Header, Field, Output, ToolTitle, hasOutput } from "../shared"
+import { Header, Field, Output, ToolTitle, hasOutput, toolResultText } from "../shared"
 import { UnknownTool } from "../UnknownTool"
 import { ImageBlock } from "../ImageBlock"
 import { ApplyPatch } from "./ApplyPatch"
@@ -13,14 +13,16 @@ function shellTailPreview(output: ToolResult): {
   text: string
   remaining: number
   className: string
+  fullText: string
 } | null {
-  if (!output.text) return null
+  const fullText = toolResultText(output)
+  if (!fullText) return null
   const tailN = output.isError ? 10 : 3
-  const tail = tailLines(output.text, tailN)
+  const tail = tailLines(fullText, tailN)
   const className = output.isError
     ? "tool-preview-snippet snippet-error copy-host"
     : "tool-preview-snippet copy-host"
-  return { ...tail, className }
+  return { ...tail, className, fullText }
 }
 
 // Helper: extract exit code from a Codex shell-tool output. Used to derive
@@ -64,7 +66,7 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
         <ToolCard.Preview>
           <pre className={tail.className}>
             {tail.text}
-            <CopyButton text={output.text} ariaLabel="Copy output" />
+            <CopyButton text={tail.fullText} ariaLabel="Copy output" />
           </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
@@ -132,7 +134,7 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
         <ToolCard.Preview>
           <pre className={tail.className}>
             {tail.text}
-            <CopyButton text={output.text} ariaLabel="Copy output" />
+            <CopyButton text={tail.fullText} ariaLabel="Copy output" />
           </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
@@ -186,7 +188,7 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
         <ToolCard.Preview>
           <pre className={tail.className}>
             {tail.text}
-            <CopyButton text={output.text} ariaLabel="Copy output" />
+            <CopyButton text={tail.fullText} ariaLabel="Copy output" />
           </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
@@ -244,7 +246,7 @@ function WriteStdin({ input, output }: { input: WriteStdinInput; output: ToolRes
         <ToolCard.Preview>
           <pre className={tail.className}>
             {tail.text}
-            <CopyButton text={output.text} ariaLabel="Copy output" />
+            <CopyButton text={tail.fullText} ariaLabel="Copy output" />
           </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
@@ -319,7 +321,7 @@ function ViewImage({ input, output }: { input: ViewImageInput; output: ToolResul
   const basename = path ? path.split("/").pop() : ""
   // Output may contain [{"type":"input_image","image_url":"data:..."}].
   // If so, render the image inline. Otherwise render the raw output.
-  const embeddedImage = tryParseEmbeddedImage(output.text)
+  const embeddedImage = tryParseEmbeddedImage(toolResultText(output))
   return (
     <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -413,7 +415,7 @@ function SpawnAgent({ input, output }: { input: SpawnAgentInput; output: ToolRes
   if (model) fields.push(["model", model])
   if (reasoning_effort) fields.push(["reasoning_effort", reasoning_effort])
   if (fork_context != null) fields.push(["fork_context", String(fork_context)])
-  const meta = tryParseAgentSpawnOutput(output.text)
+  const meta = tryParseAgentSpawnOutput(toolResultText(output))
   if (meta.nickname) fields.push(["nickname", meta.nickname])
   if (meta.agentId) fields.push(["agent_id", meta.agentId])
 
@@ -511,7 +513,7 @@ function WaitAgent({
   const labels = (targets ?? []).map((id) => agentNicknames?.get(id) ?? id.slice(0, 8))
   const detail = labels.join(", ") || undefined
 
-  const parsed = parseWaitOutput(output.text)
+  const parsed = parseWaitOutput(toolResultText(output))
   const previewRows: { id: string; line: string }[] = []
   let singleLine: string | null = null
 

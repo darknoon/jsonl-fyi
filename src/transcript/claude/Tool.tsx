@@ -34,6 +34,7 @@ import {
   Extras,
   ToolTitle,
   hasOutput,
+  toolResultText,
   type CardProps,
 } from "../shared"
 import { UnknownTool } from "../UnknownTool"
@@ -83,7 +84,8 @@ function Bash({ input, output }: CardProps<BashInput>) {
     dangerouslyDisableSandbox != null ||
     hasOutput(output)
   const tailN = output.isError ? 10 : 3
-  const tail = output.text ? tailLines(output.text, tailN) : null
+  const outputText = toolResultText(output)
+  const tail = outputText ? tailLines(outputText, tailN) : null
   const snippetClass = output.isError
     ? "tool-preview-snippet snippet-error copy-host"
     : "tool-preview-snippet copy-host"
@@ -98,7 +100,7 @@ function Bash({ input, output }: CardProps<BashInput>) {
         <ToolCard.Preview>
           <pre className={snippetClass}>
             {tail.text}
-            <CopyButton text={output.text} ariaLabel="Copy output" />
+            <CopyButton text={outputText} ariaLabel="Copy output" />
           </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
@@ -137,7 +139,7 @@ function Read({ input, output }: CardProps<ReadInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview clickable>
-        <div className="tool-preview-line">{readSummary(output.text)}</div>
+        <div className="tool-preview-line">{readSummary(toolResultText(output))}</div>
       </ToolCard.Preview>
       <ToolCard.Content>
         {(offset != null || limit != null || pages) && (
@@ -250,7 +252,7 @@ function Glob({ input, output }: CardProps<GlobInput>) {
   const { pattern, path, ...rest } = input
   assertExhaustive(rest)
   const hasContent = !!path || hasOutput(output)
-  const n = nonEmptyLines(output.text).length
+  const n = nonEmptyLines(toolResultText(output)).length
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -306,7 +308,7 @@ function Grep({ input, output }: CardProps<GrepInput>) {
   if (head_limit != null) opts.push(["head_limit", head_limit])
   if (multiline) opts.push(["multiline", "true"])
   const hasContent = opts.length > 0 || hasOutput(output)
-  const grepN = nonEmptyLines(output.text).length
+  const grepN = nonEmptyLines(toolResultText(output)).length
   const grepLabel =
     output_mode === "files_with_matches"
       ? grepN === 1
@@ -346,7 +348,7 @@ function WebFetch({ input, output }: CardProps<WebFetchInput>) {
   const { url, prompt, ...rest } = input
   assertExhaustive(rest)
   const hasContent = !!prompt || hasOutput(output)
-  const summary = firstNonEmptyLine(output.text) ?? "Fetched"
+  const summary = firstNonEmptyLine(toolResultText(output)) ?? "Fetched"
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -377,11 +379,12 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
     (allowed_domains && allowed_domains.length > 0) ||
     (blocked_domains && blocked_domains.length > 0) ||
     hasOutput(output)
-  const linkCount = countMarkdownLinks(output.text)
+  const outputText = toolResultText(output)
+  const linkCount = countMarkdownLinks(outputText)
   const summary =
     linkCount > 0
       ? `${linkCount} ${linkCount === 1 ? "result" : "results"}`
-      : (firstNonEmptyLine(output.text) ?? "Searched")
+      : (firstNonEmptyLine(outputText) ?? "Searched")
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -434,7 +437,8 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
   if (isolation) opts.push(["isolation", isolation])
   if (run_in_background) opts.push(["run_in_background", "true"])
   const hasContent = !!prompt || opts.length > 0 || hasOutput(output)
-  const head = output.text ? headLines(output.text, 3) : null
+  const outputText = toolResultText(output)
+  const head = outputText ? headLines(outputText, 3) : null
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -446,7 +450,7 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
         <ToolCard.Preview>
           <pre className="tool-preview-snippet copy-host">
             {head.text}
-            <CopyButton text={output.text} ariaLabel="Copy output" />
+            <CopyButton text={outputText} ariaLabel="Copy output" />
           </pre>
           <MoreHint count={head.remaining} />
         </ToolCard.Preview>
@@ -578,11 +582,11 @@ function NotebookEdit({ input, output }: CardProps<NotebookEditInput>) {
   )
 }
 
-function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
+function ToolSearch({ input, output, toolRefs = [] }: CardProps<ToolSearchInput> & { toolRefs?: string[] }) {
   const { query, max_results, ...rest } = input
   assertExhaustive(rest)
-  const hasContent = max_results != null || hasOutput(output)
-  const n = output.toolRefs.length
+  const hasContent = max_results != null || toolRefs.length > 0 || hasOutput(output)
+  const n = toolRefs.length
   const summary = n === 0 ? "No tools loaded" : `Loaded ${n} ${n === 1 ? "tool" : "tools"}`
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
@@ -599,6 +603,16 @@ function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
           <dl className="tool-fields">
             <Field name="max_results" value={max_results} />
           </dl>
+        )}
+        {toolRefs.length > 0 && (
+          <div className="tool-refs">
+            <div className="tool-refs-label">Loaded tools</div>
+            <ul>
+              {toolRefs.map((name, i) => (
+                <li key={i}>{name}</li>
+              ))}
+            </ul>
+          </div>
         )}
         <Output output={output} />
         <Extras output={output} />
@@ -655,13 +669,13 @@ function TaskCreate({ input, output }: CardProps<TaskCreateInput>) {
           <ToolTitle name="TaskCreate" detail={subject} />
         </Header>
       </ToolCard.Trigger>
-      {output.text && (
+      {toolResultText(output) && (
         <ToolCard.Preview>
-          <div className="tool-preview-prose">{output.text}</div>
+          <div className="tool-preview-prose">{toolResultText(output)}</div>
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
-        {output.text && <div className="tool-preview-prose">{output.text}</div>}
+        {toolResultText(output) && <div className="tool-preview-prose">{toolResultText(output)}</div>}
         {description && (
           <dl className="tool-fields">
             <Field name="description" value={description} />
@@ -677,7 +691,7 @@ function TaskCreate({ input, output }: CardProps<TaskCreateInput>) {
 // Dispatcher component — exhaustive on KnownToolUse (TS errors on missing case).
 // ---------------------------------------------------------------------------
 
-export function Tool({ use, output }: { use: ToolUse; output: ToolResult }) {
+export function Tool({ use, output, toolRefs }: { use: ToolUse; output: ToolResult; toolRefs?: string[] }) {
   if (!isKnownToolUse(use)) {
     return <UnknownTool name={use.name} input={use.input} output={output} />
   }
@@ -712,7 +726,7 @@ export function Tool({ use, output }: { use: ToolUse; output: ToolResult }) {
     case "NotebookEdit":
       return <NotebookEdit input={use.input} output={output} />
     case "ToolSearch":
-      return <ToolSearch input={use.input} output={output} />
+      return <ToolSearch input={use.input} output={output} toolRefs={toolRefs} />
     case "Skill":
       return <Skill input={use.input} output={output} />
     case "TaskCreate":

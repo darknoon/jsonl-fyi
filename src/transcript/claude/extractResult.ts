@@ -1,20 +1,17 @@
-import type { Entry, Block, ImageSource, ToolResult, ToolResultBlock } from "../../types"
+import type { Entry, Block, ToolResult, ToolResultBlock } from "../../types"
 
 export function extractResult(block: ToolResultBlock): ToolResult {
   const c = block.content
   const isError = block.is_error === true
   if (typeof c === "string") {
-    return { text: c, images: [], toolRefs: [], isError }
+    return { content: c ? [{ type: "text", text: c }] : [], isError }
   }
-  const text: string[] = []
-  const images: ImageSource[] = []
-  const toolRefs: string[] = []
+  const content: ToolResult["content"] = []
   for (const item of c) {
-    if (item.type === "text") text.push(item.text)
-    else if (item.type === "image") images.push(item.source)
-    else if (item.type === "tool_reference") toolRefs.push(item.tool_name)
+    if (item.type === "text") content.push({ type: "text", text: item.text })
+    else if (item.type === "image") content.push({ type: "image", source: item.source })
   }
-  return { text: text.join("\n"), images, toolRefs, isError }
+  return { content, isError }
 }
 
 export function getBlocks(entry: Entry): Block[] {

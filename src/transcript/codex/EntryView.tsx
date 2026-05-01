@@ -6,7 +6,7 @@ import { TextBlock } from "../claude/TextBlock"
 import { CodexFunctionCall, CodexCustomToolCall, WebSearchCall } from "./Tool"
 import type { ToolResult } from "../../types"
 
-const EMPTY_RESULT: ToolResult = { text: "", images: [], toolRefs: [], isError: false }
+const EMPTY_RESULT: ToolResult = { content: [], isError: false }
 
 type Props = {
   entry: CodexResponseItem

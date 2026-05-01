@@ -11,7 +11,12 @@ test("extractResult on every tool_result in the fixture", async () => {
     for (const block of getBlocks(entry)) {
       if (block.type === "tool_result") {
         const r = extractResult(block)
-        lines.push(`${block.tool_use_id} text=${r.text.length}b images=${r.images.length}`)
+        const textLength = r.content
+          .filter((item): item is Extract<(typeof r.content)[number], { type: "text" }> => item.type === "text")
+          .map((item) => item.text)
+          .join("\n").length
+        const imageCount = r.content.filter((item) => item.type === "image").length
+        lines.push(`${block.tool_use_id} text=${textLength}b images=${imageCount}`)
       }
     }
   }
@@ -64,31 +69,23 @@ test("extractResult on every tool_result in the fixture", async () => {
   `)
 })
 
-test("extractResult handles string content, mixed array, and image-only", () => {
-  const summary = [
-    extractResult({ type: "tool_result", tool_use_id: "a", content: "hello" }),
-    extractResult({
-      type: "tool_result",
-      tool_use_id: "b",
-      content: [
-        { type: "text", text: "out" },
-        { type: "image", source: { type: "base64", media_type: "image/png", data: "X" } },
-        { type: "text", text: "more" },
-      ],
-    }),
-    extractResult({
-      type: "tool_result",
-      tool_use_id: "c",
-      content: [{ type: "image", source: { type: "url", url: "https://x/y.png" } }],
-    }),
-  ]
-    .map((r) => `text=${JSON.stringify(r.text)} images=${r.images.length}`)
-    .join("\n")
-  expect(summary).toMatchInlineSnapshot(`
-    "text="hello" images=0
-    text="out\\nmore" images=1
-    text="" images=1"
-  `)
+test("extractResult preserves ordered text/image content", () => {
+  const image = { type: "base64" as const, media_type: "image/png", data: "X" }
+  const mixed = extractResult({
+    type: "tool_result",
+    tool_use_id: "b",
+    content: [
+      { type: "text", text: "out" },
+      { type: "image", source: image },
+      { type: "text", text: "more" },
+    ],
+  })
+
+  expect(mixed.content).toEqual([
+    { type: "text", text: "out" },
+    { type: "image", source: image },
+    { type: "text", text: "more" },
+  ])
 })
 
 test("extractResult preserves tool error status", () => {

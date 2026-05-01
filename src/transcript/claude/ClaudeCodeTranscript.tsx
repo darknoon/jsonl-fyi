@@ -1,5 +1,6 @@
 import type { Entry, ToolResult } from "../../types"
 import { extractResult, getBlocks } from "./extractResult"
+import type { ToolRefsById } from "./EntryView"
 import { detectSkill } from "./detectSkill"
 import { TranscriptHeader } from "../TranscriptHeader"
 import { TurnSeparator } from "../TurnSeparator"
@@ -23,20 +24,20 @@ function pickVerb(seed: string): string {
   return TURN_VERBS[h % TURN_VERBS.length]
 }
 
-const EMPTY_RESULT: ToolResult = {
-  text: "",
-  images: [],
-  toolRefs: [],
-  isError: false,
-}
+const EMPTY_RESULT: ToolResult = { content: [], isError: false }
 
 export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
   // Pass 1: index tool results by their tool_use_id.
   const results = new Map<string, ToolResult>()
+  const toolRefsById: ToolRefsById = new Map()
   for (const entry of entries) {
     for (const block of getBlocks(entry)) {
       if (block.type === "tool_result") {
         results.set(block.tool_use_id, extractResult(block))
+        const refs = typeof block.content === "string" ? [] : block.content
+          .filter((item) => item.type === "tool_reference")
+          .map((item) => item.tool_name)
+        if (refs.length > 0) toolRefsById.set(block.tool_use_id, refs)
       }
     }
   }
@@ -103,6 +104,7 @@ export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
                 key={item.entry.uuid ?? `entry-${idx}`}
                 entry={item.entry}
                 results={results}
+                toolRefsById={toolRefsById}
                 skipKeys={skipKeys}
               />
             )
