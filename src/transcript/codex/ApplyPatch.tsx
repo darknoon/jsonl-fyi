@@ -40,7 +40,7 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
               }
               const showFilename = fileCount > 1 || (f.op === "update" && !!f.movedTo)
               return (
-                <div key={i} className="apply-patch-file">
+                <div key={i} className="apply-patch-file copy-host">
                   {showFilename &&
                     (f.op === "update" && f.movedTo ? (
                       <div className="apply-patch-filename">
@@ -62,6 +62,7 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
                     }}
                     disableWorkerPool
                   />
+                  <CopyButton text={f.unifiedDiff} ariaLabel="Copy patch" />
                 </div>
               )
             })}

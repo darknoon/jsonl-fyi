@@ -722,6 +722,9 @@ textarea {
 .apply-patch-deleted code {
   font-family: inherit;
 }
+.apply-patch-file {
+  position: relative;
+}
 
 /* ── compacted marker (Task 13) ── */
 .compacted-marker {
