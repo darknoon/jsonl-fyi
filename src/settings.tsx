@@ -1,15 +1,20 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
-export type Settings = { renderMarkdown: boolean }
+export type ViewMode = "compact" | "normal"
+export type Settings = { renderMarkdown: boolean; viewMode: ViewMode }
 
-type Ctx = Settings & { setRenderMarkdown: (v: boolean) => void }
+type Ctx = Settings & {
+  setRenderMarkdown: (v: boolean) => void
+  setViewMode: (v: ViewMode) => void
+}
 
 const STORAGE_KEY = "jsonl-fyi:settings"
-const DEFAULTS: Settings = { renderMarkdown: true }
+const DEFAULTS: Settings = { renderMarkdown: true, viewMode: "normal" }
 
 const SettingsCtx = createContext<Ctx>({
   ...DEFAULTS,
   setRenderMarkdown: () => {},
+  setViewMode: () => {},
 })
 
 function load(): Settings {
@@ -37,12 +42,14 @@ export function SettingsProvider({
   initial,
   children,
 }: {
-  initial?: Settings
+  initial?: Partial<Settings>
   children: ReactNode
 }) {
   // `initial` is for tests; in production the provider seeds from
   // localStorage on first render.
-  const [settings, setSettings] = useState<Settings>(() => initial ?? load())
+  const [settings, setSettings] = useState<Settings>(() =>
+    initial ? { ...DEFAULTS, ...initial } : load()
+  )
 
   useEffect(() => {
     if (initial) return // tests inject — do not overwrite their value
@@ -52,6 +59,7 @@ export function SettingsProvider({
   const value: Ctx = {
     ...settings,
     setRenderMarkdown: (v) => setSettings((s) => ({ ...s, renderMarkdown: v })),
+    setViewMode: (v) => setSettings((s) => ({ ...s, viewMode: v })),
   }
   return <SettingsCtx.Provider value={value}>{children}</SettingsCtx.Provider>
 }
