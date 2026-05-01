@@ -21,7 +21,7 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
           <ToolTitle name="apply_patch" detail={detail} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Content>
+      <ToolCard.Preview>
         {"error" in parsed ? (
           <pre className="output">{patch}</pre>
         ) : (
@@ -61,7 +61,7 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
           </dl>
         )}
         {meta.text && <pre className="output">{meta.text}</pre>}
-      </ToolCard.Content>
+      </ToolCard.Preview>
     </ToolCard.Root>
   )
 }

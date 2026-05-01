@@ -237,14 +237,14 @@ function ViewImage({ input, output }: { input: ViewImageInput; output: ToolResul
           <ToolTitle name="view_image" detail={basename} />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Content>
+      <ToolCard.Preview>
         {path && (
           <dl className="tool-fields">
             <Field name="path" value={path} />
           </dl>
         )}
         {embeddedImage ? <ImageBlock source={embeddedImage} /> : <Output output={output} />}
-      </ToolCard.Content>
+      </ToolCard.Preview>
     </ToolCard.Root>
   )
 }

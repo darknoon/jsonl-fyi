@@ -81,3 +81,21 @@ test("shell_command preview: no preview when output empty", () => {
   const html = renderFnHtml("shell_command", { command: "noop" }, okOutput)
   expect(html).not.toContain("tool-preview-snippet")
 })
+
+test("view_image: renders inside Preview slot", () => {
+  const html = renderFnHtml("view_image", { path: "/foo.png" }, okOutput)
+  expect(html).toContain("tool-preview")
+  // Path field present
+  expect(html).toContain("foo.png")
+})
+
+test("apply_patch: full patch renders inside Preview slot", () => {
+  const patch = `*** Begin Patch
+*** Add File: hello.ts
++console.log("hi")
+*** End Patch`
+  const html = renderCustomHtml("apply_patch", patch, okOutput)
+  expect(html).toContain("tool-preview")
+  // Header detail uses the file name
+  expect(html).toContain("hello.ts")
+})
