@@ -68,3 +68,36 @@ test("Bash preview: compact mode shows no preview", () => {
   )
   expect(html).not.toContain("tool-preview-snippet")
 })
+
+test("Read preview: counts lines from output text", () => {
+  const html = renderToolHtml(
+    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
+    { ...okOutput, text: "a\nb\nc" },
+  )
+  expect(html).toContain("Read 3 lines")
+})
+
+test("Read preview: trailing newline doesn't inflate count", () => {
+  const html = renderToolHtml(
+    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
+    { ...okOutput, text: "a\nb\n" },
+  )
+  expect(html).toContain("Read 2 lines")
+})
+
+test("Read preview: singular line", () => {
+  const html = renderToolHtml(
+    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
+    { ...okOutput, text: "a" },
+  )
+  expect(html).toContain("Read 1 line")
+  expect(html).not.toContain("Read 1 lines")
+})
+
+test("Read preview: empty output", () => {
+  const html = renderToolHtml(
+    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("(no output)")
+})

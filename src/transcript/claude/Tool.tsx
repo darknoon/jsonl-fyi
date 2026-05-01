@@ -43,6 +43,13 @@ import { Markdown } from "../Markdown"
 // guarantees no field is silently dropped if the input type grows.
 // ---------------------------------------------------------------------------
 
+function readSummary(text: string): string {
+  if (!text) return "(no output)"
+  const trimmed = text.endsWith("\n") ? text.slice(0, -1) : text
+  const n = trimmed.split("\n").length
+  return `Read ${n} ${n === 1 ? "line" : "lines"}`
+}
+
 function Bash({ input, output }: CardProps<BashInput>) {
   const { command, description, timeout, run_in_background, dangerouslyDisableSandbox, ...rest } =
     input
@@ -100,6 +107,9 @@ function Read({ input, output }: CardProps<ReadInput>) {
           <ToolTitle name="Read" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">{readSummary(output.text)}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {(offset != null || limit != null || pages) && (
           <dl className="tool-fields">
