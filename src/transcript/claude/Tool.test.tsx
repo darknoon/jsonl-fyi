@@ -318,3 +318,25 @@ test("TodoWrite preview: all complete shows N / N complete", () => {
   )
   expect(html).toContain("2 / 2 complete")
 })
+
+test("Skill preview: shows description from injectedText frontmatter", () => {
+  const injected = `---
+name: brainstorming
+description: Help turn ideas into designs through dialogue
+---
+body`
+  const html = renderToolHtml(
+    { name: "Skill", input: { skill: "brainstorming" } } as ToolUse,
+    { ...okOutput, injectedText: injected },
+  )
+  expect(html).toContain("Help turn ideas into designs through dialogue")
+  expect(html).toContain("tool-preview-line")
+})
+
+test("Skill preview: no preview when injectedText missing", () => {
+  const html = renderToolHtml(
+    { name: "Skill", input: { skill: "x" } } as ToolUse,
+    okOutput,
+  )
+  expect(html).not.toContain("tool-preview-line")
+})

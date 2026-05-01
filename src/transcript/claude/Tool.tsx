@@ -22,7 +22,7 @@ import type {
 } from "./toolTypes"
 import { EditDiff } from "../EditDiff"
 import { ToolCard } from "../ToolCard"
-import { tailLines, headLines } from "../preview"
+import { tailLines, headLines, parseFrontmatter } from "../preview"
 import { MoreHint } from "../MoreHint"
 import { shortPath } from "./toolMeta"
 import {
@@ -577,6 +577,8 @@ function ToolSearch({ input, output }: CardProps<ToolSearchInput>) {
 function Skill({ input, output }: CardProps<SkillInput>) {
   const { skill, args, ...rest } = input
   assertExhaustive(rest)
+  const fm = output.injectedText ? parseFrontmatter(output.injectedText) : undefined
+  const description = fm?.description
   const hasContent = !!args || !!output.injectedText || hasOutput(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
@@ -585,6 +587,11 @@ function Skill({ input, output }: CardProps<SkillInput>) {
           <ToolTitle name="Skill" detail={skill && shortPath(skill)} />
         </Header>
       </ToolCard.Trigger>
+      {description && (
+        <ToolCard.Preview>
+          <div className="tool-preview-line">{description}</div>
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {args && (
           <dl className="tool-fields">
