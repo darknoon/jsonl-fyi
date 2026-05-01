@@ -1026,3 +1026,5 @@ textarea {
   width: 22px;
   height: 22px;
 }
+
+.edit-diff-wrap { position: relative; }
