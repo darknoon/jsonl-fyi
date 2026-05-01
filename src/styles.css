@@ -859,3 +859,25 @@ body,
   color: var(--muted);
   padding-top: 2px;
 }
+
+.tool-preview-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tool-preview-snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+.tool-preview-snippet.snippet-tall {
+  -webkit-line-clamp: 10;
+}
+
+.tool-preview-snippet.snippet-error {
+  -webkit-line-clamp: 12;
+}
