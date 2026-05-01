@@ -109,9 +109,12 @@ and try X" — verify it yourself.
 If you are targeting a specific case, eg certain tool calls or images, make sure you have specific .jsonl files ready you can use for verification before starting work, so you can verify you have done it correctly on real data.
 
 At the end of an implementation Andrew will do a final spot-check, so
-**leave the dev server running** when you finish a task. Kill any
-previous server before launching a new one (don't pile them up), but
-don't tear down on completion.
+**leave the dev server running** when you finish a task. If you are working
+in the main workspace, reuse port 3000 and avoid piling up duplicate main
+servers. If you are working in a worktree, **do not kill or replace the main
+workspace dev server on port 3000**; start the worktree dev server on a
+different port such as 3001 and verify against that URL instead. Do not tear
+down the relevant dev server on completion.
 
 ## Deployment
 
