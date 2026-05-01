@@ -62,7 +62,6 @@ export function CopyButton({ text, className, ariaLabel = "Copy" }: Props) {
   const mountedRef = useRef(true)
 
   useEffect(() => {
-    mountedRef.current = true
     return () => {
       mountedRef.current = false
       if (timerRef.current !== null) {
@@ -106,6 +105,7 @@ export function CopyButton({ text, className, ariaLabel = "Copy" }: Props) {
       data-copied={copied || undefined}
       onClick={onClick}
     >
+      {/* Both icons render always; CSS cross-fades based on [data-copied]. */}
       <span
         className="copy-button-icon copy-button-icon-copy"
         aria-hidden="true"

@@ -17,7 +17,11 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  act(() => root.unmount())
+  try {
+    act(() => root.unmount())
+  } catch {
+    // root may already be unmounted by the test itself
+  }
   container.remove()
 })
 
@@ -142,22 +146,34 @@ test("falls back to execCommand when clipboard.writeText rejects", async () => {
   expect(execCommand).toHaveBeenCalledWith("copy")
 })
 
-test("unmount before revert does not throw", async () => {
+test("revert callback is a no-op after unmount", async () => {
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
     value: { writeText: async () => {} },
   })
-  await act(async () => {
-    root.render(<CopyButton text="x" />)
-  })
-  const btn = container.querySelector("button")!
-  await act(async () => {
-    btn.click()
-  })
-  // Unmount immediately while the 1500ms timer is still pending.
-  expect(() => {
-    act(() => root.unmount())
-  }).not.toThrow()
-  // Re-create root so afterEach doesn't double-unmount.
-  root = createRoot(container)
+
+  const realSetTimeout = globalThis.setTimeout
+  let scheduled: (() => void) | null = null
+  globalThis.setTimeout = ((cb: () => void, _ms?: number) => {
+    scheduled = cb
+    return 0 as unknown as ReturnType<typeof setTimeout>
+  }) as typeof setTimeout
+
+  try {
+    await act(async () => {
+      root.render(<CopyButton text="x" />)
+    })
+    const btn = container.querySelector("button")!
+    await act(async () => {
+      btn.click()
+    })
+    // Unmount before invoking the captured revert callback.
+    await act(async () => {
+      root.unmount()
+    })
+    // This must not throw and must not call setState on the unmounted root.
+    expect(() => scheduled && scheduled()).not.toThrow()
+  } finally {
+    globalThis.setTimeout = realSetTimeout
+  }
 })
