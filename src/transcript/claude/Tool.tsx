@@ -22,6 +22,8 @@ import type {
 } from "./toolTypes"
 import { EditDiff } from "../EditDiff"
 import { ToolCard } from "../ToolCard"
+import { tailLines } from "../preview"
+import { MoreHint } from "../MoreHint"
 import { shortPath } from "./toolMeta"
 import {
   assertExhaustive,
@@ -52,6 +54,11 @@ function Bash({ input, output }: CardProps<BashInput>) {
     run_in_background != null ||
     dangerouslyDisableSandbox != null ||
     hasOutput(output)
+  const tailN = output.isError ? 10 : 3
+  const tail = output.text ? tailLines(output.text, tailN) : null
+  const snippetClass = output.isError
+    ? "tool-preview-snippet snippet-error"
+    : "tool-preview-snippet"
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -59,6 +66,12 @@ function Bash({ input, output }: CardProps<BashInput>) {
           <ToolTitle name="Bash" detail={command || "Done"} />
         </Header>
       </ToolCard.Trigger>
+      {tail && (
+        <ToolCard.Preview>
+          <pre className={snippetClass}>{tail.text}</pre>
+          <MoreHint count={tail.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {command && <pre className="output cmd">{command}</pre>}
         {(description || timeout != null || run_in_background || dangerouslyDisableSandbox) && (
