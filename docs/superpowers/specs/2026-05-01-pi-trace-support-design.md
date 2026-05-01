@@ -50,6 +50,8 @@ Update shared app entry points:
 
 This keeps pi-specific tree traversal and message shapes isolated while reusing shared transcript building blocks such as `ToolCard`, `Markdown`, `ThinkingBlock`, `ImageBlock`, `EditDiff`, and `UnknownTool`.
 
+As part of the shared renderer contract, `ToolResult` should preserve ordered text/image output content in addition to its existing summary fields. This is not pi-specific: Claude, Codex, pi, MCP, and extension tools can all produce mixed text/image results where normalization must not move all images after all text.
+
 ## Parsing and Branch Selection
 
 `classifyJsonl()` should return `"pi"` only when the first lines contain pi-specific evidence, for example:
@@ -98,6 +100,16 @@ Content block rendering:
 
 Pair assistant tool calls with later `toolResult` messages on the active branch using `toolCall.id === toolResult.toolCallId`. Render one expandable `ToolCard` per call. If a result exists without a visible call, render an orphan result fallback.
 
+Tool result normalization should use a shared ordered content list:
+
+```ts
+type ToolResultContent =
+  | { type: "text"; text: string }
+  | { type: "image"; source: ImageSource }
+```
+
+`ToolResult` may keep existing `text`, `images`, and `toolRefs` summary fields for compatibility, but renderers that display full tool output should prefer ordered `content` so `text → image → text` remains in that order. Claude and Codex should populate this shared field where possible; pi support should use it from the start.
+
 Known first-pass tools:
 
 - `bash`: command title and shell-style text output.
@@ -144,7 +156,9 @@ Add tests next to the relevant files:
   - hidden branch count
   - missing parent tolerance
   - unknown entry tolerance
-- Tool pairing tests near `pi/Tool.tsx` or parser helpers
+- Tool result and pairing tests near `pi/Tool.tsx` or parser helpers
+  - converts pi tool results to shared `ToolResult`
+  - preserves ordered mixed text/image output
   - pairs calls/results by `id`/`toolCallId`
   - handles missing results
   - handles orphan results
