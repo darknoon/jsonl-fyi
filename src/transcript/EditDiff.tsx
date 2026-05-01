@@ -39,10 +39,7 @@ export function EditDiff({
         }}
         disableWorkerPool
       />
-      <CopyButton
-        text={() => diffCopyText(oldString, newString)}
-        ariaLabel="Copy diff"
-      />
+      <CopyButton text={() => diffCopyText(oldString, newString)} ariaLabel="Copy diff" />
     </div>
   )
 }

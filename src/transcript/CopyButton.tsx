@@ -106,10 +106,7 @@ export function CopyButton({ text, className, ariaLabel = "Copy" }: Props) {
       onClick={onClick}
     >
       {/* Both icons render always; CSS cross-fades based on [data-copied]. */}
-      <span
-        className="copy-button-icon copy-button-icon-copy"
-        aria-hidden="true"
-      >
+      <span className="copy-button-icon copy-button-icon-copy" aria-hidden="true">
         <svg
           width="14"
           height="14"
@@ -124,10 +121,7 @@ export function CopyButton({ text, className, ariaLabel = "Copy" }: Props) {
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
       </span>
-      <span
-        className="copy-button-icon copy-button-icon-check"
-        aria-hidden="true"
-      >
+      <span className="copy-button-icon copy-button-icon-check" aria-hidden="true">
         <svg
           width="14"
           height="14"

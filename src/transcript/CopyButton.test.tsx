@@ -32,9 +32,7 @@ test("SSR: renders with default aria-label", () => {
 })
 
 test("SSR: respects custom aria-label", () => {
-  const html = renderToStaticMarkup(
-    <CopyButton text="hello" ariaLabel="Copy command" />,
-  )
+  const html = renderToStaticMarkup(<CopyButton text="hello" ariaLabel="Copy command" />)
   expect(html).toContain('aria-label="Copy command"')
 })
 
@@ -45,9 +43,7 @@ test("SSR: contains both copy and check icon spans", () => {
 })
 
 test("SSR: applies custom className", () => {
-  const html = renderToStaticMarkup(
-    <CopyButton text="x" className="extra-class" />,
-  )
+  const html = renderToStaticMarkup(<CopyButton text="x" className="extra-class" />)
   expect(html).toContain("extra-class")
   expect(html).toContain("copy-button")
 })
@@ -109,7 +105,11 @@ test("click stops propagation", async () => {
   })
   let parentClicked = false
   const Parent = () => (
-    <div onClick={() => { parentClicked = true }}>
+    <div
+      onClick={() => {
+        parentClicked = true
+      }}
+    >
       <CopyButton text="x" />
     </div>
   )
@@ -133,8 +133,7 @@ test("falls back to execCommand when clipboard.writeText rejects", async () => {
   })
   const execCommand = mock(() => true)
   // happy-dom may not implement execCommand; assign directly
-  ;(document as unknown as { execCommand: typeof execCommand }).execCommand =
-    execCommand
+  ;(document as unknown as { execCommand: typeof execCommand }).execCommand = execCommand
   await act(async () => {
     root.render(<CopyButton text="fallback-text" />)
   })
