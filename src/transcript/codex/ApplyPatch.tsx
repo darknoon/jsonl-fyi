@@ -34,18 +34,27 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
                   </div>
                 )
               }
+              const showFilename = fileCount > 1 || (f.op === "update" && !!f.movedTo)
               return (
                 <div key={i} className="apply-patch-file">
-                  {f.op === "update" && f.movedTo && (
-                    <div className="apply-patch-rename">
-                      Renamed: <code>{f.path}</code> → <code>{f.movedTo}</code>
-                    </div>
-                  )}
+                  {showFilename &&
+                    (f.op === "update" && f.movedTo ? (
+                      <div className="apply-patch-filename">
+                        Renamed: <code>{f.path}</code> → <code>{f.movedTo}</code>
+                      </div>
+                    ) : (
+                      <div className="apply-patch-filename">
+                        {f.op === "add" ? "Added: " : ""}
+                        <code>{f.path}</code>
+                      </div>
+                    ))}
                   <PatchDiff
                     patch={f.unifiedDiff}
                     options={{
                       diffStyle: "unified",
                       diffIndicators: "classic",
+                      disableFileHeader: true,
+                      disableLineNumbers: true,
                     }}
                     disableWorkerPool
                   />

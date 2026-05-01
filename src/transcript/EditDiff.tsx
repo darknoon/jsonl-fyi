@@ -29,6 +29,7 @@ export function EditDiff({
         diffStyle: "unified",
         disableFileHeader: true,
         diffIndicators: "classic",
+        disableLineNumbers: true,
       }}
       disableWorkerPool
     />
