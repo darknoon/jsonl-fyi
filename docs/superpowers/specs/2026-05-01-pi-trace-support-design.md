@@ -92,7 +92,7 @@ Content block rendering:
 - `thinking` → shared `ThinkingBlock`
 - `image` → shared `ImageBlock`
 - `toolCall` → `pi/Tool.tsx`
-- unknown block → shared integrated fallback block with a normal transcript header, concise label, and expandable raw JSON details
+- any unexpected content block type → shared integrated fallback block, but this is defensive only; pi's expected extensibility point is unknown tool calls, not arbitrary content block types
 
 ## Tool Rendering
 
@@ -153,7 +153,7 @@ Add tests next to the relevant files:
 
 - Malformed JSON remains handled by existing `iterJsonlLines()` skipped count.
 - Unknown entry types and message roles render generically instead of crashing.
-- Unknown content blocks render through a shared, visually integrated fallback component rather than an unstyled dump. The fallback shows a header such as `Unknown content block: progress`, preserves surrounding message context, and puts raw JSON in expandable details.
+- Unexpected content block types are defensive-only. Pi's expected content block types are `text`, `thinking`, `image`, and `toolCall`; unknown tools inside `toolCall` are the normal extensibility case.
 - Missing tool result renders the call as having no result.
 - Orphan tool result renders as a generic result card.
 - Missing parent links do not abort parsing.
