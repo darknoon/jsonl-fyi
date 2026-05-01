@@ -853,3 +853,9 @@ body,
   cursor: pointer;
   user-select: none;
 }
+
+.tool-more-hint {
+  font-size: 0.85em;
+  color: var(--muted);
+  padding-top: 2px;
+}
