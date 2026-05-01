@@ -1,8 +1,15 @@
+import { useCardToggle } from "./ToolCard"
+
 export function MoreHint({ count }: { count: number }) {
+  const toggle = useCardToggle()
   if (count <= 0) return null
   return (
-    <div className="tool-more-hint">
+    <button
+      type="button"
+      className="tool-more-hint"
+      onClick={toggle}
+    >
       … +{count} {count === 1 ? "line" : "lines"}
-    </div>
+    </button>
   )
 }

@@ -96,3 +96,10 @@ function Content({ children }: { children: ReactNode }) {
 }
 
 export const ToolCard = { Root, Trigger, Preview, Content }
+
+export function useCardToggle(): () => void {
+  const ctx = useContext(Ctx)
+  // No-op outside a Root provider so consumers don't need a wrapper for
+  // unit tests that render in isolation.
+  return ctx?.toggle ?? (() => {})
+}

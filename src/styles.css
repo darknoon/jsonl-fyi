@@ -854,10 +854,23 @@ body,
   user-select: none;
 }
 
+.tool-preview {
+  margin: 4px 0 4px 24px;
+  gap: 2px;
+}
+
 .tool-more-hint {
   font-size: 0.85em;
   color: var(--muted);
-  padding-top: 2px;
+  padding: 2px 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  align-self: flex-start;
+}
+.tool-more-hint:hover {
+  color: var(--fg);
 }
 
 .tool-preview-line {
@@ -867,11 +880,18 @@ body,
 }
 
 .tool-preview-snippet {
+  font-size: var(--fs-sm);
+  background: var(--code-bg);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin: 0;
+  color: var(--muted);
   display: -webkit-box;
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .tool-preview-snippet.snippet-tall {
