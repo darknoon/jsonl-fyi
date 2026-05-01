@@ -378,6 +378,36 @@ export function tryParseAgentSpawnOutput(raw: string): { nickname?: string; agen
 
 type WaitAgentInput = { targets?: string[]; timeout_ms?: number }
 
+type WaitStatus =
+  | { Completed: { message?: string } }
+  | { Errored: { error?: string } }
+  | "InProgress"
+  | "NotFound"
+  | string
+
+type WaitOutputJson = { status: Record<string, WaitStatus>; timed_out: boolean }
+
+function parseWaitOutput(raw: string): WaitOutputJson | string | null {
+  if (!raw) return null
+  try {
+    const v = JSON.parse(raw)
+    if (typeof v === "string") return v
+    if (v && typeof v === "object" && "status" in v && "timed_out" in v) {
+      return v as WaitOutputJson
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function statusLabel(s: WaitStatus): { name: string; message?: string } {
+  if (typeof s === "string") return { name: s }
+  if ("Completed" in s) return { name: "Completed", message: s.Completed.message }
+  if ("Errored" in s) return { name: "Errored", message: s.Errored.error }
+  return { name: "Unknown" }
+}
+
 function WaitAgent({
   input,
   output,
@@ -391,9 +421,36 @@ function WaitAgent({
   const labels = (targets ?? []).map((id) => agentNicknames?.get(id) ?? id.slice(0, 8))
   const detail = labels.join(", ") || undefined
 
+  const parsed = parseWaitOutput(output.text)
+  const previewRows: { id: string; line: string }[] = []
+  let singleLine: string | null = null
+
+  if (typeof parsed === "string") {
+    singleLine = parsed
+  } else if (parsed && typeof parsed === "object") {
+    const entries = Object.entries(parsed.status)
+    if (entries.length === 0) {
+      singleLine = parsed.timed_out
+        ? `Timed out after ${(timeout_ms ?? 0) / 1000}s`
+        : "(no agent results)"
+    } else {
+      for (const [id, s] of entries) {
+        const lab = agentNicknames?.get(id) ?? id.slice(0, 8)
+        const { name, message } = statusLabel(s)
+        previewRows.push({
+          id,
+          line: message ? `${lab}: ${name} — ${message}` : `${lab}: ${name}`,
+        })
+      }
+    }
+  }
+
+  const hasPreview = singleLine != null || previewRows.length > 0
+
   const fields: Array<[string, ReactNode]> = []
   if (targets && targets.length > 0) fields.push(["targets", targets.join(", ")])
   if (timeout_ms != null) fields.push(["timeout_ms", `${timeout_ms}`])
+
   return (
     <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -401,6 +458,14 @@ function WaitAgent({
           <ToolTitle name="wait_agent" detail={detail} />
         </Header>
       </ToolCard.Trigger>
+      {hasPreview && (
+        <ToolCard.Preview>
+          {singleLine && <div className="tool-preview-line">{singleLine}</div>}
+          {previewRows.map((r) => (
+            <div key={r.id} className="tool-preview-line">{r.line}</div>
+          ))}
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {fields.length > 0 && (
           <dl className="tool-fields">
