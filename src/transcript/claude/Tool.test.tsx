@@ -34,9 +34,9 @@ test("Bash preview: last 3 lines + MoreHint when more", () => {
     ...okOutput,
     text: "1\n2\n3\n4\n5",
   })
-  expect(html).toContain('class="tool-preview-snippet"')
+  expect(html).toContain('class="tool-preview-snippet copy-host"')
   expect(html).toContain("3\n4\n5")
-  expect(html).not.toContain('<pre class="tool-preview-snippet">1\n2\n3\n4\n5') // not rendering full
+  expect(html).not.toContain('<pre class="tool-preview-snippet copy-host">1\n2\n3\n4\n5') // not rendering full
   expect(html).toContain("2 more lines")
 })
 
@@ -47,7 +47,7 @@ test("Bash preview: 10-line tail on error with snippet-error class", () => {
     text,
     isError: true,
   })
-  expect(html).toContain('class="tool-preview-snippet snippet-error"')
+  expect(html).toContain('class="tool-preview-snippet snippet-error copy-host"')
   expect(html).toContain("6\n7\n8\n9\n10\n11\n12\n13\n14\n15")
   expect(html).toContain("5 more lines")
 })
@@ -156,7 +156,7 @@ test("Write preview: first 10 lines + MoreHint when content has more", () => {
     { name: "Write", input: { file_path: "/foo.ts", content: lines } } as ToolUse,
     okOutput,
   )
-  expect(html).toContain("tool-preview-snippet snippet-tall")
+  expect(html).toContain("tool-preview-snippet snippet-tall copy-host")
   expect(html).toContain("line 1\n")
   expect(html).toContain("line 10")
   expect(html).not.toMatch(/snippet[^"]*">[^<]*line 11/) // line 11 not in snippet
@@ -168,7 +168,7 @@ test("Write preview: no MoreHint when content fits", () => {
     { name: "Write", input: { file_path: "/foo.ts", content: "a\nb" } } as ToolUse,
     okOutput,
   )
-  expect(html).toContain("tool-preview-snippet snippet-tall")
+  expect(html).toContain("tool-preview-snippet snippet-tall copy-host")
   expect(html).not.toContain("tool-more-hint")
 })
 
@@ -248,7 +248,7 @@ test("Agent preview: first 3 lines of output + MoreHint", () => {
     { name: "Agent", input: { description: "Search docs", prompt: "..." } } as ToolUse,
     { ...okOutput, text },
   )
-  expect(html).toContain("tool-preview-snippet")
+  expect(html).toContain("tool-preview-snippet copy-host")
   expect(html).toContain("result line 1\nresult line 2\nresult line 3")
   expect(html).not.toMatch(/snippet[^"]*">[^<]*result line 4/)
   expect(html).toContain("1 more line")
@@ -259,7 +259,7 @@ test("Agent preview: no MoreHint when output fits", () => {
     { name: "Agent", input: { description: "x", prompt: "..." } } as ToolUse,
     { ...okOutput, text: "one\ntwo" },
   )
-  expect(html).toContain("tool-preview-snippet")
+  expect(html).toContain("tool-preview-snippet copy-host")
   expect(html).not.toContain("tool-more-hint")
 })
 

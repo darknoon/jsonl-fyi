@@ -17,7 +17,9 @@ function shellTailPreview(output: ToolResult): {
   if (!output.text) return null
   const tailN = output.isError ? 10 : 3
   const tail = tailLines(output.text, tailN)
-  const className = output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"
+  const className = output.isError
+    ? "tool-preview-snippet snippet-error copy-host"
+    : "tool-preview-snippet copy-host"
   return { ...tail, className }
 }
 
@@ -60,7 +62,10 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
       </ToolCard.Trigger>
       {tail && (
         <ToolCard.Preview>
-          <pre className={tail.className}>{tail.text}</pre>
+          <pre className={tail.className}>
+            {tail.text}
+            <CopyButton text={output.text} ariaLabel="Copy output" />
+          </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
       )}
@@ -125,7 +130,10 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
       </ToolCard.Trigger>
       {tail && (
         <ToolCard.Preview>
-          <pre className={tail.className}>{tail.text}</pre>
+          <pre className={tail.className}>
+            {tail.text}
+            <CopyButton text={output.text} ariaLabel="Copy output" />
+          </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
       )}
@@ -176,7 +184,10 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
       </ToolCard.Trigger>
       {tail && (
         <ToolCard.Preview>
-          <pre className={tail.className}>{tail.text}</pre>
+          <pre className={tail.className}>
+            {tail.text}
+            <CopyButton text={output.text} ariaLabel="Copy output" />
+          </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
       )}
@@ -231,7 +242,10 @@ function WriteStdin({ input, output }: { input: WriteStdinInput; output: ToolRes
       </ToolCard.Trigger>
       {tail && (
         <ToolCard.Preview>
-          <pre className={tail.className}>{tail.text}</pre>
+          <pre className={tail.className}>
+            {tail.text}
+            <CopyButton text={output.text} ariaLabel="Copy output" />
+          </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
       )}

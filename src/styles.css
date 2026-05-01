@@ -947,6 +947,11 @@ textarea {
   overflow: hidden;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+}
+
+.tool-preview-snippet.copy-host {
+  padding-right: 40px;
 }
 
 .tool-preview-snippet.snippet-tall {

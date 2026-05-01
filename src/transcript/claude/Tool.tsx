@@ -85,8 +85,8 @@ function Bash({ input, output }: CardProps<BashInput>) {
   const tailN = output.isError ? 10 : 3
   const tail = output.text ? tailLines(output.text, tailN) : null
   const snippetClass = output.isError
-    ? "tool-preview-snippet snippet-error"
-    : "tool-preview-snippet"
+    ? "tool-preview-snippet snippet-error copy-host"
+    : "tool-preview-snippet copy-host"
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -96,7 +96,10 @@ function Bash({ input, output }: CardProps<BashInput>) {
       </ToolCard.Trigger>
       {tail && (
         <ToolCard.Preview>
-          <pre className={snippetClass}>{tail.text}</pre>
+          <pre className={snippetClass}>
+            {tail.text}
+            <CopyButton text={output.text} ariaLabel="Copy output" />
+          </pre>
           <MoreHint count={tail.remaining} />
         </ToolCard.Preview>
       )}
@@ -222,7 +225,10 @@ function Write({ input, output }: CardProps<WriteInput>) {
       </ToolCard.Trigger>
       {head && (
         <ToolCard.Preview>
-          <pre className="tool-preview-snippet snippet-tall">{head.text}</pre>
+          <pre className="tool-preview-snippet snippet-tall copy-host">
+            {head.text}
+            <CopyButton text={content} ariaLabel="Copy contents" />
+          </pre>
           <MoreHint count={head.remaining} />
         </ToolCard.Preview>
       )}
@@ -438,7 +444,10 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
       </ToolCard.Trigger>
       {head && (
         <ToolCard.Preview>
-          <pre className="tool-preview-snippet">{head.text}</pre>
+          <pre className="tool-preview-snippet copy-host">
+            {head.text}
+            <CopyButton text={output.text} ariaLabel="Copy output" />
+          </pre>
           <MoreHint count={head.remaining} />
         </ToolCard.Preview>
       )}
