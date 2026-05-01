@@ -22,7 +22,7 @@ import type {
 } from "./toolTypes"
 import { EditDiff } from "../EditDiff"
 import { ToolCard } from "../ToolCard"
-import { tailLines } from "../preview"
+import { tailLines, headLines } from "../preview"
 import { MoreHint } from "../MoreHint"
 import { shortPath } from "./toolMeta"
 import {
@@ -186,6 +186,7 @@ function Write({ input, output }: CardProps<WriteInput>) {
   const { file_path, content, ...rest } = input
   assertExhaustive(rest)
   const hasContent = !!content || hasOutput(output)
+  const head = content ? headLines(content, 10) : null
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -193,6 +194,12 @@ function Write({ input, output }: CardProps<WriteInput>) {
           <ToolTitle name="Write" detail={file_path && shortPath(file_path)} />
         </Header>
       </ToolCard.Trigger>
+      {head && (
+        <ToolCard.Preview>
+          <pre className="tool-preview-snippet snippet-tall">{head.text}</pre>
+          <MoreHint count={head.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {content && <pre className="output">{content}</pre>}
         <Output output={output} />

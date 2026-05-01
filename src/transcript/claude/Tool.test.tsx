@@ -151,3 +151,25 @@ test("NotebookEdit: new_source renders inside Preview slot", () => {
   expect(html).toContain("tool-preview")
   expect(html).toContain("print(&#x27;hi&#x27;)")  // single quotes get HTML-escaped by React
 })
+
+test("Write preview: first 10 lines + MoreHint when content has more", () => {
+  const lines = Array.from({ length: 15 }, (_, i) => `line ${i + 1}`).join("\n")
+  const html = renderToolHtml(
+    { name: "Write", input: { file_path: "/foo.ts", content: lines } } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("tool-preview-snippet snippet-tall")
+  expect(html).toContain("line 1\n")
+  expect(html).toContain("line 10")
+  expect(html).not.toMatch(/snippet[^"]*">[^<]*line 11/) // line 11 not in snippet
+  expect(html).toContain("+5 lines")
+})
+
+test("Write preview: no MoreHint when content fits", () => {
+  const html = renderToolHtml(
+    { name: "Write", input: { file_path: "/foo.ts", content: "a\nb" } } as ToolUse,
+    okOutput,
+  )
+  expect(html).toContain("tool-preview-snippet snippet-tall")
+  expect(html).not.toContain("tool-more-hint")
+})
