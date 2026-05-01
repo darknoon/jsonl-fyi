@@ -17,8 +17,8 @@ Create:
 - `src/transcript/pi/types.ts` — pi JSONL wire types plus parsed transcript shape.
 - `src/transcript/pi/parse.ts` — validates/keeps pi entries, separates header, reconstructs active branch, computes hidden/orphan counts.
 - `src/transcript/pi/parse.test.ts` — parser tests for active branch, hidden branches, orphan tolerance, unknown entries.
-- `src/transcript/pi/toolResult.ts` — converts pi `toolResult` message content to shared `ToolResult`.
-- `src/transcript/pi/toolResult.test.ts` — tool result conversion tests.
+- `src/transcript/pi/toolResult.ts` — converts pi `toolResult` message content to a pi render result that preserves ordered text/image output while also exposing the existing shared `ToolResult` summary for compatibility.
+- `src/transcript/pi/toolResult.test.ts` — tool result conversion tests, including mixed text/image ordering.
 - `src/transcript/pi/Tool.tsx` — pi tool card rendering for built-ins, `plan_tracker`, `subagent`, and unknown tools.
 - `src/transcript/pi/Tool.test.tsx` — render tests for pi tool cards and unknown fallback.
 - `src/transcript/pi/EntryView.tsx` — renders pi entries/content blocks and skips paired tool result entries.
@@ -540,7 +540,7 @@ git commit -m "feat(pi): parse active session branch"
 
 ---
 
-### Task 3: Convert pi tool results to shared ToolResult
+### Task 3: Convert pi tool results while preserving mixed text/image order
 
 **Files:**
 - Create: `src/transcript/pi/toolResult.ts`
@@ -566,7 +566,7 @@ function result(overrides: Partial<PiToolResultMessage>): PiToolResultMessage {
   }
 }
 
-test("extractPiToolResult: joins text blocks", () => {
+test("extractPiToolResult: joins text blocks into compatibility output", () => {
   const out = extractPiToolResult(
     result({
       content: [
@@ -575,20 +575,32 @@ test("extractPiToolResult: joins text blocks", () => {
       ],
     }),
   )
-  expect(out.text).toBe("hello\nworld")
-  expect(out.images).toEqual([])
-  expect(out.isError).toBe(false)
+  expect(out.output.text).toBe("hello\nworld")
+  expect(out.output.images).toEqual([])
+  expect(out.output.isError).toBe(false)
 })
 
-test("extractPiToolResult: converts images", () => {
+test("extractPiToolResult: preserves mixed text/image order", () => {
   const out = extractPiToolResult(
-    result({ content: [{ type: "image", data: "abc", mimeType: "image/png" }] }),
+    result({
+      content: [
+        { type: "text", text: "before" },
+        { type: "image", data: "abc", mimeType: "image/png" },
+        { type: "text", text: "after" },
+      ],
+    }),
   )
-  expect(out.images).toEqual([{ type: "base64", media_type: "image/png", data: "abc" }])
+  expect(out.output.text).toBe("before\nafter")
+  expect(out.output.images).toEqual([{ type: "base64", media_type: "image/png", data: "abc" }])
+  expect(out.orderedContent).toEqual([
+    { type: "text", text: "before" },
+    { type: "image", source: { type: "base64", media_type: "image/png", data: "abc" } },
+    { type: "text", text: "after" },
+  ])
 })
 
 test("extractPiToolResult: preserves isError", () => {
-  expect(extractPiToolResult(result({ isError: true })).isError).toBe(true)
+  expect(extractPiToolResult(result({ isError: true })).output.isError).toBe(true)
 })
 ```
 
@@ -607,24 +619,43 @@ Expected: fails because `toolResult.ts` does not exist.
 Create `src/transcript/pi/toolResult.ts`:
 
 ```ts
-import type { ToolResult } from "../../types"
+import type { ImageSource, ToolResult } from "../../types"
 import type { PiToolResultMessage } from "./types"
 import { piImageToSource } from "./types"
 
-export function extractPiToolResult(message: PiToolResultMessage): ToolResult {
+export type PiOrderedToolResultContent =
+  | { type: "text"; text: string }
+  | { type: "image"; source: ImageSource }
+
+export type PiRenderedToolResult = {
+  output: ToolResult
+  orderedContent: PiOrderedToolResultContent[]
+}
+
+export function extractPiToolResult(message: PiToolResultMessage): PiRenderedToolResult {
   const text: string[] = []
   const images: ToolResult["images"] = []
+  const orderedContent: PiOrderedToolResultContent[] = []
 
   for (const item of message.content) {
-    if (item.type === "text") text.push(item.text)
-    else if (item.type === "image") images.push(piImageToSource(item))
+    if (item.type === "text") {
+      text.push(item.text)
+      orderedContent.push({ type: "text", text: item.text })
+    } else if (item.type === "image") {
+      const source = piImageToSource(item)
+      images.push(source)
+      orderedContent.push({ type: "image", source })
+    }
   }
 
   return {
-    text: text.join("\n"),
-    images,
-    toolRefs: [],
-    isError: !!message.isError,
+    output: {
+      text: text.join("\n"),
+      images,
+      toolRefs: [],
+      isError: !!message.isError,
+    },
+    orderedContent,
   }
 }
 ```
@@ -643,7 +674,7 @@ Expected: all tests pass.
 
 ```bash
 git add src/transcript/pi/toolResult.ts src/transcript/pi/toolResult.test.ts
-git commit -m "feat(pi): convert tool results"
+git commit -m "feat(pi): preserve ordered tool results"
 ```
 
 ---
@@ -673,10 +704,16 @@ function renderTool(
   output: ToolResult = okOutput,
   details?: unknown,
   settings: Partial<Settings> = {},
+  orderedContent?: Array<{ type: "text"; text: string } | { type: "image"; source: ToolResult["images"][number] }>,
 ): string {
   return renderToStaticMarkup(
     <SettingsProvider initial={{ renderMarkdown: true, viewMode: "normal", ...settings }}>
-      <PiTool call={{ type: "toolCall", id: "c1", name, arguments: input }} output={output} details={details} />
+      <PiTool
+        call={{ type: "toolCall", id: "c1", name, arguments: input }}
+        output={output}
+        details={details}
+        orderedContent={orderedContent}
+      />
     </SettingsProvider>,
   )
 }
@@ -718,6 +755,24 @@ test("PiTool: subagent renders mode and result preview", () => {
   expect(html).toContain("Scout found parser files")
 })
 
+test("PiTool: read preserves ordered mixed text and image result content", () => {
+  const image = { type: "base64" as const, media_type: "image/png", data: "abc" }
+  const html = renderTool(
+    "read",
+    { path: "/tmp/file.ts" },
+    { ...okOutput, text: "before\nafter", images: [image] },
+    undefined,
+    {},
+    [
+      { type: "text", text: "before" },
+      { type: "image", source: image },
+      { type: "text", text: "after" },
+    ],
+  )
+  expect(html.indexOf("before")).toBeLessThan(html.indexOf("image-block"))
+  expect(html.indexOf("image-block")).toBeLessThan(html.indexOf("after"))
+})
+
 test("PiTool: unknown tool uses integrated fallback", () => {
   const html = renderTool("my_extension_tool", { action: "go" }, { ...okOutput, text: "Done" })
   expect(html).toContain("my_extension_tool")
@@ -743,12 +798,14 @@ Create `src/transcript/pi/Tool.tsx`:
 ```tsx
 import type { ReactNode } from "react"
 import type { ToolResult } from "../../types"
+import { ImageBlock } from "../ImageBlock"
 import { ToolCard } from "../ToolCard"
 import { Header, Field, Output, ToolTitle, hasOutput } from "../shared"
 import { UnknownTool } from "../UnknownTool"
 import { MoreHint } from "../MoreHint"
 import { headLines, tailLines } from "../preview"
 import type { PiToolCallContent } from "./types"
+import type { PiOrderedToolResultContent } from "./toolResult"
 
 function shortPath(path: string): string {
   const parts = path.split("/").filter(Boolean)
@@ -768,7 +825,19 @@ function objectDetails(details: unknown): Record<string, unknown> | null {
     : null
 }
 
-function ShellTool({ call, output }: { call: PiToolCallContent; output: ToolResult }) {
+function OrderedResultContent({ output, orderedContent }: { output: ToolResult; orderedContent?: PiOrderedToolResultContent[] }) {
+  if (!orderedContent || orderedContent.length === 0) return <Output output={output} />
+  return (
+    <>
+      {orderedContent.map((item, index) => {
+        if (item.type === "text") return <pre key={index} className="output">{item.text}</pre>
+        return <ImageBlock key={index} source={item.source} />
+      })}
+    </>
+  )
+}
+
+function ShellTool({ call, output, orderedContent }: { call: PiToolCallContent; output: ToolResult; orderedContent?: PiOrderedToolResultContent[] }) {
   const command = typeof call.arguments.command === "string" ? call.arguments.command : undefined
   const timeout = typeof call.arguments.timeout === "number" ? call.arguments.timeout : undefined
   const tail = output.text ? tailLines(output.text, output.isError ? 10 : 3) : null
@@ -782,13 +851,13 @@ function ShellTool({ call, output }: { call: PiToolCallContent; output: ToolResu
       <ToolCard.Content>
         {command && <pre className="output cmd">{command}</pre>}
         {timeout != null && <dl className="tool-fields"><Field name="timeout" value={`${timeout}s`} /></dl>}
-        <Output output={output} />
+        <OrderedResultContent output={output} orderedContent={orderedContent} />
       </ToolCard.Content>
     </ToolCard.Root>
   )
 }
 
-function ReadTool({ call, output }: { call: PiToolCallContent; output: ToolResult }) {
+function ReadTool({ call, output, orderedContent }: { call: PiToolCallContent; output: ToolResult; orderedContent?: PiOrderedToolResultContent[] }) {
   const path = typeof call.arguments.path === "string" ? call.arguments.path : undefined
   const offset = typeof call.arguments.offset === "number" ? call.arguments.offset : undefined
   const limit = typeof call.arguments.limit === "number" ? call.arguments.limit : undefined
@@ -805,13 +874,13 @@ function ReadTool({ call, output }: { call: PiToolCallContent; output: ToolResul
             {limit != null && <Field name="limit" value={limit} />}
           </dl>
         )}
-        <Output output={output} />
+        <OrderedResultContent output={output} orderedContent={orderedContent} />
       </ToolCard.Content>
     </ToolCard.Root>
   )
 }
 
-function GenericFileTool({ call, output }: { call: PiToolCallContent; output: ToolResult }) {
+function GenericFileTool({ call, output, orderedContent }: { call: PiToolCallContent; output: ToolResult; orderedContent?: PiOrderedToolResultContent[] }) {
   const path = typeof call.arguments.path === "string" ? call.arguments.path : undefined
   const head = output.text ? headLines(output.text, 3) : null
   return (
@@ -826,7 +895,7 @@ function GenericFileTool({ call, output }: { call: PiToolCallContent; output: To
             {Object.entries(call.arguments).map(([key, value]) => <Field key={key} name={key} value={typeof value === "string" ? value : JSON.stringify(value, null, 2)} />)}
           </dl>
         )}
-        <Output output={output} />
+        <OrderedResultContent output={output} orderedContent={orderedContent} />
       </ToolCard.Content>
     </ToolCard.Root>
   )
@@ -883,18 +952,18 @@ function SubagentTool({ call, output, details }: { call: PiToolCallContent; outp
   )
 }
 
-export function PiTool({ call, output, details }: { call: PiToolCallContent; output: ToolResult; details?: unknown }) {
+export function PiTool({ call, output, details, orderedContent }: { call: PiToolCallContent; output: ToolResult; details?: unknown; orderedContent?: PiOrderedToolResultContent[] }) {
   switch (call.name) {
     case "bash":
-      return <ShellTool call={call} output={output} />
+      return <ShellTool call={call} output={output} orderedContent={orderedContent} />
     case "read":
-      return <ReadTool call={call} output={output} />
+      return <ReadTool call={call} output={output} orderedContent={orderedContent} />
     case "write":
     case "edit":
     case "grep":
     case "find":
     case "ls":
-      return <GenericFileTool call={call} output={output} />
+      return <GenericFileTool call={call} output={output} orderedContent={orderedContent} />
     case "plan_tracker":
       return <PlanTrackerTool call={call} output={output} details={details} />
     case "subagent":
@@ -945,6 +1014,7 @@ import { ToolCard } from "../ToolCard"
 import { Header, Field, ToolTitle } from "../shared"
 import { TextBlock } from "../claude/TextBlock"
 import { PiTool } from "./Tool"
+import type { PiRenderedToolResult } from "./toolResult"
 import type { PiContent, PiMessageEntry, PiTreeEntry, PiToolResultMessage } from "./types"
 import { piImageToSource } from "./types"
 
@@ -984,19 +1054,27 @@ function renderContentBlock(
   block: PiContent,
   index: number,
   role: string,
-  results: Map<string, { output: ToolResult; details?: unknown }>,
+  results: Map<string, PiRenderedToolResult & { details?: unknown }>,
 ): ReactNode {
   if (block.type === "text") return <TextBlock key={index} role={role} text={block.text} />
   if (block.type === "thinking") return <ThinkingBlock key={index} text={block.thinking} />
   if (block.type === "image") return <ImageBlock key={index} role={role} source={piImageToSource(block)} />
   if (block.type === "toolCall") {
     const result = results.get(block.id)
-    return <PiTool key={index} call={block} output={result?.output ?? EMPTY_RESULT} details={result?.details} />
+    return (
+      <PiTool
+        key={index}
+        call={block}
+        output={result?.output ?? EMPTY_RESULT}
+        details={result?.details}
+        orderedContent={result?.orderedContent}
+      />
+    )
   }
   return <UnknownContent key={index} block={block} />
 }
 
-function MessageEntryView({ entry, results }: { entry: PiMessageEntry; results: Map<string, { output: ToolResult; details?: unknown }> }) {
+function MessageEntryView({ entry, results }: { entry: PiMessageEntry; results: Map<string, PiRenderedToolResult & { details?: unknown }> }) {
   const { message } = entry
   if (message.role === "toolResult") return null
 
@@ -1026,7 +1104,7 @@ function MessageEntryView({ entry, results }: { entry: PiMessageEntry; results: 
   return <UnknownEntry entry={entry} />
 }
 
-export function PiEntryView({ entry, results }: { entry: PiTreeEntry; results: Map<string, { output: ToolResult; details?: unknown }> }) {
+export function PiEntryView({ entry, results }: { entry: PiTreeEntry; results: Map<string, PiRenderedToolResult & { details?: unknown }> }) {
   if (entry.type === "message") return <MessageEntryView entry={entry} results={results} />
   if (entry.type === "model_change") return <div className="pi-meta-row">Model: <code>{entry.provider}/{entry.modelId}</code></div>
   if (entry.type === "thinking_level_change") return <div className="pi-meta-row">Thinking: <code>{entry.thinkingLevel}</code></div>
@@ -1048,10 +1126,9 @@ export function PiEntryView({ entry, results }: { entry: PiTreeEntry; results: M
 Create `src/transcript/pi/PiTranscript.tsx`:
 
 ```tsx
-import type { ToolResult } from "../../types"
 import { TranscriptHeader } from "../TranscriptHeader"
 import { PiEntryView } from "./EntryView"
-import { extractPiToolResult } from "./toolResult"
+import { extractPiToolResult, type PiRenderedToolResult } from "./toolResult"
 import type { PiParsedSession, PiToolResultMessage } from "./types"
 
 function isPiToolResultMessage(message: unknown): message is PiToolResultMessage {
@@ -1059,12 +1136,12 @@ function isPiToolResultMessage(message: unknown): message is PiToolResultMessage
 }
 
 export function PiTranscript({ session }: { session: PiParsedSession }) {
-  const results = new Map<string, { output: ToolResult; details?: unknown }>()
+  const results = new Map<string, PiRenderedToolResult & { details?: unknown }>()
   for (const entry of session.activeEntries) {
     if (entry.type !== "message") continue
     const message = entry.message
     if (!isPiToolResultMessage(message)) continue
-    results.set(message.toolCallId, { output: extractPiToolResult(message), details: message.details })
+    results.set(message.toolCallId, { ...extractPiToolResult(message), details: message.details })
   }
 
   return (
