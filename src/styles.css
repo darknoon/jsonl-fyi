@@ -799,6 +799,7 @@ textarea {
 }
 
 .md-content .md-code-block {
+  position: relative;
   background: var(--color-code-bg);
   border-radius: var(--radius-lg);
   padding: 0.5em 0.75em;

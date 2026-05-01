@@ -1,8 +1,21 @@
+import { isValidElement, type ReactNode } from "react"
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { remarkKeepDisallowed } from "./remarkKeepDisallowed"
 import { remarkInlineOnly } from "./remarkInlineOnly"
 import { useSettings } from "../settings"
+import { CopyButton } from "./CopyButton"
+
+function extractCodeText(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return ""
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(extractCodeText).join("")
+  if (isValidElement(node)) {
+    const children = (node.props as { children?: ReactNode }).children
+    return extractCodeText(children)
+  }
+  return ""
+}
 
 const COMPONENTS: Components = {
   a: ({ node: _node, ...props }) => (
@@ -19,7 +32,15 @@ const COMPONENTS: Components = {
       </code>
     )
   },
-  pre: ({ node: _node, ...props }) => <pre {...props} className="md-code-block" />,
+  pre: ({ node: _node, children, ...props }) => {
+    const code = extractCodeText(children)
+    return (
+      <pre {...props} className="md-code-block copy-host">
+        {children}
+        <CopyButton text={code} ariaLabel="Copy code" />
+      </pre>
+    )
+  },
   ul: ({ node: _node, ...props }) => <ul {...props} className="md-list" />,
   ol: ({ node: _node, ...props }) => <ol {...props} className="md-list" />,
   blockquote: ({ node: _node, ...props }) => <blockquote {...props} className="md-quote" />,
