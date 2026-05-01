@@ -40,6 +40,11 @@ Behavior:
 - Click → resolve `text` (call thunk if function) → `navigator.clipboard.writeText`.
 - On success: render checkmark icon, set `data-copied`, schedule revert in
   1500 ms (cleared on unmount).
+- Icon swap is animated with a blur-fade cross-dissolve: both icons
+  occupy the same grid cell; the outgoing icon transitions
+  `opacity: 1 → 0` and `filter: blur(0) → blur(4px)` over ~180 ms while
+  the incoming icon does the inverse. Reduce-motion users get an
+  instant swap (`@media (prefers-reduced-motion: reduce)`).
 - On failure: fall back to `document.execCommand("copy")` via a
   one-shot offscreen textarea. If that also fails, `console.warn` and
   leave the button untouched.
