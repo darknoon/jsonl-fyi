@@ -433,7 +433,7 @@ type WaitStatus =
   | { Errored: { error?: string } }
   | "InProgress"
   | "NotFound"
-  | string
+  | (string & {})
 
 type WaitOutputJson = { status: Record<string, WaitStatus>; timed_out: boolean }
 

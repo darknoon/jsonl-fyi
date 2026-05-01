@@ -92,7 +92,7 @@ export type AgentInput = {
   description: string
   prompt: string
   subagent_type?: string
-  model?: "sonnet" | "haiku" | "opus" | string
+  model?: "sonnet" | "haiku" | "opus" | (string & {})
   mode?: string // permission mode, e.g. "plan", "acceptEdits"
   team_name?: string
   name?: string
