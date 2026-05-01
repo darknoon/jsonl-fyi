@@ -1,9 +1,13 @@
 import type { ToolResult } from "../types"
 import { ToolCard } from "./ToolCard"
-import { Header, Field, Output, Extras, ToolTitle, hasOutput } from "./shared"
+import { Header, Field, Extras, ToolTitle, hasOutput } from "./shared"
 import { headLines } from "./preview"
 import { MoreHint } from "./MoreHint"
 
+// Unknown / MCP tool outputs are usually prose status messages
+// ("Task #3 created successfully…"), not CLI output. Render as plain
+// text rather than the code-styled `.output` block used by Bash and
+// other shell-family tools.
 export function UnknownTool({
   name,
   input,
@@ -25,7 +29,7 @@ export function UnknownTool({
       </ToolCard.Trigger>
       {head && (
         <ToolCard.Preview>
-          <pre className="tool-preview-snippet">{head.text}</pre>
+          <div className="tool-preview-prose">{head.text}</div>
           <MoreHint count={head.remaining} />
         </ToolCard.Preview>
       )}
@@ -44,7 +48,7 @@ export function UnknownTool({
             })}
           </dl>
         )}
-        <Output output={output} />
+        {output.text && <div className="tool-output-prose">{output.text}</div>}
         <Extras output={output} />
       </ToolCard.Content>
     </ToolCard.Root>

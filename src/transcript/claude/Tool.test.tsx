@@ -341,13 +341,17 @@ test("Skill preview: no preview when injectedText missing", () => {
   expect(html).not.toContain("tool-preview-line")
 })
 
-test("UnknownTool preview: first 3 lines of output + MoreHint", () => {
+test("UnknownTool preview: first 3 lines of output as prose, not code", () => {
   const html = renderToolHtml(
     { name: "mcp__custom__do_thing", input: {} } as ToolUse,
     { ...okOutput, text: "a\nb\nc\nd\ne" },
   )
-  expect(html).toContain("tool-preview-snippet")
+  // Unknown / MCP tool outputs are usually prose (e.g. "Task #3 created
+  // successfully…"), not CLI output. Render with `.tool-preview-prose`,
+  // NOT the code-styled `.tool-preview-snippet` used by Bash.
+  expect(html).toContain("tool-preview-prose")
+  expect(html).not.toContain("tool-preview-snippet")
   expect(html).toContain("a\nb\nc")
-  expect(html).not.toMatch(/snippet[^"]*">[^<]*d/)
+  expect(html).not.toMatch(/preview-prose">[^<]*d/)
   expect(html).toContain("+2 lines")
 })

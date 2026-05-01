@@ -877,6 +877,21 @@ body,
   text-overflow: ellipsis;
 }
 
+.tool-preview-prose,
+.tool-output-prose {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  color: var(--fg);
+}
+
+.tool-preview-prose {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .tool-preview-snippet {
   font-size: var(--fs-sm);
   background: var(--code-bg);
