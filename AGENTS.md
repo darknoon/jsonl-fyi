@@ -96,3 +96,17 @@ At the end of an implementation Andrew will do a final spot-check, so
 **leave the dev server running** when you finish a task. Kill any
 previous server before launching a new one (don't pile them up), but
 don't tear down on completion.
+
+## Deployment
+
+Hosted on Cloudflare Workers (Static Assets), not Pages. Config is
+`wrangler.jsonc` — worker name `jsonl-fyi`, custom domains `jsonl.fyi`
+and `www.jsonl.fyi`, SPA fallback via `not_found_handling`.
+
+Deploys are triggered by Cloudflare's GitHub integration on every push
+to `main` (no GH Actions workflow in this repo). Cloudflare records
+each deploy as a GitHub Deployment (visible via `gh api repos/.../deployments`).
+
+To check deploy status:
+- `npx wrangler deployments list --name jsonl-fyi` — Workers deploy history
+- `curl -sI https://jsonl.fyi/` — confirm the live site responds
