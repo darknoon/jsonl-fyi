@@ -124,6 +124,21 @@ to `main` (no GH Actions workflow in this repo). Cloudflare records
 each deploy as a GitHub Deployment (visible via `gh api repos/.../deployments`).
 
 To check deploy status:
-
 - `npx wrangler deployments list --name jsonl-fyi` — Workers deploy history
 - `curl -sI https://jsonl.fyi/` — confirm the live site responds
+
+## Development process
+
+### Features
+*You be starting in a new session part way though this process*
+1. When instructed take a TODO from TODO.md and interview user about how it should be spec'd
+2. Write spec using /brainstorming skill
+3. User reviews spec
+4. Write plan
+5. User reviews plan. may request changes
+6. We start working on it
+   1. we always use sub-agent-driven development
+   2. sometimes we use worktrees (ask me) in ./.worktrees/ to avoid conflicts with other agents running concurrently
+
+### Quick design tweaks
+Don't need a whole spec/ plan/ process, but you should consider the approach and consult the user before editing the code.
