@@ -9,7 +9,7 @@ export function MoreHint({ count }: { count: number }) {
       className="tool-more-hint"
       onClick={toggle}
     >
-      … +{count} {count === 1 ? "line" : "lines"}
+      See {count} more {count === 1 ? "line" : "lines"}…
     </button>
   )
 }

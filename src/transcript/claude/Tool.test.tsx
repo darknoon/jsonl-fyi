@@ -37,7 +37,7 @@ test("Bash preview: last 3 lines + MoreHint when more", () => {
   expect(html).toContain('class="tool-preview-snippet"')
   expect(html).toContain("3\n4\n5")
   expect(html).not.toContain("<pre class=\"tool-preview-snippet\">1\n2\n3\n4\n5") // not rendering full
-  expect(html).toContain("+2 lines")
+  expect(html).toContain("2 more lines")
 })
 
 test("Bash preview: 10-line tail on error with snippet-error class", () => {
@@ -48,7 +48,7 @@ test("Bash preview: 10-line tail on error with snippet-error class", () => {
   )
   expect(html).toContain('class="tool-preview-snippet snippet-error"')
   expect(html).toContain("6\n7\n8\n9\n10\n11\n12\n13\n14\n15")
-  expect(html).toContain("+5 lines")
+  expect(html).toContain("5 more lines")
 })
 
 test("Bash preview: no MoreHint when output fits", () => {
@@ -162,7 +162,7 @@ test("Write preview: first 10 lines + MoreHint when content has more", () => {
   expect(html).toContain("line 1\n")
   expect(html).toContain("line 10")
   expect(html).not.toMatch(/snippet[^"]*">[^<]*line 11/) // line 11 not in snippet
-  expect(html).toContain("+5 lines")
+  expect(html).toContain("5 more lines")
 })
 
 test("Write preview: no MoreHint when content fits", () => {
@@ -256,7 +256,7 @@ test("Agent preview: first 3 lines of output + MoreHint", () => {
   expect(html).toContain("tool-preview-snippet")
   expect(html).toContain("result line 1\nresult line 2\nresult line 3")
   expect(html).not.toMatch(/snippet[^"]*">[^<]*result line 4/)
-  expect(html).toContain("+1 line")
+  expect(html).toContain("1 more line")
 })
 
 test("Agent preview: no MoreHint when output fits", () => {
@@ -353,5 +353,5 @@ test("UnknownTool preview: first 3 lines of output as prose, not code", () => {
   expect(html).not.toContain("tool-preview-snippet")
   expect(html).toContain("a\nb\nc")
   expect(html).not.toMatch(/preview-prose">[^<]*d/)
-  expect(html).toContain("+2 lines")
+  expect(html).toContain("2 more lines")
 })

@@ -51,7 +51,7 @@ test("shell_command preview: last 3 lines tail", () => {
   )
   expect(html).toContain('class="tool-preview-snippet"')
   expect(html).toContain("3\n4\n5")
-  expect(html).toContain("+2 lines")
+  expect(html).toContain("2 more lines")
 })
 
 test("exec_command preview: last 10 lines on error with snippet-error class", () => {
@@ -74,7 +74,7 @@ test("shell preview: last 3 lines tail with array command", () => {
   expect(html).toContain("ls -la")
   expect(html).toContain('class="tool-preview-snippet"')
   expect(html).toContain("b\nc\nd")
-  expect(html).toContain("+1 line")
+  expect(html).toContain("1 more line")
 })
 
 test("shell_command preview: no preview when output empty", () => {
