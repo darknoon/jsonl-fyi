@@ -26,6 +26,15 @@ export type PiUsage = {
   }
 }
 
+export type PiKnownMessageRole =
+  | "user"
+  | "assistant"
+  | "toolResult"
+  | "bashExecution"
+  | "custom"
+  | "branchSummary"
+  | "compactionSummary"
+
 export type PiUserMessage = {
   role: "user"
   content: string | Array<PiTextContent | PiImageContent>
@@ -90,6 +99,10 @@ export type PiCompactionSummaryMessage = {
   timestamp?: number
 }
 
+// Unknown roles are preserved at runtime, but use `never` for the discriminant type so
+// the fallback member does not overlap known roles and weaken narrowing.
+export type PiUnknownMessage = { role: never; [key: string]: unknown }
+
 export type PiMessage =
   | PiUserMessage
   | PiAssistantMessage
@@ -98,7 +111,7 @@ export type PiMessage =
   | PiCustomMessage
   | PiBranchSummaryMessage
   | PiCompactionSummaryMessage
-  | { role: string; [key: string]: unknown }
+  | PiUnknownMessage
 
 export type PiSessionHeader = {
   type: "session"
@@ -109,49 +122,57 @@ export type PiSessionHeader = {
   parentSession?: string
 }
 
-export type PiEntryBase = {
-  type: string
+export type PiKnownEntryType =
+  | "message"
+  | "model_change"
+  | "thinking_level_change"
+  | "compaction"
+  | "branch_summary"
+  | "custom"
+  | "custom_message"
+  | "label"
+  | "session_info"
+export type PiEntryBase<TType extends string = string> = {
+  type: TType
   id: string
   parentId: string | null
   timestamp?: string
 }
 
-export type PiMessageEntry = PiEntryBase & { type: "message"; message: PiMessage }
-export type PiModelChangeEntry = PiEntryBase & {
+export type PiMessageEntry = PiEntryBase<"message"> & { message: PiMessage }
+export type PiModelChangeEntry = PiEntryBase<"model_change"> & {
   type: "model_change"
   provider: string
   modelId: string
 }
-export type PiThinkingLevelChangeEntry = PiEntryBase & {
-  type: "thinking_level_change"
+export type PiThinkingLevelChangeEntry = PiEntryBase<"thinking_level_change"> & {
   thinkingLevel: string
 }
-export type PiCompactionEntry = PiEntryBase & {
-  type: "compaction"
+export type PiCompactionEntry = PiEntryBase<"compaction"> & {
   summary: string
   firstKeptEntryId: string
   tokensBefore: number
   details?: unknown
   fromHook?: boolean
 }
-export type PiBranchSummaryEntry = PiEntryBase & {
-  type: "branch_summary"
+export type PiBranchSummaryEntry = PiEntryBase<"branch_summary"> & {
   fromId: string
   summary: string
   details?: unknown
   fromHook?: boolean
 }
-export type PiCustomEntry = PiEntryBase & { type: "custom"; customType: string; data?: unknown }
-export type PiCustomMessageEntry = PiEntryBase & {
-  type: "custom_message"
+export type PiCustomEntry = PiEntryBase<"custom"> & { customType: string; data?: unknown }
+export type PiCustomMessageEntry = PiEntryBase<"custom_message"> & {
   customType: string
   content: string | Array<PiTextContent | PiImageContent>
   display: boolean
   details?: unknown
 }
-export type PiLabelEntry = PiEntryBase & { type: "label"; targetId: string; label?: string }
-export type PiSessionInfoEntry = PiEntryBase & { type: "session_info"; name?: string }
-export type PiUnknownEntry = PiEntryBase & { type: string; [key: string]: unknown }
+export type PiLabelEntry = PiEntryBase<"label"> & { targetId: string; label?: string }
+export type PiSessionInfoEntry = PiEntryBase<"session_info"> & { name?: string }
+// Unknown entry type strings are preserved at runtime, but use `never` for the
+// discriminant type so this fallback member does not overlap known entry shapes.
+export type PiUnknownEntry = PiEntryBase<never> & { [key: string]: unknown }
 
 export type PiTreeEntry =
   | PiMessageEntry

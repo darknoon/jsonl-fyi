@@ -22,7 +22,14 @@ function msg(id: string, parentId: string | null, role: "user" | "assistant", te
 test("parsePiEntries: preserves header and active linear branch", () => {
   const parsed = parsePiEntries([
     header,
-    { type: "model_change", id: "m", parentId: null, timestamp: "t", provider: "openai", modelId: "gpt" },
+    {
+      type: "model_change",
+      id: "m",
+      parentId: null,
+      timestamp: "t",
+      provider: "openai",
+      modelId: "gpt",
+    },
     msg("u1", "m", "user", "hello"),
     msg("a1", "u1", "assistant", "hi"),
   ])
@@ -56,9 +63,15 @@ test("parsePiEntries: missing parent starts an orphan path", () => {
 test("parsePiEntries: keeps unknown tree entries with id", () => {
   const parsed = parsePiEntries([
     header,
-    { type: "surprise", id: "x", parentId: null, timestamp: "2026-05-01T00:00:01.000Z", payload: { ok: true } },
+    {
+      type: "surprise",
+      id: "x",
+      parentId: null,
+      timestamp: "2026-05-01T00:00:01.000Z",
+      payload: { ok: true },
+    },
   ])
-  expect(parsed.entries.map((e) => e.type)).toEqual(["surprise"])
+  expect(parsed.entries.map((e) => e.type) as string[]).toEqual(["surprise"])
   expect(parsed.activeEntries.map((e) => e.id)).toEqual(["x"])
 })
 
@@ -66,4 +79,22 @@ test("parsePiEntries: drops malformed objects without id", () => {
   const parsed = parsePiEntries([header, { type: "message", parentId: null }, null, "bad"])
   expect(parsed.entries).toHaveLength(0)
   expect(parsed.activeEntries).toHaveLength(0)
+})
+
+test("parsePiEntries: drops malformed known entries instead of treating them as unknown", () => {
+  const parsed = parsePiEntries([
+    header,
+    { type: "model_change", id: "bad-model", parentId: null, provider: "openai" },
+    { type: "message", id: "bad-message", parentId: null, message: { content: "missing role" } },
+    {
+      type: "custom_message",
+      id: "bad-custom",
+      parentId: null,
+      customType: "notice",
+      content: "missing display",
+    },
+    { type: "surprise", id: "x", parentId: null, payload: { ok: true } },
+  ])
+
+  expect(parsed.entries.map((e) => e.type) as string[]).toEqual(["surprise"])
 })
