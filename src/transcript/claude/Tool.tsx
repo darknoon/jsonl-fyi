@@ -407,6 +407,7 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
   if (isolation) opts.push(["isolation", isolation])
   if (run_in_background) opts.push(["run_in_background", "true"])
   const hasContent = !!prompt || opts.length > 0 || hasOutput(output)
+  const head = output.text ? headLines(output.text, 3) : null
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -414,6 +415,12 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
           <ToolTitle name={name} detail={description && shortPath(description)} />
         </Header>
       </ToolCard.Trigger>
+      {head && (
+        <ToolCard.Preview>
+          <pre className="tool-preview-snippet">{head.text}</pre>
+          <MoreHint count={head.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {prompt && <Markdown source={prompt} />}
         {opts.length > 0 && (

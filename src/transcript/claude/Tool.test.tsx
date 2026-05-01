@@ -246,3 +246,24 @@ test("WebSearch preview: counts markdown links", () => {
   )
   expect(html).toContain("2 results")
 })
+
+test("Agent preview: first 3 lines of output + MoreHint", () => {
+  const text = "result line 1\nresult line 2\nresult line 3\nresult line 4"
+  const html = renderToolHtml(
+    { name: "Agent", input: { description: "Search docs", prompt: "..." } } as ToolUse,
+    { ...okOutput, text },
+  )
+  expect(html).toContain("tool-preview-snippet")
+  expect(html).toContain("result line 1\nresult line 2\nresult line 3")
+  expect(html).not.toMatch(/snippet[^"]*">[^<]*result line 4/)
+  expect(html).toContain("+1 line")
+})
+
+test("Agent preview: no MoreHint when output fits", () => {
+  const html = renderToolHtml(
+    { name: "Agent", input: { description: "x", prompt: "..." } } as ToolUse,
+    { ...okOutput, text: "one\ntwo" },
+  )
+  expect(html).toContain("tool-preview-snippet")
+  expect(html).not.toContain("tool-more-hint")
+})
