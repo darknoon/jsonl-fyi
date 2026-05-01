@@ -2,18 +2,14 @@ import type { ToolResult } from "../../types"
 import { TranscriptHeader } from "../TranscriptHeader"
 import { PiEntryView } from "./EntryView"
 import { extractPiToolResult } from "./toolResult"
-import type { PiParsedSession, PiToolResultMessage } from "./types"
-
-function isPiToolResultMessage(message: unknown): message is PiToolResultMessage {
-  return !!message && typeof message === "object" && (message as { role?: unknown }).role === "toolResult"
-}
+import type { PiParsedSession } from "./types"
 
 export function PiTranscript({ session }: { session: PiParsedSession }) {
   const results = new Map<string, ToolResult & { details?: unknown }>()
   for (const entry of session.activeEntries) {
     if (entry.type !== "message") continue
     const { message } = entry
-    if (!isPiToolResultMessage(message)) continue
+    if (message.role !== "toolResult") continue
     results.set(message.toolCallId, { ...extractPiToolResult(message), details: message.details })
   }
 

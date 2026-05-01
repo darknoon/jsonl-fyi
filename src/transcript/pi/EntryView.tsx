@@ -6,15 +6,11 @@ import { ToolCard } from "../ToolCard"
 import { Header, ToolTitle } from "../shared"
 import { TextBlock } from "../claude/TextBlock"
 import { PiTool } from "./Tool"
-import type { PiContent, PiMessageEntry, PiToolResultMessage, PiTreeEntry } from "./types"
+import type { PiContent, PiMessageEntry, PiTreeEntry } from "./types"
 import { piImageToSource } from "./types"
 
 const EMPTY_RESULT: ToolResult = { content: [], isError: false }
 type PiResultWithDetails = ToolResult & { details?: unknown }
-
-function isToolResultMessage(message: unknown): message is PiToolResultMessage {
-  return !!message && typeof message === "object" && (message as { role?: unknown }).role === "toolResult"
-}
 
 function stringify(value: unknown): string {
   return JSON.stringify(value, null, 2)
@@ -107,7 +103,6 @@ function MessageEntryView({
   if (message.role === "branchSummary") return <TextBlock role="assistant" text={message.summary} />
   if (message.role === "compactionSummary") return <TextBlock role="assistant" text={message.summary} />
 
-  if (isToolResultMessage(message)) return null
   return <UnknownEntry entry={entry} />
 }
 
