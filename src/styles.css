@@ -4,7 +4,7 @@
   --color-muted: #81868f;
   --color-border: #e3e6eb;
   --color-card: #f7f8fa;
-  --color-code-bg: #F7F7F8;
+  --color-code-bg: #f7f7f8;
   --color-code-fg: #5e6062;
   --color-user-bubble: #f2f4f6;
   --color-success: #2f9e44;
@@ -31,8 +31,8 @@
   --fs-mono: 0.875em;
 
   /* Match @pierre/diffs font stack so inline code reads the same as diff bodies. */
-  --font-mono: "SF Mono", Monaco, Consolas, "Ubuntu Mono", "Liberation Mono",
-    "Courier New", monospace;
+  --font-mono:
+    "SF Mono", Monaco, Consolas, "Ubuntu Mono", "Liberation Mono", "Courier New", monospace;
 }
 
 @media (prefers-color-scheme: dark) {

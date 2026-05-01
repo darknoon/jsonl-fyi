@@ -38,12 +38,7 @@ test("buildCodexModelLabels: model change → every separator carries its turn's
 })
 
 test("buildCodexModelLabels: effort change with same model still triggers multi-mode", () => {
-  const entries: CodexEntry[] = [
-    ctx("gpt-5.5", "high"),
-    asst(),
-    ctx("gpt-5.5", "medium"),
-    asst(),
-  ]
+  const entries: CodexEntry[] = [ctx("gpt-5.5", "high"), asst(), ctx("gpt-5.5", "medium"), asst()]
   const sepIndices = new Set([1, 3])
   const out = buildCodexModelLabels(entries, sepIndices)
   expect(out.models).toEqual([
@@ -75,10 +70,7 @@ test("buildCodexModelLabels: toggling back and forth lists every distinct pair o
   ]
   const sepIndices = new Set([1, 3, 5])
   const out = buildCodexModelLabels(entries, sepIndices)
-  expect(out.models.map((m) => m.label)).toEqual([
-    "GPT 5.5/high",
-    "GPT 5.5/medium",
-  ])
+  expect(out.models.map((m) => m.label)).toEqual(["GPT 5.5/high", "GPT 5.5/medium"])
   expect(out.byIndex.get(1)?.label).toBe("GPT 5.5/high")
   expect(out.byIndex.get(3)?.label).toBe("GPT 5.5/medium")
   expect(out.byIndex.get(5)?.label).toBe("GPT 5.5/high")

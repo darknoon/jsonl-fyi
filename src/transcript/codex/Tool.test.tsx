@@ -56,11 +56,7 @@ test("shell_command preview: last 3 lines tail", () => {
 
 test("exec_command preview: last 10 lines on error with snippet-error class", () => {
   const text = Array.from({ length: 12 }, (_, i) => String(i + 1)).join("\n")
-  const html = renderFnHtml(
-    "exec_command",
-    { cmd: "fail" },
-    { ...okOutput, text, isError: true },
-  )
+  const html = renderFnHtml("exec_command", { cmd: "fail" }, { ...okOutput, text, isError: true })
   expect(html).toContain("snippet-error")
   expect(html).toContain("3\n4\n5\n6\n7\n8\n9\n10\n11\n12")
 })
@@ -144,11 +140,7 @@ test("spawn_agent preview: nickname only when message missing", () => {
 })
 
 test("spawn_agent preview: message only when output missing nickname", () => {
-  const html = renderFnHtml(
-    "spawn_agent",
-    { agent_type: "worker", message: "do thing" },
-    okOutput,
-  )
+  const html = renderFnHtml("spawn_agent", { agent_type: "worker", message: "do thing" }, okOutput)
   expect(html).toContain("tool-preview-line")
   expect(html).toContain("do thing")
 })
@@ -220,10 +212,6 @@ test("wait_agent preview: simple string status (InProgress) renders without dash
 })
 
 test("wait_agent preview: empty output → no preview slot", () => {
-  const html = renderFnHtml(
-    "wait_agent",
-    { targets: ["019d"], timeout_ms: 60000 },
-    okOutput,
-  )
+  const html = renderFnHtml("wait_agent", { targets: ["019d"], timeout_ms: 60000 }, okOutput)
   expect(html).not.toContain("tool-preview")
 })

@@ -60,13 +60,10 @@ function Root({
   // - Content present → always clickable (compact: collapsed→content; normal: preview→content)
   // - No Content but Preview present and we're in compact mode → clickable (collapsed→preview)
   // - hasContent=false from caller (no inline body at all) → never clickable
-  const clickable =
-    hasContent && (content != null || (preview != null && viewMode === "compact"))
+  const clickable = hasContent && (content != null || (preview != null && viewMode === "compact"))
 
   return (
-    <Ctx.Provider
-      value={{ expanded, toggle: () => setExpanded((e) => !e), hasContent: clickable }}
-    >
+    <Ctx.Provider value={{ expanded, toggle: () => setExpanded((e) => !e), hasContent: clickable }}>
       <div className={`tool-card${statusClass}`}>
         {trigger}
         {body}

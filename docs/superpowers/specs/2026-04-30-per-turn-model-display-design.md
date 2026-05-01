@@ -34,10 +34,10 @@ any given turn is answerable without scrolling.
     minor group declines to match an 8-digit date, the trailing date
     group swallows it.)
   - `claude-opus-5-0` → `Opus 5.0` (future major bump)
-  Anything that does not match falls back to the raw id. Dedup uses the
-  raw id, not the label, so two distinct raw ids with the same rendered
-  label would appear as two header entries (verified absent across 957
-  observed sessions, so this is theoretical).
+    Anything that does not match falls back to the raw id. Dedup uses the
+    raw id, not the label, so two distinct raw ids with the same rendered
+    label would appear as two header entries (verified absent across 957
+    observed sessions, so this is theoretical).
 - **Codex:** `GPT 5.5/high` — pattern-based. Match
   `^gpt-(\d+(?:\.\d+)?)(?:-(.+))?$` and render as `GPT ${version}`
   (space between brand and version, matching Claude's `Opus 4.7` style),

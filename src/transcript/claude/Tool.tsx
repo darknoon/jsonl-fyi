@@ -242,7 +242,9 @@ function Glob({ input, output }: CardProps<GlobInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview clickable>
-        <div className="tool-preview-line">Found {n} {n === 1 ? "file" : "files"}</div>
+        <div className="tool-preview-line">
+          Found {n} {n === 1 ? "file" : "files"}
+        </div>
       </ToolCard.Preview>
       <ToolCard.Content>
         {path && (
@@ -288,9 +290,14 @@ function Grep({ input, output }: CardProps<GrepInput>) {
   if (multiline) opts.push(["multiline", "true"])
   const hasContent = opts.length > 0 || hasOutput(output)
   const grepN = nonEmptyLines(output.text).length
-  const grepLabel = output_mode === "files_with_matches"
-    ? (grepN === 1 ? "file" : "files")
-    : (grepN === 1 ? "match" : "matches")
+  const grepLabel =
+    output_mode === "files_with_matches"
+      ? grepN === 1
+        ? "file"
+        : "files"
+      : grepN === 1
+        ? "match"
+        : "matches"
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -299,7 +306,9 @@ function Grep({ input, output }: CardProps<GrepInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview clickable>
-        <div className="tool-preview-line">Found {grepN} {grepLabel}</div>
+        <div className="tool-preview-line">
+          Found {grepN} {grepLabel}
+        </div>
       </ToolCard.Preview>
       <ToolCard.Content>
         {opts.length > 0 && (
@@ -355,7 +364,7 @@ function WebSearch({ input, output }: CardProps<WebSearchInput>) {
   const summary =
     linkCount > 0
       ? `${linkCount} ${linkCount === 1 ? "result" : "results"}`
-      : firstNonEmptyLine(output.text) ?? "Searched"
+      : (firstNonEmptyLine(output.text) ?? "Searched")
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -510,9 +519,7 @@ function ExitPlanMode({ input, output }: CardProps<ExitPlanModeInput>) {
           <ToolTitle name="ExitPlanMode" />
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview>
-        {plan && <Markdown source={plan} />}
-      </ToolCard.Preview>
+      <ToolCard.Preview>{plan && <Markdown source={plan} />}</ToolCard.Preview>
     </ToolCard.Root>
   )
 }

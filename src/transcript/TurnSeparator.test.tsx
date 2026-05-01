@@ -60,8 +60,6 @@ test("TurnSeparator: model + usage renders both, model after usage", () => {
 })
 
 test("TurnSeparator: model=null renders no model label", () => {
-  const html = renderToStaticMarkup(
-    <TurnSeparator durationMs={1000} usage={null} model={null} />,
-  )
+  const html = renderToStaticMarkup(<TurnSeparator durationMs={1000} usage={null} model={null} />)
   expect(html).not.toContain("title=")
 })

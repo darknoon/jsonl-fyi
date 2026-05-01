@@ -14,10 +14,7 @@ export function SettingsPopover() {
     >
       <label className="settings-row">
         <span>View mode</span>
-        <select
-          value={viewMode}
-          onChange={(e) => setViewMode(e.currentTarget.value as ViewMode)}
-        >
+        <select value={viewMode} onChange={(e) => setViewMode(e.currentTarget.value as ViewMode)}>
           <option value="normal">Normal</option>
           <option value="compact">Compact</option>
         </select>

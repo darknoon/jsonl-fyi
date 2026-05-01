@@ -49,7 +49,14 @@ export function EntryView({ entry, results, agentNicknames }: Props) {
 
     case "function_call": {
       const out = results.get(p.call_id) ?? EMPTY_RESULT
-      return <CodexFunctionCall name={p.name} argumentsJson={p.arguments} output={out} agentNicknames={agentNicknames} />
+      return (
+        <CodexFunctionCall
+          name={p.name}
+          argumentsJson={p.arguments}
+          output={out}
+          agentNicknames={agentNicknames}
+        />
+      )
     }
 
     case "custom_tool_call": {

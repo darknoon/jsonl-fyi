@@ -4,10 +4,10 @@
   "compatibility_date": "2026-03-01",
   "assets": {
     "directory": "./dist/",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
   },
   "routes": [
     { "pattern": "jsonl.fyi", "custom_domain": true },
-    { "pattern": "www.jsonl.fyi", "custom_domain": true }
-  ]
+    { "pattern": "www.jsonl.fyi", "custom_domain": true },
+  ],
 }

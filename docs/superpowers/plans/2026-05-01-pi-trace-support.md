@@ -45,6 +45,7 @@ Add fixture:
 ### Task 1: Classify pi JSONL without false positives
 
 **Files:**
+
 - Modify: `src/parse/classify.ts`
 - Modify: `src/parse/classify.test.ts`
 
@@ -185,6 +186,7 @@ git commit -m "feat(pi): classify pi session jsonl"
 ### Task 2: Define pi wire types and active-branch parser
 
 **Files:**
+
 - Create: `src/transcript/pi/types.ts`
 - Create: `src/transcript/pi/parse.ts`
 - Create: `src/transcript/pi/parse.test.ts`
@@ -403,7 +405,14 @@ function msg(id: string, parentId: string | null, role: "user" | "assistant", te
 test("parsePiEntries: preserves header and active linear branch", () => {
   const parsed = parsePiEntries([
     header,
-    { type: "model_change", id: "m", parentId: null, timestamp: "t", provider: "openai", modelId: "gpt" },
+    {
+      type: "model_change",
+      id: "m",
+      parentId: null,
+      timestamp: "t",
+      provider: "openai",
+      modelId: "gpt",
+    },
     msg("u1", "m", "user", "hello"),
     msg("a1", "u1", "assistant", "hi"),
   ])
@@ -437,7 +446,13 @@ test("parsePiEntries: missing parent starts an orphan path", () => {
 test("parsePiEntries: keeps unknown tree entries with id", () => {
   const parsed = parsePiEntries([
     header,
-    { type: "surprise", id: "x", parentId: null, timestamp: "2026-05-01T00:00:01.000Z", payload: { ok: true } },
+    {
+      type: "surprise",
+      id: "x",
+      parentId: null,
+      timestamp: "2026-05-01T00:00:01.000Z",
+      payload: { ok: true },
+    },
   ])
   expect(parsed.entries.map((e) => e.type)).toEqual(["surprise"])
   expect(parsed.activeEntries.map((e) => e.id)).toEqual(["x"])
@@ -547,6 +562,7 @@ git commit -m "feat(pi): parse active session branch"
 ### Task 3: Replace ToolResult summaries with canonical ordered content
 
 **Files:**
+
 - Modify: `src/types.ts`
 - Modify: `src/transcript/shared.tsx`
 - Modify: `src/transcript/UnknownTool.tsx`
@@ -650,14 +666,20 @@ In `src/transcript/shared.tsx`, replace `Output`, `Extras`, and `hasOutput` with
 ```tsx
 export function toolResultText(output: ToolResult): string {
   return output.content
-    .filter((item): item is Extract<ToolResult["content"][number], { type: "text" }> => item.type === "text")
+    .filter(
+      (item): item is Extract<ToolResult["content"][number], { type: "text" }> =>
+        item.type === "text",
+    )
     .map((item) => item.text)
     .join("\n")
 }
 
 export function toolResultImages(output: ToolResult): ImageSource[] {
   return output.content
-    .filter((item): item is Extract<ToolResult["content"][number], { type: "image" }> => item.type === "image")
+    .filter(
+      (item): item is Extract<ToolResult["content"][number], { type: "image" }> =>
+        item.type === "image",
+    )
     .map((item) => item.source)
 }
 
@@ -670,7 +692,12 @@ export function ToolResultContent({ output }: { output: ToolResult }) {
   return (
     <>
       {output.content.map((item, i) => {
-        if (item.type === "text") return <pre key={i} className="output">{item.text}</pre>
+        if (item.type === "text")
+          return (
+            <pre key={i} className="output">
+              {item.text}
+            </pre>
+          )
         return <ImageBlock key={i} source={item.source} />
       })}
     </>
@@ -795,6 +822,7 @@ git commit -m "feat(transcript): use ordered tool result content"
 ### Task 4: Convert pi tool results while preserving mixed text/image order
 
 **Files:**
+
 - Create: `src/transcript/pi/toolResult.ts`
 - Create: `src/transcript/pi/toolResult.test.ts`
 
@@ -912,6 +940,7 @@ git commit -m "feat(pi): convert tool results"
 ### Task 5: Render pi tool cards
 
 **Files:**
+
 - Create: `src/transcript/pi/Tool.tsx`
 - Create: `src/transcript/pi/Tool.test.tsx`
 
@@ -937,20 +966,32 @@ function renderTool(
 ): string {
   return renderToStaticMarkup(
     <SettingsProvider initial={{ renderMarkdown: true, viewMode: "normal", ...settings }}>
-      <PiTool call={{ type: "toolCall", id: "c1", name, arguments: input }} output={output} details={details} />
+      <PiTool
+        call={{ type: "toolCall", id: "c1", name, arguments: input }}
+        output={output}
+        details={details}
+      />
     </SettingsProvider>,
   )
 }
 
 test("PiTool: bash renders command and tail preview", () => {
-  const html = renderTool("bash", { command: "ls -la", timeout: 10 }, { ...okOutput, content: [{ type: "text", text: "1\n2\n3\n4" }] })
+  const html = renderTool(
+    "bash",
+    { command: "ls -la", timeout: 10 },
+    { ...okOutput, content: [{ type: "text", text: "1\n2\n3\n4" }] },
+  )
   expect(html).toContain("bash")
   expect(html).toContain("ls -la")
   expect(html).toContain("2\n3\n4")
 })
 
 test("PiTool: read renders path and output summary", () => {
-  const html = renderTool("read", { path: "/tmp/file.ts", offset: 1, limit: 20 }, { ...okOutput, content: [{ type: "text", text: "a\nb" }] })
+  const html = renderTool(
+    "read",
+    { path: "/tmp/file.ts", offset: 1, limit: 20 },
+    { ...okOutput, content: [{ type: "text", text: "a\nb" }] },
+  )
   expect(html).toContain("read")
   expect(html).toContain("file.ts")
   expect(html).toContain("Read 2 lines")
@@ -961,7 +1002,13 @@ test("PiTool: plan_tracker renders progress preview", () => {
     "plan_tracker",
     { action: "update", index: 0, status: "complete" },
     okOutput,
-    { action: "update", tasks: [{ name: "Explore", status: "complete" }, { name: "Build", status: "pending" }] },
+    {
+      action: "update",
+      tasks: [
+        { name: "Explore", status: "complete" },
+        { name: "Build", status: "pending" },
+      ],
+    },
   )
   expect(html).toContain("plan_tracker")
   expect(html).toContain("1 / 2 complete")
@@ -998,7 +1045,11 @@ test("PiTool: read preserves ordered mixed text and image result content", () =>
 })
 
 test("PiTool: unknown tool uses integrated fallback", () => {
-  const html = renderTool("my_extension_tool", { action: "go" }, { ...okOutput, content: [{ type: "text", text: "Done" }] })
+  const html = renderTool(
+    "my_extension_tool",
+    { action: "go" },
+    { ...okOutput, content: [{ type: "text", text: "Done" }] },
+  )
   expect(html).toContain("my_extension_tool")
   expect(html).toContain("action")
   expect(html).toContain("Done")
@@ -1052,16 +1103,32 @@ function ShellTool({ call, output }: { call: PiToolCallContent; output: ToolResu
   const timeout = typeof call.arguments.timeout === "number" ? call.arguments.timeout : undefined
   const outputText = toolResultText(output)
   const tail = outputText ? tailLines(outputText, output.isError ? 10 : 3) : null
-  const snippetClass = output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"
+  const snippetClass = output.isError
+    ? "tool-preview-snippet snippet-error"
+    : "tool-preview-snippet"
   return (
-    <ToolCard.Root hasContent={!!command || timeout != null || hasOutput(output)} status={output.isError ? "error" : "success"}>
+    <ToolCard.Root
+      hasContent={!!command || timeout != null || hasOutput(output)}
+      status={output.isError ? "error" : "success"}
+    >
       <ToolCard.Trigger>
-        <Header><ToolTitle name="bash" detail={command} /></Header>
+        <Header>
+          <ToolTitle name="bash" detail={command} />
+        </Header>
       </ToolCard.Trigger>
-      {tail && <ToolCard.Preview><pre className={snippetClass}>{tail.text}</pre><MoreHint count={tail.remaining} /></ToolCard.Preview>}
+      {tail && (
+        <ToolCard.Preview>
+          <pre className={snippetClass}>{tail.text}</pre>
+          <MoreHint count={tail.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {command && <pre className="output cmd">{command}</pre>}
-        {timeout != null && <dl className="tool-fields"><Field name="timeout" value={`${timeout}s`} /></dl>}
+        {timeout != null && (
+          <dl className="tool-fields">
+            <Field name="timeout" value={`${timeout}s`} />
+          </dl>
+        )}
         <ToolResultContent output={output} />
       </ToolCard.Content>
     </ToolCard.Root>
@@ -1073,11 +1140,18 @@ function ReadTool({ call, output }: { call: PiToolCallContent; output: ToolResul
   const offset = typeof call.arguments.offset === "number" ? call.arguments.offset : undefined
   const limit = typeof call.arguments.limit === "number" ? call.arguments.limit : undefined
   return (
-    <ToolCard.Root hasContent={offset != null || limit != null || hasOutput(output)} status={output.isError ? "error" : "success"}>
+    <ToolCard.Root
+      hasContent={offset != null || limit != null || hasOutput(output)}
+      status={output.isError ? "error" : "success"}
+    >
       <ToolCard.Trigger>
-        <Header><ToolTitle name="read" detail={path && shortPath(path)} /></Header>
+        <Header>
+          <ToolTitle name="read" detail={path && shortPath(path)} />
+        </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview><div className="tool-preview-line">{readSummary(toolResultText(output))}</div></ToolCard.Preview>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">{readSummary(toolResultText(output))}</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {(offset != null || limit != null) && (
           <dl className="tool-fields">
@@ -1096,15 +1170,31 @@ function GenericFileTool({ call, output }: { call: PiToolCallContent; output: To
   const outputText = toolResultText(output)
   const head = outputText ? headLines(outputText, 3) : null
   return (
-    <ToolCard.Root hasContent={Object.keys(call.arguments).length > 0 || hasOutput(output)} status={output.isError ? "error" : "success"}>
+    <ToolCard.Root
+      hasContent={Object.keys(call.arguments).length > 0 || hasOutput(output)}
+      status={output.isError ? "error" : "success"}
+    >
       <ToolCard.Trigger>
-        <Header><ToolTitle name={call.name} detail={path && shortPath(path)} /></Header>
+        <Header>
+          <ToolTitle name={call.name} detail={path && shortPath(path)} />
+        </Header>
       </ToolCard.Trigger>
-      {head && <ToolCard.Preview><pre className="tool-preview-snippet">{head.text}</pre><MoreHint count={head.remaining} /></ToolCard.Preview>}
+      {head && (
+        <ToolCard.Preview>
+          <pre className="tool-preview-snippet">{head.text}</pre>
+          <MoreHint count={head.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {Object.keys(call.arguments).length > 0 && (
           <dl className="tool-fields">
-            {Object.entries(call.arguments).map(([key, value]) => <Field key={key} name={key} value={typeof value === "string" ? value : JSON.stringify(value, null, 2)} />)}
+            {Object.entries(call.arguments).map(([key, value]) => (
+              <Field
+                key={key}
+                name={key}
+                value={typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+              />
+            ))}
           </dl>
         )}
         <ToolResultContent output={output} />
@@ -1113,18 +1203,35 @@ function GenericFileTool({ call, output }: { call: PiToolCallContent; output: To
   )
 }
 
-function PlanTrackerTool({ call, output, details }: { call: PiToolCallContent; output: ToolResult; details?: unknown }) {
+function PlanTrackerTool({
+  call,
+  output,
+  details,
+}: {
+  call: PiToolCallContent
+  output: ToolResult
+  details?: unknown
+}) {
   const d = objectDetails(details)
   const tasks = Array.isArray(d?.tasks) ? d.tasks : []
   const done = tasks.filter((task) => objectDetails(task)?.status === "complete").length
   const total = tasks.length
   const action = typeof call.arguments.action === "string" ? call.arguments.action : "plan_tracker"
   return (
-    <ToolCard.Root hasContent={Object.keys(call.arguments).length > 0 || total > 0 || hasOutput(output)} status={output.isError ? "error" : "success"}>
+    <ToolCard.Root
+      hasContent={Object.keys(call.arguments).length > 0 || total > 0 || hasOutput(output)}
+      status={output.isError ? "error" : "success"}
+    >
       <ToolCard.Trigger>
-        <Header><ToolTitle name="plan_tracker" detail={action} /></Header>
+        <Header>
+          <ToolTitle name="plan_tracker" detail={action} />
+        </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview><div className="tool-preview-line">{done} / {total} complete</div></ToolCard.Preview>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">
+          {done} / {total} complete
+        </div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {total > 0 && (
           <ul className="todo-list">
@@ -1132,7 +1239,12 @@ function PlanTrackerTool({ call, output, details }: { call: PiToolCallContent; o
               const t = objectDetails(task)
               const name = typeof t?.name === "string" ? t.name : `Task ${i + 1}`
               const status = typeof t?.status === "string" ? t.status : "unknown"
-              return <li key={i} className={`todo todo-${status}`}><span className="todo-status">{status}</span><span>{name}</span></li>
+              return (
+                <li key={i} className={`todo todo-${status}`}>
+                  <span className="todo-status">{status}</span>
+                  <span>{name}</span>
+                </li>
+              )
             })}
           </ul>
         )}
@@ -1142,7 +1254,15 @@ function PlanTrackerTool({ call, output, details }: { call: PiToolCallContent; o
   )
 }
 
-function SubagentTool({ call, output, details }: { call: PiToolCallContent; output: ToolResult; details?: unknown }) {
+function SubagentTool({
+  call,
+  output,
+  details,
+}: {
+  call: PiToolCallContent
+  output: ToolResult
+  details?: unknown
+}) {
   const d = objectDetails(details)
   const mode = typeof d?.mode === "string" ? d.mode : undefined
   const outputText = toolResultText(output)
@@ -1152,20 +1272,47 @@ function SubagentTool({ call, output, details }: { call: PiToolCallContent; outp
   if (typeof call.arguments.task === "string") fields.push(["task", call.arguments.task])
   if (mode) fields.push(["mode", mode])
   return (
-    <ToolCard.Root hasContent={fields.length > 0 || hasOutput(output)} status={output.isError ? "error" : "success"}>
+    <ToolCard.Root
+      hasContent={fields.length > 0 || hasOutput(output)}
+      status={output.isError ? "error" : "success"}
+    >
       <ToolCard.Trigger>
-        <Header><ToolTitle name="subagent" detail={mode ?? (call.arguments.agent as string | undefined)} /></Header>
+        <Header>
+          <ToolTitle
+            name="subagent"
+            detail={mode ?? (call.arguments.agent as string | undefined)}
+          />
+        </Header>
       </ToolCard.Trigger>
-      {head && <ToolCard.Preview><div className="tool-preview-prose">{head.text}</div><MoreHint count={head.remaining} /></ToolCard.Preview>}
+      {head && (
+        <ToolCard.Preview>
+          <div className="tool-preview-prose">{head.text}</div>
+          <MoreHint count={head.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
-        {fields.length > 0 && <dl className="tool-fields">{fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}</dl>}
+        {fields.length > 0 && (
+          <dl className="tool-fields">
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
+          </dl>
+        )}
         {outputText && <div className="tool-output-prose">{outputText}</div>}
       </ToolCard.Content>
     </ToolCard.Root>
   )
 }
 
-export function PiTool({ call, output, details }: { call: PiToolCallContent; output: ToolResult; details?: unknown }) {
+export function PiTool({
+  call,
+  output,
+  details,
+}: {
+  call: PiToolCallContent
+  output: ToolResult
+  details?: unknown
+}) {
   switch (call.name) {
     case "bash":
       return <ShellTool call={call} output={output} />
@@ -1209,6 +1356,7 @@ git commit -m "feat(pi): render pi tool cards"
 ### Task 6: Render pi entries and transcript
 
 **Files:**
+
 - Create: `src/transcript/pi/EntryView.tsx`
 - Create: `src/transcript/pi/PiTranscript.tsx`
 - Modify: `src/styles.css`
@@ -1232,14 +1380,20 @@ import { piImageToSource } from "./types"
 const EMPTY_RESULT: ToolResult = { content: [], isError: false }
 
 function isToolResultMessage(message: unknown): message is PiToolResultMessage {
-  return !!message && typeof message === "object" && (message as { role?: unknown }).role === "toolResult"
+  return (
+    !!message &&
+    typeof message === "object" &&
+    (message as { role?: unknown }).role === "toolResult"
+  )
 }
 
 function UnknownEntry({ entry }: { entry: PiTreeEntry }) {
   return (
     <ToolCard.Root hasContent>
       <ToolCard.Trigger>
-        <Header><ToolTitle name={entry.type} /></Header>
+        <Header>
+          <ToolTitle name={entry.type} />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
         <pre className="output">{JSON.stringify(entry, null, 2)}</pre>
@@ -1252,7 +1406,9 @@ function UnknownContent({ block }: { block: unknown }) {
   return (
     <ToolCard.Root hasContent>
       <ToolCard.Trigger>
-        <Header><ToolTitle name="unknown content block" /></Header>
+        <Header>
+          <ToolTitle name="unknown content block" />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Content>
         <pre className="output">{JSON.stringify(block, null, 2)}</pre>
@@ -1269,32 +1425,42 @@ function renderContentBlock(
 ): ReactNode {
   if (block.type === "text") return <TextBlock key={index} role={role} text={block.text} />
   if (block.type === "thinking") return <ThinkingBlock key={index} text={block.thinking} />
-  if (block.type === "image") return <ImageBlock key={index} role={role} source={piImageToSource(block)} />
+  if (block.type === "image")
+    return <ImageBlock key={index} role={role} source={piImageToSource(block)} />
   if (block.type === "toolCall") {
     const result = results.get(block.id)
     return (
-      <PiTool
-        key={index}
-        call={block}
-        output={result ?? EMPTY_RESULT}
-        details={result?.details}
-      />
+      <PiTool key={index} call={block} output={result ?? EMPTY_RESULT} details={result?.details} />
     )
   }
   return <UnknownContent key={index} block={block} />
 }
 
-function MessageEntryView({ entry, results }: { entry: PiMessageEntry; results: Map<string, ToolResult & { details?: unknown }> }) {
+function MessageEntryView({
+  entry,
+  results,
+}: {
+  entry: PiMessageEntry
+  results: Map<string, ToolResult & { details?: unknown }>
+}) {
   const { message } = entry
   if (message.role === "toolResult") return null
 
   if (message.role === "user") {
     if (typeof message.content === "string") return <TextBlock role="user" text={message.content} />
-    return <>{message.content.map((block, i) => renderContentBlock(block as PiContent, i, "user", results))}</>
+    return (
+      <>
+        {message.content.map((block, i) =>
+          renderContentBlock(block as PiContent, i, "user", results),
+        )}
+      </>
+    )
   }
 
   if (message.role === "assistant") {
-    return <>{message.content.map((block, i) => renderContentBlock(block, i, "assistant", results))}</>
+    return (
+      <>{message.content.map((block, i) => renderContentBlock(block, i, "assistant", results))}</>
+    )
   }
 
   if (message.role === "bashExecution") {
@@ -1303,29 +1469,58 @@ function MessageEntryView({ entry, results }: { entry: PiMessageEntry; results: 
 
   if (message.role === "custom") {
     if (!message.display) return null
-    const content = typeof message.content === "string" ? message.content : JSON.stringify(message.content, null, 2)
+    const content =
+      typeof message.content === "string"
+        ? message.content
+        : JSON.stringify(message.content, null, 2)
     return <TextBlock role="assistant" text={content} />
   }
 
   if (message.role === "branchSummary") return <TextBlock role="assistant" text={message.summary} />
-  if (message.role === "compactionSummary") return <TextBlock role="assistant" text={message.summary} />
+  if (message.role === "compactionSummary")
+    return <TextBlock role="assistant" text={message.summary} />
 
   if (isToolResultMessage(message)) return null
   return <UnknownEntry entry={entry} />
 }
 
-export function PiEntryView({ entry, results }: { entry: PiTreeEntry; results: Map<string, ToolResult & { details?: unknown }> }) {
+export function PiEntryView({
+  entry,
+  results,
+}: {
+  entry: PiTreeEntry
+  results: Map<string, ToolResult & { details?: unknown }>
+}) {
   if (entry.type === "message") return <MessageEntryView entry={entry} results={results} />
-  if (entry.type === "model_change") return <div className="pi-meta-row">Model: <code>{entry.provider}/{entry.modelId}</code></div>
-  if (entry.type === "thinking_level_change") return <div className="pi-meta-row">Thinking: <code>{entry.thinkingLevel}</code></div>
+  if (entry.type === "model_change")
+    return (
+      <div className="pi-meta-row">
+        Model:{" "}
+        <code>
+          {entry.provider}/{entry.modelId}
+        </code>
+      </div>
+    )
+  if (entry.type === "thinking_level_change")
+    return (
+      <div className="pi-meta-row">
+        Thinking: <code>{entry.thinkingLevel}</code>
+      </div>
+    )
   if (entry.type === "branch_summary") return <TextBlock role="assistant" text={entry.summary} />
   if (entry.type === "compaction") return <TextBlock role="assistant" text={entry.summary} />
   if (entry.type === "custom_message") {
     if (!entry.display) return null
-    const content = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content, null, 2)
+    const content =
+      typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content, null, 2)
     return <TextBlock role="assistant" text={content} />
   }
-  if (entry.type === "session_info") return entry.name ? <div className="pi-meta-row">Session: <code>{entry.name}</code></div> : null
+  if (entry.type === "session_info")
+    return entry.name ? (
+      <div className="pi-meta-row">
+        Session: <code>{entry.name}</code>
+      </div>
+    ) : null
   if (entry.type === "label" || entry.type === "custom") return null
   return <UnknownEntry entry={entry} />
 }
@@ -1343,7 +1538,11 @@ import { extractPiToolResult } from "./toolResult"
 import type { PiParsedSession, PiToolResultMessage } from "./types"
 
 function isPiToolResultMessage(message: unknown): message is PiToolResultMessage {
-  return !!message && typeof message === "object" && (message as { role?: unknown }).role === "toolResult"
+  return (
+    !!message &&
+    typeof message === "object" &&
+    (message as { role?: unknown }).role === "toolResult"
+  )
 }
 
 export function PiTranscript({ session }: { session: PiParsedSession }) {
@@ -1360,9 +1559,19 @@ export function PiTranscript({ session }: { session: PiParsedSession }) {
       {session.header && <TranscriptHeader startTimestamp={session.header.timestamp} />}
       {session.header && (
         <div className="pi-session-card">
-          <div><strong>pi session</strong> <code>{session.header.id}</code></div>
-          {session.header.cwd && <div>cwd <code>{session.header.cwd}</code></div>}
-          {session.header.parentSession && <div>parent <code>{session.header.parentSession}</code></div>}
+          <div>
+            <strong>pi session</strong> <code>{session.header.id}</code>
+          </div>
+          {session.header.cwd && (
+            <div>
+              cwd <code>{session.header.cwd}</code>
+            </div>
+          )}
+          {session.header.parentSession && (
+            <div>
+              parent <code>{session.header.parentSession}</code>
+            </div>
+          )}
         </div>
       )}
       {session.activeEntries.map((entry) => (
@@ -1448,6 +1657,7 @@ git commit -m "feat(pi): render pi transcript entries"
 ### Task 7: Wire pi into app loading and icons
 
 **Files:**
+
 - Modify: `src/App.tsx`
 - Modify: `src/FileIcon.tsx`
 
@@ -1483,7 +1693,7 @@ In `loadText`, after the Codex branch and before Claude, add:
 Change the unknown error to:
 
 ```ts
-      setDropError(`Couldn't parse ${name} as a Claude Code, OpenAI Codex, or pi JSONL file`)
+setDropError(`Couldn't parse ${name} as a Claude Code, OpenAI Codex, or pi JSONL file`)
 ```
 
 Change drop-zone copy to:
@@ -1504,7 +1714,9 @@ Add pi location hint after Codex hint:
 Add render branch near existing transcript render branches:
 
 ```tsx
-        {session && session.format === "pi" && <PiTranscript session={session.session} />}
+{
+  session && session.format === "pi" && <PiTranscript session={session.session} />
+}
 ```
 
 - [ ] **Step 3: Update FileIcon format type**
@@ -1546,6 +1758,7 @@ git commit -m "feat(pi): wire pi transcript viewer"
 ### Task 8: Add real pi fixture with original filename
 
 **Files:**
+
 - Create: `src/transcript/__fixtures__/<original-pi-session-filename>.jsonl`
 
 - [ ] **Step 1: Select representative real pi trace**
@@ -1589,6 +1802,7 @@ git commit -m "test(pi): add real pi session fixture"
 ### Task 9: Verify in browser on existing dev server
 
 **Files:**
+
 - No source changes unless verification finds bugs.
 
 - [ ] **Step 1: Confirm dev server is already available**

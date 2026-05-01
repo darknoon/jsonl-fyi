@@ -161,7 +161,10 @@ export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
         else if (entry.type === "turn_context") node = null
         else if (entry.type === "compacted") node = <CompactedMarker key={`comp-${i}`} />
         else if (entry.type === "event_msg") node = null
-        else node = <EntryView key={i} entry={entry} results={results} agentNicknames={agentNicknames} />
+        else
+          node = (
+            <EntryView key={i} entry={entry} results={results} agentNicknames={agentNicknames} />
+          )
 
         const ms = durations.get(i)
         return (

@@ -11,12 +11,12 @@ Captured 2026-05-01.
 
 ## Options compared
 
-| Tool | 0 / 10k / 100k pv | HN spike (~200k/day) | Cookies / IP | Custom events |
-|---|---|---|---|---|
-| **Cloudflare Web Analytics** | $0 / $0 / $0 | $0 | none / none | no (use WAE) |
-| Plausible Cloud | $9 / $9 / $19 | $19 (no overage) | none / none | yes |
-| Umami Cloud | $0 (1M events/mo free) | $0 | none / none | yes |
-| Fathom | $15 flat | tier bump likely | none / none | yes |
+| Tool                         | 0 / 10k / 100k pv      | HN spike (~200k/day) | Cookies / IP | Custom events |
+| ---------------------------- | ---------------------- | -------------------- | ------------ | ------------- |
+| **Cloudflare Web Analytics** | $0 / $0 / $0           | $0                   | none / none  | no (use WAE)  |
+| Plausible Cloud              | $9 / $9 / $19          | $19 (no overage)     | none / none  | yes           |
+| Umami Cloud                  | $0 (1M events/mo free) | $0                   | none / none  | yes           |
+| Fathom                       | $15 flat               | tier bump likely     | none / none  | yes           |
 
 All four meet the privacy bar. Only CFWA and Umami Cloud are truly $0.
 
@@ -29,6 +29,7 @@ All four meet the privacy bar. Only CFWA and Umami Cloud are truly $0.
 ## Decision: Cloudflare Web Analytics
 
 Reasons specific to jsonl.fyi:
+
 1. First-party Cloudflare beacon on a CF-hosted site = least-surprising thing a technical visitor could find in DevTools.
 2. Free, no usage-based pricing — zero risk on a spike.
 3. Pageviews + uniques + country breakdown all included.
@@ -41,6 +42,7 @@ Trade-off accepted: no native custom events. Secondary metrics (tool/turn/byte c
 CFWA is **already enabled** on `jsonl.fyi` via Cloudflare's automatic-injection path (orange-clouded Workers custom domain).
 
 Verified 2026-05-01 in a clean headless Chrome:
+
 - `<script src="https://static.cloudflareinsights.com/beacon.min.js/...">` is auto-injected at the edge
 - `data-cf-beacon` token `28c07facc4d44334a2e6a71548347e4d`
 - Beacon script returns 200
@@ -52,8 +54,11 @@ No script tag in the repo, no `wrangler.jsonc` changes needed.
 Fallback is a manual snippet just before `</body>` in `index.html`:
 
 ```html
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
-  data-cf-beacon='{"token": "28c07facc4d44334a2e6a71548347e4d"}'></script>
+<script
+  defer
+  src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "28c07facc4d44334a2e6a71548347e4d"}'
+></script>
 ```
 
 If a CSP is ever added: allow `script-src https://static.cloudflareinsights.com` and `connect-src https://cloudflareinsights.com`.

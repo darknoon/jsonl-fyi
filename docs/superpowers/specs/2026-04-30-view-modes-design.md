@@ -65,12 +65,12 @@ One new slot. No new flags.
 `ToolCard.Root` reads `viewMode` via `useSettings()`. Render rules below
 the trigger:
 
-| `viewMode` | `expanded` | Renders |
-|------------|-----------|---------|
-| `compact`  | false     | nothing |
-| `compact`  | true      | `Content` if present, else `Preview` |
-| `normal`   | false     | `Preview` if present, else nothing |
-| `normal`   | true      | `Content` if present, else `Preview` |
+| `viewMode` | `expanded` | Renders                              |
+| ---------- | ---------- | ------------------------------------ |
+| `compact`  | false      | nothing                              |
+| `compact`  | true       | `Content` if present, else `Preview` |
+| `normal`   | false      | `Preview` if present, else nothing   |
+| `normal`   | true       | `Content` if present, else `Preview` |
 
 The three meaningful tool configurations:
 
@@ -106,37 +106,37 @@ called out. The "Body" column is what goes in `<ToolCard.Preview>`.
 
 ### Claude Code tools
 
-| Tool | Header detail | Preview body |
-|------|---------------|--------------|
-| Bash | command (capped via existing CSS) | last 3 logical lines of `output.text`; on error, last 10; if more remain, append `<MoreHint/>` |
-| Read | short path | one line: `Read N lines`; `(no output)` if empty |
-| Edit | short path | full `EditDiff` (no `Content`) |
-| MultiEdit | short path | all diffs (no `Content`) |
-| Write | short path | first 10 logical lines of `input.content` + `<MoreHint/>` if longer |
-| Glob | pattern | one line: `Found N file(s)` |
-| Grep | pattern | one line: `Found N match(es)`; for `output_mode === "files_with_matches"` use `Found N file(s)` |
-| WebFetch | url | one line: first non-empty line of `output.text`; fallback `Fetched` |
-| WebSearch | query | one line: link count from `output.text`; fallback first line |
-| Task / Agent | description | first 3 logical lines of `output.text` + `<MoreHint/>` |
-| NotebookEdit | path@cell | full new cell source (no `Content`) |
-| EnterPlanMode | — | no preview, no content |
-| ExitPlanMode | — | full plan markdown (no `Content`) |
-| TodoWrite | `activeForm` of in-progress todo, or no parens | one line: `M / N complete` |
-| Skill | skill name | first line of skill `description:` from `output.injectedText` (line-clamp 1) |
-| ToolSearch | query | one line: `Loaded N tool(s)` from `output.toolRefs.length`; `No tools loaded` if zero |
-| Unknown / MCP | name | first 3 logical lines of `output.text` + `<MoreHint/>` |
+| Tool          | Header detail                                  | Preview body                                                                                    |
+| ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Bash          | command (capped via existing CSS)              | last 3 logical lines of `output.text`; on error, last 10; if more remain, append `<MoreHint/>`  |
+| Read          | short path                                     | one line: `Read N lines`; `(no output)` if empty                                                |
+| Edit          | short path                                     | full `EditDiff` (no `Content`)                                                                  |
+| MultiEdit     | short path                                     | all diffs (no `Content`)                                                                        |
+| Write         | short path                                     | first 10 logical lines of `input.content` + `<MoreHint/>` if longer                             |
+| Glob          | pattern                                        | one line: `Found N file(s)`                                                                     |
+| Grep          | pattern                                        | one line: `Found N match(es)`; for `output_mode === "files_with_matches"` use `Found N file(s)` |
+| WebFetch      | url                                            | one line: first non-empty line of `output.text`; fallback `Fetched`                             |
+| WebSearch     | query                                          | one line: link count from `output.text`; fallback first line                                    |
+| Task / Agent  | description                                    | first 3 logical lines of `output.text` + `<MoreHint/>`                                          |
+| NotebookEdit  | path@cell                                      | full new cell source (no `Content`)                                                             |
+| EnterPlanMode | —                                              | no preview, no content                                                                          |
+| ExitPlanMode  | —                                              | full plan markdown (no `Content`)                                                               |
+| TodoWrite     | `activeForm` of in-progress todo, or no parens | one line: `M / N complete`                                                                      |
+| Skill         | skill name                                     | first line of skill `description:` from `output.injectedText` (line-clamp 1)                    |
+| ToolSearch    | query                                          | one line: `Loaded N tool(s)` from `output.toolRefs.length`; `No tools loaded` if zero           |
+| Unknown / MCP | name                                           | first 3 logical lines of `output.text` + `<MoreHint/>`                                          |
 
 ### Codex tools
 
-| Tool | Header detail | Preview body |
-|------|---------------|--------------|
-| `shell_command` / `exec_command` / `shell` | command (joined for `shell`) | last 3 logical lines of `output.text`; on error, last 10; `<MoreHint/>` if more |
-| `apply_patch` | path | full patch via existing `ApplyPatch` (no `Content`) |
-| `update_plan` | `input.explanation` if present | one line: `M / N complete` |
-| `view_image` | basename | image inline (existing) (no `Content`) |
-| `spawn_agent` | `agent_type` | one line: `<nickname> · <message>` (line-clamp 1); fallback `<nickname>` |
-| `wait_agent` | nicknames resolved via earlier `spawn_agent` outputs, else target IDs | see "wait_agent output handling" below |
-| `web_search` (custom) | query | no preview, no content |
+| Tool                                       | Header detail                                                         | Preview body                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `shell_command` / `exec_command` / `shell` | command (joined for `shell`)                                          | last 3 logical lines of `output.text`; on error, last 10; `<MoreHint/>` if more |
+| `apply_patch`                              | path                                                                  | full patch via existing `ApplyPatch` (no `Content`)                             |
+| `update_plan`                              | `input.explanation` if present                                        | one line: `M / N complete`                                                      |
+| `view_image`                               | basename                                                              | image inline (existing) (no `Content`)                                          |
+| `spawn_agent`                              | `agent_type`                                                          | one line: `<nickname> · <message>` (line-clamp 1); fallback `<nickname>`        |
+| `wait_agent`                               | nicknames resolved via earlier `spawn_agent` outputs, else target IDs | see "wait_agent output handling" below                                          |
+| `web_search` (custom)                      | query                                                                 | no preview, no content                                                          |
 
 ### Truncation rules
 
@@ -158,11 +158,11 @@ spawn_agent message, wait_agent agent message, etc.) use:
 hands the snippet at most N logical lines; CSS caps the rendered box at
 `L` visual lines:
 
-| Snippet | Logical-line slice | Visual-line cap (CSS) |
-|---------|-------------------|----------------------|
-| Bash tail | 3 (10 on error) | 6 (12 on error) |
-| Write head | 10 | 10 |
-| Agent / MCP / Unknown head | 3 | 6 |
+| Snippet                    | Logical-line slice | Visual-line cap (CSS) |
+| -------------------------- | ------------------ | --------------------- |
+| Bash tail                  | 3 (10 on error)    | 6 (12 on error)       |
+| Write head                 | 10                 | 10                    |
+| Agent / MCP / Unknown head | 3                  | 6                     |
 
 `<MoreHint count={n}/>` renders the `… +N lines` row underneath any
 clipped snippet.

@@ -10,6 +10,7 @@ copy and tool-card copy are explicitly out of scope for v1.
 ## Scope
 
 **In:**
+
 - Fenced code blocks rendered by `Markdown.tsx` (`<pre><code>`).
 - Tool `<pre className="output">` blocks rendered by `Output` in
   `src/transcript/shared.tsx`.
@@ -19,6 +20,7 @@ copy and tool-card copy are explicitly out of scope for v1.
   `codex/Tool.tsx`, `codex/ApplyPatch.tsx`.
 
 **Deferred:**
+
 - Whole-message copy (assistant text, user bubble, thinking blocks).
 - Tool-card-level copy buttons (the card header is reserved for other UI
   including a Raw View toggle).
@@ -32,11 +34,12 @@ copy and tool-card copy are explicitly out of scope for v1.
 type Props = {
   text: string | (() => string)
   className?: string
-  ariaLabel?: string  // default: "Copy"
+  ariaLabel?: string // default: "Copy"
 }
 ```
 
 Behavior:
+
 - Click → resolve `text` (call thunk if function) → `navigator.clipboard.writeText`.
 - On success: render checkmark icon, set `data-copied`, schedule revert in
   1500 ms (cleared on unmount).
@@ -57,13 +60,13 @@ potentially large find/replace string on every render.
 
 ## Integration points
 
-| Site | Copied text | Wrapper change |
-|---|---|---|
-| `Markdown.tsx` `pre` component | child code text (extracted from React children) | Make `<pre className="md-code-block">` `position: relative`; render `<CopyButton>` as last child |
-| `shared.tsx` `Output` | `output.text` | `<pre className="output">` becomes `position: relative`; CopyButton overlay |
-| `shared.tsx` `Field` | string form of `value` (only when value is a string or number) | `<dd>` becomes `position: relative`; CopyButton appears on hover of the row |
-| `EditDiff.tsx` | thunk → `<<<<<<< OLD\n{oldString}\n=======\n{newString}\n>>>>>>> NEW\n` | Wrap `<FileDiff>` in `<div className="edit-diff-wrap">` (`position: relative`); overlay CopyButton |
-| `claude/Tool.tsx`, `codex/Tool.tsx`, `codex/ApplyPatch.tsx` | per-tool — usually a single string field (command, contents, patch) | Apply CopyButton wherever a `<pre>` is emitted directly |
+| Site                                                        | Copied text                                                             | Wrapper change                                                                                     |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `Markdown.tsx` `pre` component                              | child code text (extracted from React children)                         | Make `<pre className="md-code-block">` `position: relative`; render `<CopyButton>` as last child   |
+| `shared.tsx` `Output`                                       | `output.text`                                                           | `<pre className="output">` becomes `position: relative`; CopyButton overlay                        |
+| `shared.tsx` `Field`                                        | string form of `value` (only when value is a string or number)          | `<dd>` becomes `position: relative`; CopyButton appears on hover of the row                        |
+| `EditDiff.tsx`                                              | thunk → `<<<<<<< OLD\n{oldString}\n=======\n{newString}\n>>>>>>> NEW\n` | Wrap `<FileDiff>` in `<div className="edit-diff-wrap">` (`position: relative`); overlay CopyButton |
+| `claude/Tool.tsx`, `codex/Tool.tsx`, `codex/ApplyPatch.tsx` | per-tool — usually a single string field (command, contents, patch)     | Apply CopyButton wherever a `<pre>` is emitted directly                                            |
 
 For `Markdown.tsx` we extract code text by walking children: in
 react-markdown's `pre` renderer the child is a `<code>` element whose
@@ -117,6 +120,7 @@ No new tokens expected.
 ## Tests
 
 `src/transcript/CopyButton.test.tsx` (Bun):
+
 1. Click invokes `navigator.clipboard.writeText` with the static string.
 2. Thunk variant: thunk is NOT called until click; on click, returned
    value is what gets written.

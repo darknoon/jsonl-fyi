@@ -48,7 +48,7 @@ export function SettingsProvider({
   // `initial` is for tests; in production the provider seeds from
   // localStorage on first render.
   const [settings, setSettings] = useState<Settings>(() =>
-    initial ? { ...DEFAULTS, ...initial } : load()
+    initial ? { ...DEFAULTS, ...initial } : load(),
   )
 
   useEffect(() => {

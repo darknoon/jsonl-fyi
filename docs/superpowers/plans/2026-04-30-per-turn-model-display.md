@@ -15,11 +15,13 @@
 ## File Structure
 
 **Create:**
+
 - `src/transcript/model.ts` — `ModelDisplay`, `formatClaudeModel`, `formatCodexModel`, `isSyntheticClaudeModel`
 - `src/transcript/model.test.ts` — unit tests for the module
 - `src/transcript/TranscriptHeader.test.tsx` — snapshot/render tests for the header
 
 **Modify:**
+
 - `src/types.ts` — add `model?: string` to `MessageEntry["message"]` so the Claude assistant row's model is typed.
 - `src/transcript/TranscriptHeader.tsx` — accept `models?: ModelDisplay[]`.
 - `src/transcript/TurnSeparator.tsx` — accept `model?: ModelDisplay | null`.
@@ -35,6 +37,7 @@
 ## Task 1: Module skeleton + `ModelDisplay` type + Claude name normalization
 
 **Files:**
+
 - Create: `src/transcript/model.ts`
 - Create: `src/transcript/model.test.ts`
 
@@ -140,6 +143,7 @@ git commit -m "feat(model): formatClaudeModel with regex normalization"
 ## Task 2: Codex name normalization
 
 **Files:**
+
 - Modify: `src/transcript/model.ts`
 - Modify: `src/transcript/model.test.ts`
 
@@ -229,6 +233,7 @@ git commit -m "feat(model): formatCodexModel with effort suffix"
 ## Task 3: Synthetic-model predicate
 
 **Files:**
+
 - Modify: `src/transcript/model.ts`
 - Modify: `src/transcript/model.test.ts`
 
@@ -282,6 +287,7 @@ git commit -m "feat(model): isSyntheticClaudeModel predicate"
 ## Task 4: Type model on `MessageEntry`
 
 **Files:**
+
 - Modify: `src/types.ts`
 
 - [ ] **Step 1: Add `model?: string` to the message shape**
@@ -321,6 +327,7 @@ git commit -m "types: add optional message.model on MessageEntry"
 ## Task 5: `TranscriptHeader` renders a model list
 
 **Files:**
+
 - Modify: `src/transcript/TranscriptHeader.tsx`
 - Create: `src/transcript/TranscriptHeader.test.tsx`
 
@@ -443,6 +450,7 @@ git commit -m "feat(header): render model list before date"
 ## Task 6: `TurnSeparator` renders an optional model label
 
 **Files:**
+
 - Modify: `src/transcript/TurnSeparator.tsx`
 - Modify: `src/transcript/TurnSeparator.test.tsx`
 
@@ -477,9 +485,7 @@ test("TurnSeparator: model + usage renders both, model after usage", () => {
 })
 
 test("TurnSeparator: model=null renders no model label", () => {
-  const html = renderToStaticMarkup(
-    <TurnSeparator durationMs={1000} usage={null} model={null} />,
-  )
+  const html = renderToStaticMarkup(<TurnSeparator durationMs={1000} usage={null} model={null} />)
   expect(html).not.toContain("title=")
 })
 ```
@@ -547,6 +553,7 @@ git commit -m "feat(separator): render optional per-turn model label"
 ## Task 7: Discovery + per-turn labeling for the Claude pipeline
 
 **Files:**
+
 - Modify: `src/transcript/timing.ts`
 - Modify: `src/transcript/timing.test.ts`
 - Modify: `src/transcript/claude/ClaudeCodeTranscript.tsx`
@@ -641,9 +648,7 @@ test("buildTranscriptItems: synthetic model rows excluded from discovery and per
   ]
   const { items, models } = buildTranscriptItems(entries)
   expect(models.map((m) => m.raw)).toEqual(["claude-opus-4-7", "claude-sonnet-4-6"])
-  const synSep = items.find(
-    (i) => i.kind === "separator" && i.afterUuid === "syn",
-  )
+  const synSep = items.find((i) => i.kind === "separator" && i.afterUuid === "syn")
   if (synSep?.kind !== "separator") throw new Error("expected synthetic separator")
   expect(synSep.model).toBeNull()
 })
@@ -812,6 +817,7 @@ git commit -m "feat(claude): per-turn model labeling on multi-model sessions"
 ## Task 8: Codex per-turn model + effort labeling
 
 **Files:**
+
 - Modify: `src/transcript/codex/CodexTranscript.tsx`
 - Create: `src/transcript/codex/modelLabeling.ts`
 - Create: `src/transcript/codex/modelLabeling.test.ts`
@@ -863,12 +869,7 @@ test("buildCodexModelLabels: model change → every separator carries its turn's
 })
 
 test("buildCodexModelLabels: effort change with same model still triggers multi-mode", () => {
-  const entries: CodexEntry[] = [
-    ctx("gpt-5.5", "high"),
-    asst(),
-    ctx("gpt-5.5", "medium"),
-    asst(),
-  ]
+  const entries: CodexEntry[] = [ctx("gpt-5.5", "high"), asst(), ctx("gpt-5.5", "medium"), asst()]
   const sepIndices = new Set([1, 3])
   const out = buildCodexModelLabels(entries, sepIndices)
   expect(out.models).toEqual([
@@ -900,10 +901,7 @@ test("buildCodexModelLabels: toggling back and forth lists every distinct pair o
   ]
   const sepIndices = new Set([1, 3, 5])
   const out = buildCodexModelLabels(entries, sepIndices)
-  expect(out.models.map((m) => m.label)).toEqual([
-    "GPT 5.5/high",
-    "GPT 5.5/medium",
-  ])
+  expect(out.models.map((m) => m.label)).toEqual(["GPT 5.5/high", "GPT 5.5/medium"])
   expect(out.byIndex.get(1)?.label).toBe("GPT 5.5/high")
   expect(out.byIndex.get(3)?.label).toBe("GPT 5.5/medium")
   expect(out.byIndex.get(5)?.label).toBe("GPT 5.5/high")
@@ -993,21 +991,23 @@ const modelLabels = buildCodexModelLabels(entries, sepIndexSet)
 Update the header render:
 
 ```tsx
-{startTimestamp && (
-  <TranscriptHeader startTimestamp={startTimestamp} models={modelLabels.models} />
-)}
+{
+  startTimestamp && <TranscriptHeader startTimestamp={startTimestamp} models={modelLabels.models} />
+}
 ```
 
 Update the `TurnSeparator` render:
 
 ```tsx
-{ms != null && (
-  <TurnSeparator
-    durationMs={ms}
-    usage={usages.get(i) ?? null}
-    model={modelLabels.byIndex.get(i) ?? null}
-  />
-)}
+{
+  ms != null && (
+    <TurnSeparator
+      durationMs={ms}
+      usage={usages.get(i) ?? null}
+      model={modelLabels.byIndex.get(i) ?? null}
+    />
+  )
+}
 ```
 
 - [ ] **Step 6: Run all tests**
@@ -1027,6 +1027,7 @@ git commit -m "feat(codex): per-turn model+effort labeling on multi-config sessi
 ## Task 9: Styling
 
 **Files:**
+
 - Modify: `src/styles.css`
 
 - [ ] **Step 1: Add CSS rules**
@@ -1077,12 +1078,14 @@ bun run dev
 - [ ] **Step 3: Drag in `src/__fixtures__/sample.jsonl`** (Claude, single model `claude-opus-4-7`)
 
 Verify:
+
 - Header shows `Opus 4.7 • <date>` (with a `title="claude-opus-4-7"` tooltip on the model label).
 - No turn separators carry a model label.
 
 - [ ] **Step 4: Drag in `src/__fixtures__/codex-sample.jsonl`** (Codex, single model `gpt-5.5`, no effort recorded in the fixture)
 
 Verify:
+
 - Header shows `GPT 5.5 • <date>` (slash + effort omitted because the fixture's `turn_context.effort` is empty).
 - No separator labels.
 
@@ -1091,6 +1094,7 @@ Verify:
 Create a temporary test fixture by combining a real session with a synthetic multi-model patch — or take one of the user's real multi-model jsonls (e.g. `~/.claude/projects/-Users-andrew-Developer-Web-Dave/b86d0172-c882-45b9-ae57-c488b987cee1.jsonl`, which mixes `claude-opus-4-6` and `sonnet`) — and drag it in.
 
 Verify:
+
 - Header shows two entries comma-joined.
 - Every separator carries its turn's model label.
 - Hover on a label reveals the raw id.

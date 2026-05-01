@@ -25,9 +25,9 @@ type ToolResult = {
   images: ImageSource[]
   toolRefs: string[]
   isError: boolean
-  injectedText?: string  // currently only Skill — full skill markdown body
-                         // (with YAML frontmatter at top) injected as a
-                         // sibling user message right after the tool_result
+  injectedText?: string // currently only Skill — full skill markdown body
+  // (with YAML frontmatter at top) injected as a
+  // sibling user message right after the tool_result
 }
 ```
 

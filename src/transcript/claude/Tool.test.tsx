@@ -30,32 +30,33 @@ test("Tool.test.tsx scaffolding loads", () => {
 })
 
 test("Bash preview: last 3 lines + MoreHint when more", () => {
-  const html = renderToolHtml(
-    { name: "Bash", input: { command: "ls" } } as ToolUse,
-    { ...okOutput, text: "1\n2\n3\n4\n5" },
-  )
+  const html = renderToolHtml({ name: "Bash", input: { command: "ls" } } as ToolUse, {
+    ...okOutput,
+    text: "1\n2\n3\n4\n5",
+  })
   expect(html).toContain('class="tool-preview-snippet"')
   expect(html).toContain("3\n4\n5")
-  expect(html).not.toContain("<pre class=\"tool-preview-snippet\">1\n2\n3\n4\n5") // not rendering full
+  expect(html).not.toContain('<pre class="tool-preview-snippet">1\n2\n3\n4\n5') // not rendering full
   expect(html).toContain("2 more lines")
 })
 
 test("Bash preview: 10-line tail on error with snippet-error class", () => {
   const text = Array.from({ length: 15 }, (_, i) => String(i + 1)).join("\n")
-  const html = renderToolHtml(
-    { name: "Bash", input: { command: "fail" } } as ToolUse,
-    { ...okOutput, text, isError: true },
-  )
+  const html = renderToolHtml({ name: "Bash", input: { command: "fail" } } as ToolUse, {
+    ...okOutput,
+    text,
+    isError: true,
+  })
   expect(html).toContain('class="tool-preview-snippet snippet-error"')
   expect(html).toContain("6\n7\n8\n9\n10\n11\n12\n13\n14\n15")
   expect(html).toContain("5 more lines")
 })
 
 test("Bash preview: no MoreHint when output fits", () => {
-  const html = renderToolHtml(
-    { name: "Bash", input: { command: "echo hi" } } as ToolUse,
-    { ...okOutput, text: "hi" },
-  )
+  const html = renderToolHtml({ name: "Bash", input: { command: "echo hi" } } as ToolUse, {
+    ...okOutput,
+    text: "hi",
+  })
   expect(html).toContain("hi")
   expect(html).not.toContain("tool-more-hint")
 })
@@ -70,35 +71,32 @@ test("Bash preview: compact mode shows no preview", () => {
 })
 
 test("Read preview: counts lines from output text", () => {
-  const html = renderToolHtml(
-    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-    { ...okOutput, text: "a\nb\nc" },
-  )
+  const html = renderToolHtml({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, {
+    ...okOutput,
+    text: "a\nb\nc",
+  })
   expect(html).toContain("Read 3 lines")
 })
 
 test("Read preview: trailing newline doesn't inflate count", () => {
-  const html = renderToolHtml(
-    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-    { ...okOutput, text: "a\nb\n" },
-  )
+  const html = renderToolHtml({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, {
+    ...okOutput,
+    text: "a\nb\n",
+  })
   expect(html).toContain("Read 2 lines")
 })
 
 test("Read preview: singular line", () => {
-  const html = renderToolHtml(
-    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-    { ...okOutput, text: "a" },
-  )
+  const html = renderToolHtml({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, {
+    ...okOutput,
+    text: "a",
+  })
   expect(html).toContain("Read 1 line")
   expect(html).not.toContain("Read 1 lines")
 })
 
 test("Read preview: empty output", () => {
-  const html = renderToolHtml(
-    { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-    okOutput,
-  )
+  const html = renderToolHtml({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, okOutput)
   expect(html).toContain("(no output)")
 })
 
@@ -149,7 +147,7 @@ test("NotebookEdit: new_source renders inside Preview slot", () => {
     okOutput,
   )
   expect(html).toContain("tool-preview")
-  expect(html).toContain("print(&#x27;hi&#x27;)")  // single quotes get HTML-escaped by React
+  expect(html).toContain("print(&#x27;hi&#x27;)") // single quotes get HTML-escaped by React
 })
 
 test("Write preview: first 10 lines + MoreHint when content has more", () => {
@@ -175,27 +173,27 @@ test("Write preview: no MoreHint when content fits", () => {
 })
 
 test("Glob preview: file count, plural", () => {
-  const html = renderToolHtml(
-    { name: "Glob", input: { pattern: "*.ts" } } as ToolUse,
-    { ...okOutput, text: "/a.ts\n/b.ts\n/c.ts" },
-  )
+  const html = renderToolHtml({ name: "Glob", input: { pattern: "*.ts" } } as ToolUse, {
+    ...okOutput,
+    text: "/a.ts\n/b.ts\n/c.ts",
+  })
   expect(html).toContain("Found 3 files")
 })
 
 test("Glob preview: singular", () => {
-  const html = renderToolHtml(
-    { name: "Glob", input: { pattern: "*.ts" } } as ToolUse,
-    { ...okOutput, text: "/a.ts" },
-  )
+  const html = renderToolHtml({ name: "Glob", input: { pattern: "*.ts" } } as ToolUse, {
+    ...okOutput,
+    text: "/a.ts",
+  })
   expect(html).toContain("Found 1 file")
   expect(html).not.toContain("Found 1 files")
 })
 
 test("Grep preview: matches count", () => {
-  const html = renderToolHtml(
-    { name: "Grep", input: { pattern: "foo" } } as ToolUse,
-    { ...okOutput, text: "match1\nmatch2" },
-  )
+  const html = renderToolHtml({ name: "Grep", input: { pattern: "foo" } } as ToolUse, {
+    ...okOutput,
+    text: "match1\nmatch2",
+  })
   expect(html).toContain("Found 2 matches")
 })
 
@@ -208,18 +206,15 @@ test("Grep preview: files_with_matches mode says 'files'", () => {
 })
 
 test("ToolSearch preview: loaded count", () => {
-  const html = renderToolHtml(
-    { name: "ToolSearch", input: { query: "x" } } as ToolUse,
-    { ...okOutput, toolRefs: ["Read", "Edit"] },
-  )
+  const html = renderToolHtml({ name: "ToolSearch", input: { query: "x" } } as ToolUse, {
+    ...okOutput,
+    toolRefs: ["Read", "Edit"],
+  })
   expect(html).toContain("Loaded 2 tools")
 })
 
 test("ToolSearch preview: zero loaded", () => {
-  const html = renderToolHtml(
-    { name: "ToolSearch", input: { query: "x" } } as ToolUse,
-    okOutput,
-  )
+  const html = renderToolHtml({ name: "ToolSearch", input: { query: "x" } } as ToolUse, okOutput)
   expect(html).toContain("No tools loaded")
 })
 
@@ -240,10 +235,10 @@ test("WebFetch preview: fallback when output empty", () => {
 })
 
 test("WebSearch preview: counts markdown links", () => {
-  const html = renderToolHtml(
-    { name: "WebSearch", input: { query: "x" } } as ToolUse,
-    { ...okOutput, text: "Some [first](http://a) [second](http://b) result" },
-  )
+  const html = renderToolHtml({ name: "WebSearch", input: { query: "x" } } as ToolUse, {
+    ...okOutput,
+    text: "Some [first](http://a) [second](http://b) result",
+  })
   expect(html).toContain("2 results")
 })
 
@@ -325,27 +320,24 @@ name: brainstorming
 description: Help turn ideas into designs through dialogue
 ---
 body`
-  const html = renderToolHtml(
-    { name: "Skill", input: { skill: "brainstorming" } } as ToolUse,
-    { ...okOutput, injectedText: injected },
-  )
+  const html = renderToolHtml({ name: "Skill", input: { skill: "brainstorming" } } as ToolUse, {
+    ...okOutput,
+    injectedText: injected,
+  })
   expect(html).toContain("Help turn ideas into designs through dialogue")
   expect(html).toContain("tool-preview-line")
 })
 
 test("Skill preview: no preview when injectedText missing", () => {
-  const html = renderToolHtml(
-    { name: "Skill", input: { skill: "x" } } as ToolUse,
-    okOutput,
-  )
+  const html = renderToolHtml({ name: "Skill", input: { skill: "x" } } as ToolUse, okOutput)
   expect(html).not.toContain("tool-preview-line")
 })
 
 test("UnknownTool preview: first 3 lines of output as prose, not code", () => {
-  const html = renderToolHtml(
-    { name: "mcp__custom__do_thing", input: {} } as ToolUse,
-    { ...okOutput, text: "a\nb\nc\nd\ne" },
-  )
+  const html = renderToolHtml({ name: "mcp__custom__do_thing", input: {} } as ToolUse, {
+    ...okOutput,
+    text: "a\nb\nc\nd\ne",
+  })
   // Unknown / MCP tool outputs are usually prose (e.g. "Task #3 created
   // successfully…"), not CLI output. Render with `.tool-preview-prose`,
   // NOT the code-styled `.tool-preview-snippet` used by Bash.

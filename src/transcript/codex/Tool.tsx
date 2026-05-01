@@ -16,9 +16,7 @@ function shellTailPreview(output: ToolResult): {
   if (!output.text) return null
   const tailN = output.isError ? 10 : 3
   const tail = tailLines(output.text, tailN)
-  const className = output.isError
-    ? "tool-preview-snippet snippet-error"
-    : "tool-preview-snippet"
+  const className = output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"
   return { ...tail, className }
 }
 
@@ -203,7 +201,11 @@ function WriteStdin({ input, output }: { input: WriteStdinInput; output: ToolRes
   const tail = shellTailPreview(output)
   // chars is empty for poll-style invocations; show session id instead so
   // the trigger isn't blank.
-  const detail = chars ? JSON.stringify(chars) : session_id != null ? `session ${session_id}` : undefined
+  const detail = chars
+    ? JSON.stringify(chars)
+    : session_id != null
+      ? `session ${session_id}`
+      : undefined
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -254,7 +256,9 @@ function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolRes
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview>
-        <div className="tool-preview-line">{done} / {total} complete</div>
+        <div className="tool-preview-line">
+          {done} / {total} complete
+        </div>
       </ToolCard.Preview>
       <ToolCard.Content>
         {plan && plan.length > 0 && (
@@ -508,7 +512,9 @@ function WaitAgent({
         <ToolCard.Preview>
           {singleLine && <div className="tool-preview-line">{singleLine}</div>}
           {previewRows.map((r) => (
-            <div key={r.id} className="tool-preview-line">{r.line}</div>
+            <div key={r.id} className="tool-preview-line">
+              {r.line}
+            </div>
           ))}
         </ToolCard.Preview>
       )}
@@ -565,7 +571,13 @@ export function CodexFunctionCall({
     case "spawn_agent":
       return <SpawnAgent input={parsed as SpawnAgentInput} output={output} />
     case "wait_agent":
-      return <WaitAgent input={parsed as WaitAgentInput} output={output} agentNicknames={agentNicknames} />
+      return (
+        <WaitAgent
+          input={parsed as WaitAgentInput}
+          output={output}
+          agentNicknames={agentNicknames}
+        />
+      )
     default:
       return <UnknownTool name={name} input={parsed} output={output} />
   }

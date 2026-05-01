@@ -15,7 +15,7 @@ Pi stores sessions as JSONL under:
 The first line is a session header:
 
 ```json
-{"type":"session","version":3,"id":"...","timestamp":"...","cwd":"..."}
+{ "type": "session", "version": 3, "id": "...", "timestamp": "...", "cwd": "..." }
 ```
 
 Subsequent entries are append-only tree entries with `id`, `parentId`, and `timestamp`. Message entries contain normalized pi messages under `message`:
@@ -103,9 +103,7 @@ Pair assistant tool calls with later `toolResult` messages on the active branch 
 Tool result normalization should use a shared ordered content list:
 
 ```ts
-type ToolResultContent =
-  | { type: "text"; text: string }
-  | { type: "image"; source: ImageSource }
+type ToolResultContent = { type: "text"; text: string } | { type: "image"; source: ImageSource }
 ```
 
 `ToolResult` should make `content` the canonical representation rather than storing duplicate `text` or `images` summaries. Shared helpers can derive plain text previews or image counts from `content` when existing UI needs summaries. Claude and Codex should be updated to populate this shared field; pi support should use it from the start.

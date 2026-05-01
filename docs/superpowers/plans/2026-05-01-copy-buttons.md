@@ -16,23 +16,24 @@
 
 ## File Structure
 
-| File | Purpose |
-|---|---|
-| `src/transcript/CopyButton.tsx` (new) | Shared button component with clipboard write + state machine |
-| `src/transcript/CopyButton.test.tsx` (new) | Unit tests |
-| `src/styles.css` | `.copy-button` styles + blur-fade icon transition + per-host `position: relative` rules |
-| `src/transcript/Markdown.tsx` | Add CopyButton inside `pre` renderer; extract code text from children |
-| `src/transcript/shared.tsx` | Add CopyButton to `Output` and to string/number `Field` values |
-| `src/transcript/EditDiff.tsx` | Wrap diff in relative container; overlay CopyButton with thunk producing find/replace string |
-| `src/transcript/claude/Tool.tsx` | Wrap each non-shared `<pre>` (Bash command, Write content, Skill injectedText) with CopyButton |
-| `src/transcript/codex/Tool.tsx` | Wrap each `<pre className="output cmd">` and `<pre className="output">` with CopyButton |
-| `src/transcript/codex/ApplyPatch.tsx` | Wrap the patch and meta `<pre>` with CopyButton |
+| File                                       | Purpose                                                                                        |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `src/transcript/CopyButton.tsx` (new)      | Shared button component with clipboard write + state machine                                   |
+| `src/transcript/CopyButton.test.tsx` (new) | Unit tests                                                                                     |
+| `src/styles.css`                           | `.copy-button` styles + blur-fade icon transition + per-host `position: relative` rules        |
+| `src/transcript/Markdown.tsx`              | Add CopyButton inside `pre` renderer; extract code text from children                          |
+| `src/transcript/shared.tsx`                | Add CopyButton to `Output` and to string/number `Field` values                                 |
+| `src/transcript/EditDiff.tsx`              | Wrap diff in relative container; overlay CopyButton with thunk producing find/replace string   |
+| `src/transcript/claude/Tool.tsx`           | Wrap each non-shared `<pre>` (Bash command, Write content, Skill injectedText) with CopyButton |
+| `src/transcript/codex/Tool.tsx`            | Wrap each `<pre className="output cmd">` and `<pre className="output">` with CopyButton        |
+| `src/transcript/codex/ApplyPatch.tsx`      | Wrap the patch and meta `<pre>` with CopyButton                                                |
 
 ---
 
 ## Task 1: CopyButton component (TDD)
 
 **Files:**
+
 - Create: `src/transcript/CopyButton.tsx`
 - Create: `src/transcript/CopyButton.test.tsx`
 
@@ -206,13 +207,31 @@ export function CopyButton({ text, className, ariaLabel = "Copy" }: Props) {
       onClick={handleClick}
     >
       <span className="copy-button-icon copy-button-icon-copy" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
       </span>
       <span className="copy-button-icon copy-button-icon-check" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </span>
@@ -239,6 +258,7 @@ git commit -m "feat(copy): CopyButton component with clipboard fallback"
 ## Task 2: Styles + blur-fade transition
 
 **Files:**
+
 - Modify: `src/styles.css`
 
 - [ ] **Step 1: Append CopyButton styles**
@@ -267,7 +287,9 @@ Append to `src/styles.css`:
   z-index: 1;
 }
 
-.copy-button:hover { color: var(--color-fg); }
+.copy-button:hover {
+  color: var(--color-fg);
+}
 .copy-button:focus-visible {
   outline: 2px solid var(--color-fg);
   outline-offset: 1px;
@@ -276,30 +298,53 @@ Append to `src/styles.css`:
 
 /* Reveal on hover of any container that hosts a copy button. */
 .copy-host:hover > .copy-button,
-.copy-host:focus-within > .copy-button { opacity: 1; }
+.copy-host:focus-within > .copy-button {
+  opacity: 1;
+}
 
 /* Touch/no-hover: always visible. */
 @media (hover: none) {
-  .copy-button { opacity: 1; }
+  .copy-button {
+    opacity: 1;
+  }
 }
 
 /* Stay opaque while showing the success state. */
-.copy-button--copied { opacity: 1; color: var(--color-success); }
+.copy-button--copied {
+  opacity: 1;
+  color: var(--color-success);
+}
 
 /* Blur-fade cross-dissolve between copy/check icons. */
 .copy-button-icon {
   grid-area: 1 / 1;
   display: inline-flex;
-  transition: opacity 180ms ease, filter 180ms ease;
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease;
 }
-.copy-button-icon-copy   { opacity: 1; filter: blur(0); }
-.copy-button-icon-check  { opacity: 0; filter: blur(4px); }
-.copy-button[data-copied] .copy-button-icon-copy  { opacity: 0; filter: blur(4px); }
-.copy-button[data-copied] .copy-button-icon-check { opacity: 1; filter: blur(0); }
+.copy-button-icon-copy {
+  opacity: 1;
+  filter: blur(0);
+}
+.copy-button-icon-check {
+  opacity: 0;
+  filter: blur(4px);
+}
+.copy-button[data-copied] .copy-button-icon-copy {
+  opacity: 0;
+  filter: blur(4px);
+}
+.copy-button[data-copied] .copy-button-icon-check {
+  opacity: 1;
+  filter: blur(0);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .copy-button,
-  .copy-button-icon { transition: none; }
+  .copy-button-icon {
+    transition: none;
+  }
 }
 ```
 
@@ -315,6 +360,7 @@ git commit -m "style(copy): copy-button with blur-fade icon swap"
 ## Task 3: Markdown fenced code blocks
 
 **Files:**
+
 - Modify: `src/transcript/Markdown.tsx`
 - Modify: `src/styles.css`
 - Modify (test fixtures only if snapshots break): `src/transcript/__snapshots__/`
@@ -360,6 +406,7 @@ Add `import { CopyButton } from "./CopyButton"` to the imports if not already pr
 The CopyButton is positioned absolutely; `.md-code-block` must be positioned. Edit `src/styles.css` around line 801:
 
 Find:
+
 ```css
 .md-content .md-code-block {
 ```
@@ -393,6 +440,7 @@ git commit -m "feat(copy): copy button on markdown code blocks"
 ## Task 4: Output + Field
 
 **Files:**
+
 - Modify: `src/transcript/shared.tsx`
 - Modify: `src/styles.css`
 
@@ -426,7 +474,11 @@ export function Field({ name, value }: { name: string; value: ReactNode }) {
       <dd>
         <code>{value}</code>
         {copyable && (
-          <CopyButton text={String(value)} ariaLabel={`Copy ${name}`} className="copy-button-field" />
+          <CopyButton
+            text={String(value)}
+            ariaLabel={`Copy ${name}`}
+            className="copy-button-field"
+          />
         )}
       </dd>
     </div>
@@ -455,7 +507,9 @@ Edit `src/styles.css`:
 For the field button, override the absolute position so it sits at the right of the value column. Append:
 
 ```css
-.tool-field { position: relative; }
+.tool-field {
+  position: relative;
+}
 .copy-button-field {
   /* anchored to the row, not the dd box */
   top: 0;
@@ -480,6 +534,7 @@ git commit -m "feat(copy): copy buttons on tool Output and Field"
 ## Task 5: Edit diffs
 
 **Files:**
+
 - Modify: `src/transcript/EditDiff.tsx`
 - Modify: `src/styles.css`
 
@@ -529,10 +584,7 @@ export function EditDiff({
         }}
         disableWorkerPool
       />
-      <CopyButton
-        text={() => diffCopyText(oldString, newString)}
-        ariaLabel="Copy diff"
-      />
+      <CopyButton text={() => diffCopyText(oldString, newString)} ariaLabel="Copy diff" />
     </div>
   )
 }
@@ -543,8 +595,13 @@ export function EditDiff({
 Append to `src/styles.css`:
 
 ```css
-.edit-diff-wrap { position: relative; }
-.edit-diff-wrap > .copy-button { top: 6px; right: 6px; }
+.edit-diff-wrap {
+  position: relative;
+}
+.edit-diff-wrap > .copy-button {
+  top: 6px;
+  right: 6px;
+}
 ```
 
 - [ ] **Step 3: Run tests**
@@ -566,6 +623,7 @@ git commit -m "feat(copy): copy button on edit diffs (find/replace markers)"
 These are direct `<pre>` emissions in tool dispatchers that aren't routed through `Output`. Each gets the same `copy-host` class + `<CopyButton>` overlay.
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx`
 - Modify: `src/transcript/codex/Tool.tsx`
 - Modify: `src/transcript/codex/ApplyPatch.tsx`
@@ -575,27 +633,35 @@ These are direct `<pre>` emissions in tool dispatchers that aren't routed throug
 Find each `<pre className="output">…</pre>` or `<pre className="output cmd">…</pre>` that is **not** part of a preview snippet (those are `tool-preview-snippet`, leave them alone). Replace each like:
 
 Before:
+
 ```tsx
-{command && <pre className="output cmd">{command}</pre>}
+{
+  command && <pre className="output cmd">{command}</pre>
+}
 ```
 
 After:
+
 ```tsx
-{command && (
-  <pre className="output cmd copy-host">
-    {command}
-    <CopyButton text={command} ariaLabel="Copy command" />
-  </pre>
-)}
+{
+  command && (
+    <pre className="output cmd copy-host">
+      {command}
+      <CopyButton text={command} ariaLabel="Copy command" />
+    </pre>
+  )
+}
 ```
 
 Apply to:
+
 - `Bash`: line ~103, `<pre className="output cmd">{command}</pre>` → `ariaLabel="Copy command"`.
 - `Write`: line ~224, `<pre className="output">{content}</pre>` → `ariaLabel="Copy contents"`.
 - `Skill`: line ~602, `<pre className="output">{output.injectedText}</pre>` → `ariaLabel="Copy skill body"`.
 - `NotebookEdit`: line ~536, `<pre className="output">{new_source}</pre>` → `ariaLabel="Copy source"`.
 
 Add at top of file:
+
 ```tsx
 import { CopyButton } from "../CopyButton"
 ```
@@ -605,9 +671,11 @@ Leave `tool-preview-snippet` blocks alone (they are previews, full content is be
 - [ ] **Step 2: codex/Tool.tsx — every `<pre className="output cmd">` and `<pre className="output">`**
 
 Repeat the same pattern for the lines listed:
+
 - 69, 129, 175, 221, 399 (`<pre className="output cmd">…</pre>` and one `<pre className="output">{message}</pre>`).
 
 For each, choose an `ariaLabel`:
+
 - Lines 69, 129: `"Copy command"`.
 - Line 175: `"Copy command"` (joined argv).
 - Line 221: `"Copy stdin"` (`chars` is stdin payload).
@@ -620,6 +688,7 @@ Leave `tool-preview-snippet` previews (lines 64, 124, 170, 216) untouched.
 - [ ] **Step 3: codex/ApplyPatch.tsx — patch and meta `<pre>`**
 
 Lines 26 and 72:
+
 - Line 26 `{patch}` → `ariaLabel="Copy patch"`.
 - Line 72 `{meta.text}` → `ariaLabel="Copy output"`.
 
@@ -664,6 +733,7 @@ Expected: server up at `http://localhost:5173`.
 Invoke the `agent-browser` skill with the dev URL. Drag in fixtures from `src/__fixtures__/` and `src/transcript/__fixtures__/` (one Claude file, one Codex file).
 
 For each, verify:
+
 - Hovering a fenced code block shows a copy button top-right; clicking it swaps to a checkmark with a visible blur-fade; reverts after ~1.5s.
 - Clipboard contains the code text (verify via a separate browser action that pastes into a textarea, or via `await navigator.clipboard.readText()` if accessible).
 - Same for: Bash command pre, Bash output, Write contents, Edit diff (copy-as-find/replace markers), Skill injectedText.

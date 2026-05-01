@@ -124,5 +124,6 @@ to `main` (no GH Actions workflow in this repo). Cloudflare records
 each deploy as a GitHub Deployment (visible via `gh api repos/.../deployments`).
 
 To check deploy status:
+
 - `npx wrangler deployments list --name jsonl-fyi` — Workers deploy history
 - `curl -sI https://jsonl.fyi/` — confirm the live site responds

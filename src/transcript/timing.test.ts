@@ -320,9 +320,7 @@ test("buildTranscriptItems: synthetic model rows excluded from discovery and per
   ]
   const { items, models } = buildTranscriptItems(entries)
   expect(models.map((m) => m.raw)).toEqual(["claude-opus-4-7", "claude-sonnet-4-6"])
-  const synSep = items.find(
-    (i) => i.kind === "separator" && i.afterUuid === "syn",
-  )
+  const synSep = items.find((i) => i.kind === "separator" && i.afterUuid === "syn")
   if (synSep?.kind !== "separator") throw new Error("expected synthetic separator")
   expect(synSep.model).toBeNull()
 })

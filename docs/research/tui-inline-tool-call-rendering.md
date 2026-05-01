@@ -19,28 +19,28 @@ Constants referenced below live in:
 
 **Non-exploring “single command” layout** (`ExecCell::command_display_lines` in `exec_cell/render.rs`):
 
-| State | Glyph | Prefix title | Rest of line |
-|--------|--------|----------------|---------------|
-| Running | Animated spinner (`•` shimmer / blink) or static `•` if animations off | **`Running`** | Bash-highlighted command (wrapped) |
-| Finished, success | **`•`** green bold | **`Ran`** (agent) or **`You ran`** (`CommandExecutionSource::UserShell`) | Same command |
-| Finished, failure | **`•`** red bold | Same titles | Same command |
+| State             | Glyph                                                                  | Prefix title                                                             | Rest of line                       |
+| ----------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------- |
+| Running           | Animated spinner (`•` shimmer / blink) or static `•` if animations off | **`Running`**                                                            | Bash-highlighted command (wrapped) |
+| Finished, success | **`•`** green bold                                                     | **`Ran`** (agent) or **`You ran`** (`CommandExecutionSource::UserShell`) | Same command                       |
+| Finished, failure | **`•`** red bold                                                       | Same titles                                                              | Same command                       |
 
 **Unified exec interaction** (`ExecCommandSource::UnifiedExecInteraction`): header is **`•`** + single line from `format_unified_exec_interaction` — **no** `Running`/`Ran`/`You ran` prefix (`exec_cell/render.rs`).
 
 **“Exploring” grouped reads** (`ExecCell::exploring_display_lines` when every parsed action is Read/List/Search and source is not user shell): first line is **`•`** (spinner while active, dim bullet when done) + **`Exploring`** / **`Explored`** bold; indented subtree uses cyan labels **`Read`**, **`List`**, **`Search`**, **`Run`** with paths/queries (`exec_cell/render.rs`).
 
-First-line continuation uses prefixes **`  │ `** (dim); max **2** extra wrapped continuation lines before `… +N lines` ellipsis (`EXEC_DISPLAY_LAYOUT.command_continuation_max_lines`).
+First-line continuation uses prefixes **` │`** (dim); max **2** extra wrapped continuation lines before `… +N lines` ellipsis (`EXEC_DISPLAY_LAYOUT.command_continuation_max_lines`).
 
 ### 2. Default body (stdout/stderr)
 
 - **While running:** No output block until `CommandExecution.output` is populated; streaming deltas append into `aggregated_output` (`exec_cell/model.rs` `append_output`, `chatwidget.rs` `on_exec_command_output_delta`).
 - **After finish:** Output is **`aggregated_output`** (stderr + stdout interleaved in one string). There is **no** stderr-only preview for failed commands in this cell (`only_err` is **false** in `command_display_lines`).
-- **Logical lines:** `output_lines()` keeps up to **`line_limit`** lines from the **head** and **`line_limit`** from the **tail**. If `total > 2 * line_limit`, inserts **`… +{total - 2*line_limit} lines (ctrl + t to view transcript)`** (`exec_cell/render.rs`).  
-  - Agent / default commands: **`line_limit = TOOL_CALL_MAX_LINES` (5)**.  
+- **Logical lines:** `output_lines()` keeps up to **`line_limit`** lines from the **head** and **`line_limit`** from the **tail**. If `total > 2 * line_limit`, inserts **`… +{total - 2*line_limit} lines (ctrl + t to view transcript)`** (`exec_cell/render.rs`).
+  - Agent / default commands: **`line_limit = TOOL_CALL_MAX_LINES` (5)**.
   - User shell: **`line_limit = USER_SHELL_TOOL_CALL_MAX_LINES` (50)**.
 - **Viewport rows:** After wrapping, output is capped to **`output_max_lines`** rows (**5** agent, **50** user shell) via `truncate_lines_middle` (splits head/tail row budgets around an ellipsis line). Ellipsis counts **logical** lines, not wrapped rows.
 - **Empty output:** Indented **`(no output)`** dim — skipped for unified-exec interaction rows (`exec_cell/render.rs`).
-- **Prefixes:** Output uses **`  └ `** first line, **`    `** continuation (dim gutter).
+- **Prefixes:** Output uses **` └`** first line, **`    `** continuation (dim gutter).
 
 **Unified exec interaction:** Completed rows intentionally use **empty** aggregated output for the exec cell; interaction content is rendered separately (`UnifiedExecInteractionCell`, `history_cell.rs`).
 
@@ -67,11 +67,11 @@ Streaming only grows `aggregated_output`; layout/truncation applies to whatever 
 
 Full per-file diff rendering (syntax-highlighted add/delete/update hunks), wrapped at **`wrap_cols - 4`** with **`    `** gutter. **No** `TOOL_CALL_MAX_LINES`-style truncation in this path — the inline cell can occupy many rows.
 
-Per-file subtree: **`  └ `** dim + path + counts when **multi-file** (skipped when **single-file** header already names the path).
+Per-file subtree: **` └`** dim + path + counts when **multi-file** (skipped when **single-file** header already names the path).
 
 ### 3. Errors
 
-Patch apply failure uses a separate cell **`new_patch_apply_failure`** (`history_cell.rs`): title **`✘ Failed to apply patch`** magenta bold; stderr preview via `output_lines` with **`line_limit = TOOL_CALL_MAX_LINES` (5)**, **`only_err: true`**, gutter **`  └ `** / **`    `**.
+Patch apply failure uses a separate cell **`new_patch_apply_failure`** (`history_cell.rs`): title **`✘ Failed to apply patch`** magenta bold; stderr preview via `output_lines` with **`line_limit = TOOL_CALL_MAX_LINES` (5)**, **`only_err: true`**, gutter **` └`** / **`    `**.
 
 ### 4. Streaming vs complete
 
@@ -92,7 +92,7 @@ Patch preview is emitted as a completed history insert (`chatwidget.rs` `on_patc
 - Optional **`explanation`**: italic dim, wrapped at **`width - 4`** (`render_note`).
 - Steps: checkbox **`✔ `** (completed, crossed-out dim), **`□ `** cyan bold (in progress), **`□ `** dim (pending) + step text (`render_step`).
 - Empty plan: **`(no steps provided)`** dim italic.
-- Block indented with **`  └ `** / **`    `**.
+- Block indented with **` └`** / **`    `**.
 
 ### 3. Errors
 
@@ -102,7 +102,7 @@ No dedicated error styling in `PlanUpdateCell` (protocol carries normal step sta
 
 **`update_plan`** is logged as discrete updates; each emits a full `PlanUpdateCell` snapshot (not a streaming markdown controller).
 
-*(Related but distinct: proposed-plan **markdown** streaming uses `PlanStreamController` in `codex-rs/tui/src/streaming/controller.rs` — header **`• Proposed Plan`**, body streamed as markdown lines with **`  `** indent. That is not the same widget as `PlanUpdateCell`.)*
+_(Related but distinct: proposed-plan **markdown** streaming uses `PlanStreamController` in `codex-rs/tui/src/streaming/controller.rs` — header **`• Proposed Plan`**, body streamed as markdown lines with **`  `** indent. That is not the same widget as `PlanUpdateCell`.)_
 
 ---
 
@@ -116,7 +116,7 @@ No dedicated error styling in `PlanUpdateCell` (protocol carries normal step sta
 
 ### 2. Body
 
-One line: **`  └ `** dim + session-relative path (**dim**).
+One line: **` └`** dim + session-relative path (**dim**).
 
 ### 3. Errors / streaming
 
@@ -161,10 +161,10 @@ Begin/end swap spinner vs dim bullet + title text change; still one composed hea
 ### 1. Header / body
 
 - **`InProgress`:** **`None`** — **no history row** while spawn is running (`multi_agents.rs`).
-- **Completed:** **`• `** dim + bold title  
-  - Success: **`Spawned `** + agent label (nickname cyan bold, else thread id cyan, optional **`[role]`**) + optional **` (model reasoning_effort)`** magenta (`spawn_request_spans`).  
+- **Completed:** **`• `** dim + bold title
+  - Success: **`Spawned `** + agent label (nickname cyan bold, else thread id cyan, optional **`[role]`**) + optional **` (model reasoning_effort)`** magenta (`spawn_request_spans`).
   - Failure (no receiver thread id): **`Agent spawn failed`** (`title_text`).
-- **Detail:** Optional prompt line under **`  └ `** / **`    `**, grapheme-truncated to **160** (`COLLAB_PROMPT_PREVIEW_GRAPHEMES`, `truncate_text`).
+- **Detail:** Optional prompt line under **` └`** / **`    `**, grapheme-truncated to **160** (`COLLAB_PROMPT_PREVIEW_GRAPHEMES`, `truncate_text`).
 
 ### 2. Errors
 
@@ -184,7 +184,7 @@ Binary visibility: nothing until completion event produces a cell.
 
 ### 1. Header
 
-- **In progress:** **`• `** dim + **`Waiting for `** bold + agent label, or **`Waiting for N agents`** when multiple receivers; multi-agent lists each agent on **`  └ `** indented lines.
+- **In progress:** **`• `** dim + **`Waiting for `** bold + agent label, or **`Waiting for N agents`** when multiple receivers; multi-agent lists each agent on **` └`** indented lines.
 - **Completed:** **`• `** dim + **`Finished waiting`** bold (`title_text`).
 
 ### 2. Body
@@ -209,13 +209,13 @@ In-progress row shows waiting header; completion replaces semantic content via s
 
 **`• `** bullet:
 
-- Running: spinner  
-- Success: **`•`** green bold  
-- Failure: **`•`** red bold  
+- Running: spinner
+- Success: **`•`** green bold
+- Failure: **`•`** red bold
 
 Prefix word: **`Calling`** while running, **`Called`** when finished.
 
-Invocation text: **`server`** cyan **`.`** **`tool`** cyan **`(`** `serde_json::to_string(arguments)` dim **`)`** — if wider than remaining columns, invocation wraps under a **`  └ `** tree (`history_cell.rs`).
+Invocation text: **`server`** cyan **`.`** **`tool`** cyan **`(`** `serde_json::to_string(arguments)` dim **`)`** — if wider than remaining columns, invocation wraps under a **` └`** tree (`history_cell.rs`).
 
 ### 2. Default body
 
@@ -225,7 +225,7 @@ After completion, text blocks render per MCP content:
 - Non-text placeholders: **`<image content>`**, **`<audio content>`**, **`embedded resource: {uri}`**, **`link: {uri}`**.
 - Multiple blocks: concatenated as separate wrapped segments.
 
-Indent: **`  └ `** when invocation fit on header line, else **`    `** for details (`history_cell.rs`).
+Indent: **` └`** when invocation fit on header line, else **`    `** for details (`history_cell.rs`).
 
 ### 3. Errors
 
@@ -247,9 +247,9 @@ No partial results in the cell body until completion; spinner header while activ
 
 There is **no** separate “unknown function name” renderer beyond:
 
-- **`ExecCell`** for shell executions  
-- **`McpToolCallCell`** for MCP  
-- Collab variants above  
+- **`ExecCell`** for shell executions
+- **`McpToolCallCell`** for MCP
+- Collab variants above
 - **`DynamicToolCall`** (currently no UI)
 
 If your JSONL uses other labels, map them to these wire items when mirroring Codex.
@@ -258,14 +258,14 @@ If your JSONL uses other labels, map them to these wire items when mirroring Cod
 
 ## Quick constant lookup
 
-| Concept | Value | File |
-|---------|-------|------|
-| Agent command output logical window | 5 lines head/tail | `exec_cell/render.rs` `TOOL_CALL_MAX_LINES` |
-| Agent command output viewport row cap | 5 | `EXEC_DISPLAY_LAYOUT.output_max_lines` |
-| User shell logical window | 50 | `USER_SHELL_TOOL_CALL_MAX_LINES` |
-| User shell viewport row cap | 50 | same constant in `command_display_lines` |
-| MCP / patch-failure text truncate lines | 5 | `TOOL_CALL_MAX_LINES` passed into `format_and_truncate_tool_result` |
-| Unified exec stdin preview chars | 80 | `exec_cell/render.rs` `MAX_INTERACTION_PREVIEW_CHARS` |
-| Collab prompt preview | 160 graphemes | `multi_agents.rs` `COLLAB_PROMPT_PREVIEW_GRAPHEMES` |
-| Collab agent message preview | 240 graphemes | `COLLAB_AGENT_RESPONSE_PREVIEW_GRAPHEMES` |
-| Collab error preview | 160 graphemes | `COLLAB_AGENT_ERROR_PREVIEW_GRAPHEMES` |
+| Concept                                 | Value             | File                                                                |
+| --------------------------------------- | ----------------- | ------------------------------------------------------------------- |
+| Agent command output logical window     | 5 lines head/tail | `exec_cell/render.rs` `TOOL_CALL_MAX_LINES`                         |
+| Agent command output viewport row cap   | 5                 | `EXEC_DISPLAY_LAYOUT.output_max_lines`                              |
+| User shell logical window               | 50                | `USER_SHELL_TOOL_CALL_MAX_LINES`                                    |
+| User shell viewport row cap             | 50                | same constant in `command_display_lines`                            |
+| MCP / patch-failure text truncate lines | 5                 | `TOOL_CALL_MAX_LINES` passed into `format_and_truncate_tool_result` |
+| Unified exec stdin preview chars        | 80                | `exec_cell/render.rs` `MAX_INTERACTION_PREVIEW_CHARS`               |
+| Collab prompt preview                   | 160 graphemes     | `multi_agents.rs` `COLLAB_PROMPT_PREVIEW_GRAPHEMES`                 |
+| Collab agent message preview            | 240 graphemes     | `COLLAB_AGENT_RESPONSE_PREVIEW_GRAPHEMES`                           |
+| Collab error preview                    | 160 graphemes     | `COLLAB_AGENT_ERROR_PREVIEW_GRAPHEMES`                              |

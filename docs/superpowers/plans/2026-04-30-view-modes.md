@@ -15,6 +15,7 @@
 ## File structure
 
 **New files:**
+
 - `src/transcript/preview.ts` — pure helpers (`tailLines`, `headLines`, `parseFrontmatter`)
 - `src/transcript/preview.test.ts` — unit tests for above
 - `src/transcript/MoreHint.tsx` — `<MoreHint count={n}/>` dim row
@@ -25,6 +26,7 @@
 - `src/__fixtures__/normal-mode-codex.jsonl` — minimal fixture: shell_command, apply_patch, spawn_agent + wait_agent (string-abort)
 
 **Modified files:**
+
 - `src/settings.tsx` — `Settings` gains `viewMode`; setter; default `"normal"`
 - `src/settings.test.tsx` — extend round-trip + default tests
 - `src/SettingsPopover.tsx` — add View mode `<select>`
@@ -42,6 +44,7 @@
 ### Task 1: `tailLines` helper
 
 **Files:**
+
 - Create: `src/transcript/preview.ts`
 - Create: `src/transcript/preview.test.ts`
 
@@ -106,6 +109,7 @@ git commit -m "feat(preview): tailLines helper"
 ### Task 2: `headLines` helper
 
 **Files:**
+
 - Modify: `src/transcript/preview.ts`
 - Modify: `src/transcript/preview.test.ts`
 
@@ -169,6 +173,7 @@ git commit -m "feat(preview): headLines helper"
 ### Task 3: `parseFrontmatter` helper
 
 **Files:**
+
 - Modify: `src/transcript/preview.ts`
 - Modify: `src/transcript/preview.test.ts`
 
@@ -279,6 +284,7 @@ git commit -m "feat(preview): parseFrontmatter helper"
 ### Task 4: `viewMode` setting
 
 **Files:**
+
 - Modify: `src/settings.tsx`
 - Modify: `src/settings.test.tsx`
 
@@ -398,6 +404,7 @@ git commit -m "feat(settings): add viewMode (compact|normal) with default 'norma
 ### Task 5: View mode dropdown in SettingsPopover
 
 **Files:**
+
 - Modify: `src/SettingsPopover.tsx`
 
 - [ ] **Step 1: Read current SettingsPopover**
@@ -447,6 +454,7 @@ git commit -m "feat(settings): View mode dropdown in popover"
 ### Task 6: `MoreHint` component
 
 **Files:**
+
 - Create: `src/transcript/MoreHint.tsx`
 - Modify: `src/styles.css`
 
@@ -456,7 +464,11 @@ git commit -m "feat(settings): View mode dropdown in popover"
 // src/transcript/MoreHint.tsx
 export function MoreHint({ count }: { count: number }) {
   if (count <= 0) return null
-  return <div className="tool-more-hint">… +{count} {count === 1 ? "line" : "lines"}</div>
+  return (
+    <div className="tool-more-hint">
+      … +{count} {count === 1 ? "line" : "lines"}
+    </div>
+  )
 }
 ```
 
@@ -491,6 +503,7 @@ git commit -m "feat(preview): MoreHint component"
 ### Task 7: ToolCard `Preview` slot + render rules
 
 **Files:**
+
 - Modify: `src/transcript/ToolCard.tsx`
 - Modify: `src/styles.css`
 
@@ -498,7 +511,15 @@ git commit -m "feat(preview): MoreHint component"
 
 ```tsx
 // src/transcript/ToolCard.tsx — full replacement
-import { Children, createContext, isValidElement, useContext, useState, type ReactElement, type ReactNode } from "react"
+import {
+  Children,
+  createContext,
+  isValidElement,
+  useContext,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react"
 import { useSettings } from "../settings"
 
 type CardCtx = {
@@ -548,13 +569,10 @@ function Root({
   // Click changes rendering iff:
   // - content is present (collapsed → content, OR preview → content)
   // - or in compact mode preview is present (collapsed → preview)
-  const clickable =
-    hasContent && (content != null || (preview != null && viewMode === "compact"))
+  const clickable = hasContent && (content != null || (preview != null && viewMode === "compact"))
 
   return (
-    <Ctx.Provider
-      value={{ expanded, toggle: () => setExpanded((e) => !e), hasContent: clickable }}
-    >
+    <Ctx.Provider value={{ expanded, toggle: () => setExpanded((e) => !e), hasContent: clickable }}>
       <div className={`tool-card${statusClass}`}>
         {trigger}
         {body}
@@ -587,6 +605,7 @@ export const ToolCard = { Root, Trigger, Preview, Content }
 ```
 
 Key points:
+
 - `Root` no longer renders `Trigger`/`Content` via context-based rendering. It picks slots out of `children` and decides which to render itself.
 - `Trigger` always renders. `Preview` and `Content` are now plain wrappers; the choice is made by `Root`.
 - `hasContent` in the context is reused as the "clickable" flag for `Trigger`.
@@ -636,6 +655,7 @@ git commit -m "feat(toolcard): Preview slot + view-mode-aware render rules"
 ## Phase 2 — Claude tool previews
 
 For each tool below, the pattern is the same:
+
 1. Add a `<ToolCard.Preview>...</ToolCard.Preview>` block before the existing `<ToolCard.Content>` (or replace `<Content>` entirely for "preview-is-content" tools).
 2. Add a unit test that renders the tool with viewMode "normal" and asserts the preview text.
 
@@ -644,6 +664,7 @@ The Tool.test.tsx file exists once for all tools — created in Task 8.
 ### Task 8: Test scaffolding for `claude/Tool.tsx`
 
 **Files:**
+
 - Create: `src/transcript/claude/Tool.test.tsx`
 
 - [ ] **Step 1: Create test file with rendering helper**
@@ -660,7 +681,7 @@ function renderTool(use: ToolUse, output: ToolResult, settings: Partial<Settings
   return render(
     <SettingsProvider initial={{ renderMarkdown: true, viewMode: "normal", ...settings }}>
       <Tool use={use} output={output} />
-    </SettingsProvider>
+    </SettingsProvider>,
   )
 }
 
@@ -692,6 +713,7 @@ git commit -m "test(claude): scaffolding for Tool preview tests"
 ### Task 9: Bash preview
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (the `Bash` component)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -702,10 +724,10 @@ Append to `src/transcript/claude/Tool.test.tsx`:
 ```tsx
 describe("Bash preview", () => {
   test("renders last 3 lines as snippet in normal mode", () => {
-    const { container } = renderTool(
-      { name: "Bash", input: { command: "ls" } } as ToolUse,
-      { ...okOutput, text: "1\n2\n3\n4\n5" }
-    )
+    const { container } = renderTool({ name: "Bash", input: { command: "ls" } } as ToolUse, {
+      ...okOutput,
+      text: "1\n2\n3\n4\n5",
+    })
     const snippet = container.querySelector(".tool-preview-snippet")
     expect(snippet?.textContent).toBe("3\n4\n5")
     expect(container.textContent).toContain("+2")
@@ -713,20 +735,21 @@ describe("Bash preview", () => {
 
   test("renders last 10 lines on error", () => {
     const text = Array.from({ length: 15 }, (_, i) => String(i + 1)).join("\n")
-    const { container } = renderTool(
-      { name: "Bash", input: { command: "fail" } } as ToolUse,
-      { ...okOutput, text, isError: true }
-    )
+    const { container } = renderTool({ name: "Bash", input: { command: "fail" } } as ToolUse, {
+      ...okOutput,
+      text,
+      isError: true,
+    })
     const snippet = container.querySelector(".tool-preview-snippet")
     expect(snippet?.textContent).toBe("6\n7\n8\n9\n10\n11\n12\n13\n14\n15")
     expect(container.textContent).toContain("+5")
   })
 
   test("no MoreHint when output fits in window", () => {
-    const { container } = renderTool(
-      { name: "Bash", input: { command: "echo hi" } } as ToolUse,
-      { ...okOutput, text: "hi" }
-    )
+    const { container } = renderTool({ name: "Bash", input: { command: "echo hi" } } as ToolUse, {
+      ...okOutput,
+      text: "hi",
+    })
     expect(container.querySelector(".tool-more-hint")).toBeNull()
   })
 
@@ -734,7 +757,7 @@ describe("Bash preview", () => {
     const { container } = renderTool(
       { name: "Bash", input: { command: "ls" } } as ToolUse,
       { ...okOutput, text: "1\n2\n3" },
-      { viewMode: "compact" }
+      { viewMode: "compact" },
     )
     expect(container.querySelector(".tool-preview-snippet")).toBeNull()
   })
@@ -749,6 +772,7 @@ Expected: FAIL — preview not rendered.
 - [ ] **Step 3: Modify `src/transcript/claude/Tool.tsx` — Bash component**
 
 Add imports at top:
+
 ```tsx
 import { tailLines } from "../preview"
 import { MoreHint } from "../MoreHint"
@@ -770,7 +794,9 @@ function Bash({ input, output }: CardProps<BashInput>) {
     hasOutput(output)
   const tailN = output.isError ? 10 : 3
   const tail = output.text ? tailLines(output.text, tailN) : null
-  const snippetClass = output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"
+  const snippetClass = output.isError
+    ? "tool-preview-snippet snippet-error"
+    : "tool-preview-snippet"
 
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
@@ -820,6 +846,7 @@ git commit -m "feat(claude): Bash preview — 3-line tail, 10 on error"
 ### Task 10: Read preview
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (the `Read` component)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -828,33 +855,33 @@ git commit -m "feat(claude): Bash preview — 3-line tail, 10 on error"
 ```tsx
 describe("Read preview", () => {
   test("counts lines from output text", () => {
-    const { container } = renderTool(
-      { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-      { ...okOutput, text: "a\nb\nc" }
-    )
+    const { container } = renderTool({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, {
+      ...okOutput,
+      text: "a\nb\nc",
+    })
     expect(container.querySelector(".tool-preview")?.textContent).toBe("Read 3 lines")
   })
 
   test("trailing newline does not inflate count", () => {
-    const { container } = renderTool(
-      { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-      { ...okOutput, text: "a\nb\n" }
-    )
+    const { container } = renderTool({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, {
+      ...okOutput,
+      text: "a\nb\n",
+    })
     expect(container.querySelector(".tool-preview")?.textContent).toBe("Read 2 lines")
   })
 
   test("singular line", () => {
-    const { container } = renderTool(
-      { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-      { ...okOutput, text: "a" }
-    )
+    const { container } = renderTool({ name: "Read", input: { file_path: "/x.ts" } } as ToolUse, {
+      ...okOutput,
+      text: "a",
+    })
     expect(container.querySelector(".tool-preview")?.textContent).toBe("Read 1 line")
   })
 
   test("empty output", () => {
     const { container } = renderTool(
       { name: "Read", input: { file_path: "/x.ts" } } as ToolUse,
-      okOutput
+      okOutput,
     )
     expect(container.querySelector(".tool-preview")?.textContent).toBe("(no output)")
   })
@@ -923,6 +950,7 @@ git commit -m "feat(claude): Read preview — line-count summary"
 ### Task 11: Edit / MultiEdit / NotebookEdit / ExitPlanMode — Preview-only tools
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (Edit, MultiEdit, NotebookEdit, ExitPlanMode)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -936,7 +964,7 @@ describe("Preview-is-content tools", () => {
         name: "Edit",
         input: { file_path: "/foo.ts", old_string: "a", new_string: "b" },
       } as ToolUse,
-      okOutput
+      okOutput,
     )
     expect(container.querySelector(".tool-preview")).not.toBeNull()
     // diff renderer should be present inside preview
@@ -946,7 +974,7 @@ describe("Preview-is-content tools", () => {
   test("ExitPlanMode renders plan markdown in preview", () => {
     const { container } = renderTool(
       { name: "ExitPlanMode", input: { plan: "# Title\n\nbody" } } as ToolUse,
-      okOutput
+      okOutput,
     )
     expect(container.querySelector(".tool-preview")?.textContent).toContain("Title")
   })
@@ -961,6 +989,7 @@ Expected: FAIL — preview elements not present yet (today they live in `<Conten
 - [ ] **Step 3: Restructure components**
 
 For each of Edit, MultiEdit, NotebookEdit, ExitPlanMode in `claude/Tool.tsx`:
+
 - Replace `<ToolCard.Content>...</ToolCard.Content>` with `<ToolCard.Preview>...</ToolCard.Preview>` containing the same body content (diff / source / plan markdown).
 - Drop the trailing `<Output>` and `<Extras>` (they're rarely populated for these tools, and `Content` is gone — so they wouldn't render anyway). Verify against fixtures during agent-browser checks; if any of these tools have meaningful `output.text`, restore `Content` for that tool only.
 
@@ -1011,6 +1040,7 @@ git commit -m "feat(claude): Edit/MultiEdit/NotebookEdit/ExitPlanMode use Previe
 ### Task 12: Write preview
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (Write component)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -1022,7 +1052,7 @@ describe("Write preview", () => {
     const lines = Array.from({ length: 15 }, (_, i) => `line ${i + 1}`).join("\n")
     const { container } = renderTool(
       { name: "Write", input: { file_path: "/foo.ts", content: lines } } as ToolUse,
-      okOutput
+      okOutput,
     )
     const snippet = container.querySelector(".tool-preview-snippet")
     expect(snippet?.textContent).toContain("line 1")
@@ -1034,7 +1064,7 @@ describe("Write preview", () => {
   test("no MoreHint when content fits", () => {
     const { container } = renderTool(
       { name: "Write", input: { file_path: "/foo.ts", content: "a\nb" } } as ToolUse,
-      okOutput
+      okOutput,
     )
     expect(container.querySelector(".tool-more-hint")).toBeNull()
   })
@@ -1049,7 +1079,7 @@ Expected: FAIL.
 - [ ] **Step 3: Modify Write component**
 
 ```tsx
-import { headLines } from "../preview"  // ensure import exists
+import { headLines } from "../preview" // ensure import exists
 
 function Write({ input, output }: CardProps<WriteInput>) {
   const { file_path, content, ...rest } = input
@@ -1094,6 +1124,7 @@ git commit -m "feat(claude): Write preview — first 10 lines"
 ### Task 13: Glob, Grep, ToolSearch, WebFetch, WebSearch — one-line summary tools
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx`
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -1102,41 +1133,41 @@ git commit -m "feat(claude): Write preview — first 10 lines"
 ```tsx
 describe("One-line summary previews", () => {
   test("Glob shows file count", () => {
-    const { container } = renderTool(
-      { name: "Glob", input: { pattern: "*.ts" } } as ToolUse,
-      { ...okOutput, text: "/a.ts\n/b.ts\n/c.ts" }
-    )
+    const { container } = renderTool({ name: "Glob", input: { pattern: "*.ts" } } as ToolUse, {
+      ...okOutput,
+      text: "/a.ts\n/b.ts\n/c.ts",
+    })
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Found 3 files")
   })
 
   test("Grep counts matches", () => {
-    const { container } = renderTool(
-      { name: "Grep", input: { pattern: "foo" } } as ToolUse,
-      { ...okOutput, text: "match1\nmatch2" }
-    )
+    const { container } = renderTool({ name: "Grep", input: { pattern: "foo" } } as ToolUse, {
+      ...okOutput,
+      text: "match1\nmatch2",
+    })
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Found 2 matches")
   })
 
   test("Grep with files_with_matches mode says 'files'", () => {
     const { container } = renderTool(
       { name: "Grep", input: { pattern: "foo", output_mode: "files_with_matches" } } as ToolUse,
-      { ...okOutput, text: "/a.ts\n/b.ts" }
+      { ...okOutput, text: "/a.ts\n/b.ts" },
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Found 2 files")
   })
 
   test("ToolSearch reports loaded count", () => {
-    const { container } = renderTool(
-      { name: "ToolSearch", input: { query: "x" } } as ToolUse,
-      { ...okOutput, toolRefs: ["Read", "Edit"] }
-    )
+    const { container } = renderTool({ name: "ToolSearch", input: { query: "x" } } as ToolUse, {
+      ...okOutput,
+      toolRefs: ["Read", "Edit"],
+    })
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Loaded 2 tools")
   })
 
   test("ToolSearch zero loaded", () => {
     const { container } = renderTool(
       { name: "ToolSearch", input: { query: "x" } } as ToolUse,
-      okOutput
+      okOutput,
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("No tools loaded")
   })
@@ -1144,7 +1175,7 @@ describe("One-line summary previews", () => {
   test("WebFetch shows first non-empty line", () => {
     const { container } = renderTool(
       { name: "WebFetch", input: { url: "https://x", prompt: "summarize" } } as ToolUse,
-      { ...okOutput, text: "\nFirst content line\nrest..." }
+      { ...okOutput, text: "\nFirst content line\nrest..." },
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("First content line")
   })
@@ -1152,16 +1183,16 @@ describe("One-line summary previews", () => {
   test("WebFetch fallback when output empty", () => {
     const { container } = renderTool(
       { name: "WebFetch", input: { url: "https://x", prompt: "y" } } as ToolUse,
-      okOutput
+      okOutput,
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Fetched")
   })
 
   test("WebSearch counts markdown links", () => {
-    const { container } = renderTool(
-      { name: "WebSearch", input: { query: "x" } } as ToolUse,
-      { ...okOutput, text: "Some [first](http://a) [second](http://b) result" }
-    )
+    const { container } = renderTool({ name: "WebSearch", input: { query: "x" } } as ToolUse, {
+      ...okOutput,
+      text: "Some [first](http://a) [second](http://b) result",
+    })
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("2 results")
   })
 })
@@ -1229,6 +1260,7 @@ git commit -m "feat(claude): one-line summary previews for Glob/Grep/ToolSearch/
 ### Task 14: Task / Agent preview
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (Agent component)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -1240,7 +1272,7 @@ describe("Agent preview", () => {
     const text = "result line 1\nresult line 2\nresult line 3\nresult line 4"
     const { container } = renderTool(
       { name: "Agent", input: { description: "Search docs", prompt: "..." } } as ToolUse,
-      { ...okOutput, text }
+      { ...okOutput, text },
     )
     const snippet = container.querySelector(".tool-preview-snippet")
     expect(snippet?.textContent).toBe("result line 1\nresult line 2\nresult line 3")
@@ -1259,8 +1291,16 @@ Expected: FAIL.
 ```tsx
 function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" | "Agent" }) {
   const {
-    description, prompt, subagent_type, model, mode, team_name,
-    name: agentName, isolation, run_in_background, ...rest
+    description,
+    prompt,
+    subagent_type,
+    model,
+    mode,
+    team_name,
+    name: agentName,
+    isolation,
+    run_in_background,
+    ...rest
   } = input
   assertExhaustive(rest)
   const opts: Array<[string, ReactNode]> = []
@@ -1277,7 +1317,9 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header><ToolTitle name={name} detail={description && shortPath(description)} /></Header>
+        <Header>
+          <ToolTitle name={name} detail={description && shortPath(description)} />
+        </Header>
       </ToolCard.Trigger>
       {head && (
         <ToolCard.Preview>
@@ -1289,7 +1331,9 @@ function Agent({ input, output, name }: CardProps<AgentInput> & { name: "Task" |
         {prompt && <Markdown source={prompt} />}
         {opts.length > 0 && (
           <dl className="tool-fields">
-            {opts.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {opts.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -1315,6 +1359,7 @@ git commit -m "feat(claude): Agent preview — first 3 lines of output"
 ### Task 15: TodoWrite preview
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (TodoWrite component)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -1324,12 +1369,17 @@ git commit -m "feat(claude): Agent preview — first 3 lines of output"
 describe("TodoWrite preview", () => {
   test("header detail = activeForm of in-progress; body = M/N complete", () => {
     const { container } = renderTool(
-      { name: "TodoWrite", input: { todos: [
-        { content: "Do A", activeForm: "Doing A", status: "completed" },
-        { content: "Do B", activeForm: "Doing B", status: "in_progress" },
-        { content: "Do C", activeForm: "Doing C", status: "pending" },
-      ] } } as ToolUse,
-      okOutput
+      {
+        name: "TodoWrite",
+        input: {
+          todos: [
+            { content: "Do A", activeForm: "Doing A", status: "completed" },
+            { content: "Do B", activeForm: "Doing B", status: "in_progress" },
+            { content: "Do C", activeForm: "Doing C", status: "pending" },
+          ],
+        },
+      } as ToolUse,
+      okOutput,
     )
     expect(container.textContent).toContain("(Doing B)")
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("1 / 3 complete")
@@ -1337,11 +1387,16 @@ describe("TodoWrite preview", () => {
 
   test("no in-progress todo → no parens in header", () => {
     const { container } = renderTool(
-      { name: "TodoWrite", input: { todos: [
-        { content: "Do A", activeForm: "Doing A", status: "completed" },
-        { content: "Do B", activeForm: "Doing B", status: "pending" },
-      ] } } as ToolUse,
-      okOutput
+      {
+        name: "TodoWrite",
+        input: {
+          todos: [
+            { content: "Do A", activeForm: "Doing A", status: "completed" },
+            { content: "Do B", activeForm: "Doing B", status: "pending" },
+          ],
+        },
+      } as ToolUse,
+      okOutput,
     )
     expect(container.textContent).not.toContain("(Doing")
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("1 / 2 complete")
@@ -1349,11 +1404,16 @@ describe("TodoWrite preview", () => {
 
   test("all complete shows N / N complete", () => {
     const { container } = renderTool(
-      { name: "TodoWrite", input: { todos: [
-        { content: "A", activeForm: "Aing", status: "completed" },
-        { content: "B", activeForm: "Bing", status: "completed" },
-      ] } } as ToolUse,
-      okOutput
+      {
+        name: "TodoWrite",
+        input: {
+          todos: [
+            { content: "A", activeForm: "Aing", status: "completed" },
+            { content: "B", activeForm: "Bing", status: "completed" },
+          ],
+        },
+      } as ToolUse,
+      okOutput,
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("2 / 2 complete")
   })
@@ -1382,7 +1442,9 @@ function TodoWrite({ input, output }: CardProps<TodoWriteInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview>
-        <div className="tool-preview-line">{done} / {total} complete</div>
+        <div className="tool-preview-line">
+          {done} / {total} complete
+        </div>
       </ToolCard.Preview>
       <ToolCard.Content>
         <ul className="todo-list">
@@ -1420,6 +1482,7 @@ git commit -m "feat(claude): TodoWrite preview — activeForm + M/N complete"
 ### Task 16: Skill preview
 
 **Files:**
+
 - Modify: `src/transcript/claude/Tool.tsx` (Skill component)
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -1435,17 +1498,15 @@ description: Help turn ideas into designs through dialogue
 body`
     const { container } = renderTool(
       { name: "Skill", input: { skill: "brainstorming" } } as ToolUse,
-      { ...okOutput, injectedText: injected }
+      { ...okOutput, injectedText: injected },
     )
-    expect(container.querySelector(".tool-preview-line")?.textContent)
-      .toBe("Help turn ideas into designs through dialogue")
+    expect(container.querySelector(".tool-preview-line")?.textContent).toBe(
+      "Help turn ideas into designs through dialogue",
+    )
   })
 
   test("no preview when injectedText missing", () => {
-    const { container } = renderTool(
-      { name: "Skill", input: { skill: "x" } } as ToolUse,
-      okOutput
-    )
+    const { container } = renderTool({ name: "Skill", input: { skill: "x" } } as ToolUse, okOutput)
     // no preview line; trigger only
     expect(container.querySelector(".tool-preview")).toBeNull()
   })
@@ -1457,7 +1518,7 @@ body`
 - [ ] **Step 3: Modify Skill component**
 
 ```tsx
-import { parseFrontmatter } from "../preview"  // ensure import
+import { parseFrontmatter } from "../preview" // ensure import
 
 function Skill({ input, output }: CardProps<SkillInput>) {
   const { skill, args, ...rest } = input
@@ -1468,7 +1529,9 @@ function Skill({ input, output }: CardProps<SkillInput>) {
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header><ToolTitle name="Skill" detail={skill && shortPath(skill)} /></Header>
+        <Header>
+          <ToolTitle name="Skill" detail={skill && shortPath(skill)} />
+        </Header>
       </ToolCard.Trigger>
       {description && (
         <ToolCard.Preview>
@@ -1477,7 +1540,9 @@ function Skill({ input, output }: CardProps<SkillInput>) {
       )}
       <ToolCard.Content>
         {args && (
-          <dl className="tool-fields"><Field name="args" value={args} /></dl>
+          <dl className="tool-fields">
+            <Field name="args" value={args} />
+          </dl>
         )}
         {output.injectedText && <pre className="output">{output.injectedText}</pre>}
         <Output output={output} />
@@ -1501,6 +1566,7 @@ git commit -m "feat(claude): Skill preview — description from frontmatter"
 ### Task 17: UnknownTool preview
 
 **Files:**
+
 - Modify: `src/transcript/UnknownTool.tsx`
 - Modify: `src/transcript/claude/Tool.test.tsx`
 
@@ -1509,10 +1575,10 @@ git commit -m "feat(claude): Skill preview — description from frontmatter"
 ```tsx
 describe("UnknownTool preview", () => {
   test("shows first 3 lines of output + MoreHint", () => {
-    const { container } = renderTool(
-      { name: "mcp__custom__do_thing", input: {} } as ToolUse,
-      { ...okOutput, text: "a\nb\nc\nd\ne" }
-    )
+    const { container } = renderTool({ name: "mcp__custom__do_thing", input: {} } as ToolUse, {
+      ...okOutput,
+      text: "a\nb\nc\nd\ne",
+    })
     const snippet = container.querySelector(".tool-preview-snippet")
     expect(snippet?.textContent).toBe("a\nb\nc")
     expect(container.textContent).toContain("+2")
@@ -1533,13 +1599,21 @@ import { MoreHint } from "./MoreHint"
 import type { ToolResult } from "../types"
 
 export function UnknownTool({
-  name, input, output,
-}: { name: string; input: unknown; output: ToolResult }) {
+  name,
+  input,
+  output,
+}: {
+  name: string
+  input: unknown
+  output: ToolResult
+}) {
   const head = output.text ? headLines(output.text, 3) : null
   return (
     <ToolCard.Root hasContent={hasOutput(output)} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header><ToolTitle name={name} /></Header>
+        <Header>
+          <ToolTitle name={name} />
+        </Header>
       </ToolCard.Trigger>
       {head && (
         <ToolCard.Preview>
@@ -1574,6 +1648,7 @@ git commit -m "feat(unknown): preview — first 3 lines of output"
 ### Task 18: Test scaffolding for Codex tools
 
 **Files:**
+
 - Create: `src/transcript/codex/Tool.test.tsx`
 
 - [ ] **Step 1: Create file with rendering helpers**
@@ -1585,18 +1660,25 @@ import { CodexFunctionCall, CodexCustomToolCall } from "./Tool"
 import { SettingsProvider, type Settings } from "../../settings"
 import type { ToolResult } from "../../types"
 
-function renderFn(name: string, args: unknown, output: ToolResult, settings: Partial<Settings> = {}) {
+function renderFn(
+  name: string,
+  args: unknown,
+  output: ToolResult,
+  settings: Partial<Settings> = {},
+) {
   return render(
     <SettingsProvider initial={{ renderMarkdown: true, viewMode: "normal", ...settings }}>
       <CodexFunctionCall name={name} argumentsJson={JSON.stringify(args)} output={output} />
-    </SettingsProvider>
+    </SettingsProvider>,
   )
 }
 
 const okOutput: ToolResult = { text: "", images: [], toolRefs: [], isError: false }
 
 describe("Codex tool previews — placeholder", () => {
-  test("scaffolding loads", () => { expect(typeof renderFn).toBe("function") })
+  test("scaffolding loads", () => {
+    expect(typeof renderFn).toBe("function")
+  })
 })
 ```
 
@@ -1613,6 +1695,7 @@ git commit -m "test(codex): scaffolding for Tool preview tests"
 ### Task 19: Codex shell-family previews
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx` (ShellCommand, ExecCommand, Shell)
 - Modify: `src/transcript/codex/Tool.test.tsx`
 
@@ -1622,8 +1705,9 @@ git commit -m "test(codex): scaffolding for Tool preview tests"
 describe("Codex shell-family preview", () => {
   test("shell_command shows last 3 lines tail", () => {
     const { container } = renderFn(
-      "shell_command", { command: "ls" },
-      { ...okOutput, text: "1\n2\n3\n4\n5" }
+      "shell_command",
+      { command: "ls" },
+      { ...okOutput, text: "1\n2\n3\n4\n5" },
     )
     const snippet = container.querySelector(".tool-preview-snippet")
     expect(snippet?.textContent).toBe("3\n4\n5")
@@ -1633,18 +1717,17 @@ describe("Codex shell-family preview", () => {
   test("exec_command on error shows last 10", () => {
     const text = Array.from({ length: 12 }, (_, i) => String(i + 1)).join("\n")
     const { container } = renderFn(
-      "exec_command", { cmd: "fail" },
-      { ...okOutput, text, isError: true }
+      "exec_command",
+      { cmd: "fail" },
+      { ...okOutput, text, isError: true },
     )
-    expect(container.querySelector(".tool-preview-snippet")?.textContent)
-      .toBe("3\n4\n5\n6\n7\n8\n9\n10\n11\n12")
+    expect(container.querySelector(".tool-preview-snippet")?.textContent).toBe(
+      "3\n4\n5\n6\n7\n8\n9\n10\n11\n12",
+    )
   })
 
   test("shell joins string[] command for header detail", () => {
-    const { container } = renderFn(
-      "shell", { command: ["ls", "-la"] },
-      { ...okOutput, text: "x" }
-    )
+    const { container } = renderFn("shell", { command: ["ls", "-la"] }, { ...okOutput, text: "x" })
     expect(container.textContent).toContain("ls -la")
   })
 })
@@ -1655,19 +1738,24 @@ describe("Codex shell-family preview", () => {
 - [ ] **Step 3: Modify the three shell components**
 
 For each (ShellCommand, ExecCommand, Shell):
+
 - Add `import { tailLines } from "../preview"` and `import { MoreHint } from "../MoreHint"` at top of file.
 - Compute `tailN = output.isError ? 10 : 3` and `tail = output.text ? tailLines(output.text, tailN) : null`.
 - Insert before existing `<ToolCard.Content>`:
 
 ```tsx
-{tail && (
-  <ToolCard.Preview>
-    <pre className={output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"}>
-      {tail.text}
-    </pre>
-    <MoreHint count={tail.remaining} />
-  </ToolCard.Preview>
-)}
+{
+  tail && (
+    <ToolCard.Preview>
+      <pre
+        className={output.isError ? "tool-preview-snippet snippet-error" : "tool-preview-snippet"}
+      >
+        {tail.text}
+      </pre>
+      <MoreHint count={tail.remaining} />
+    </ToolCard.Preview>
+  )
+}
 ```
 
 - [ ] **Step 4: Run + commit**
@@ -1683,6 +1771,7 @@ git commit -m "feat(codex): shell-family previews — 3-line tail (10 on error)"
 ### Task 20: `apply_patch` and `view_image` — Preview-only
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx` (`view_image`)
 - Modify: `src/transcript/codex/ApplyPatch.tsx`
 - Modify: `src/transcript/codex/Tool.test.tsx`
@@ -1692,10 +1781,7 @@ git commit -m "feat(codex): shell-family previews — 3-line tail (10 on error)"
 ```tsx
 describe("Codex preview-is-content tools", () => {
   test("view_image uses Preview slot (image renders inline)", () => {
-    const { container } = renderFn(
-      "view_image", { path: "/foo.png" },
-      okOutput
-    )
+    const { container } = renderFn("view_image", { path: "/foo.png" }, okOutput)
     expect(container.querySelector(".tool-preview")).not.toBeNull()
   })
 })
@@ -1724,6 +1810,7 @@ git commit -m "feat(codex): apply_patch and view_image use Preview slot"
 ### Task 21: `update_plan` preview
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx` (UpdatePlan)
 - Modify: `src/transcript/codex/Tool.test.tsx`
 
@@ -1734,12 +1821,15 @@ describe("update_plan preview", () => {
   test("M / N complete with explanation in header detail", () => {
     const { container } = renderFn(
       "update_plan",
-      { explanation: "Refactoring auth", plan: [
-        { step: "Read files", status: "completed" },
-        { step: "Update fn", status: "in_progress" },
-        { step: "Run tests", status: "pending" },
-      ] },
-      okOutput
+      {
+        explanation: "Refactoring auth",
+        plan: [
+          { step: "Read files", status: "completed" },
+          { step: "Update fn", status: "in_progress" },
+          { step: "Run tests", status: "pending" },
+        ],
+      },
+      okOutput,
     )
     expect(container.textContent).toContain("Refactoring auth")
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("1 / 3 complete")
@@ -1760,10 +1850,14 @@ function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolRes
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header><ToolTitle name="update_plan" detail={explanation} /></Header>
+        <Header>
+          <ToolTitle name="update_plan" detail={explanation} />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview>
-        <div className="tool-preview-line">{done} / {total} complete</div>
+        <div className="tool-preview-line">
+          {done} / {total} complete
+        </div>
       </ToolCard.Preview>
       <ToolCard.Content>
         {plan && plan.length > 0 && (
@@ -1796,6 +1890,7 @@ git commit -m "feat(codex): update_plan preview — M/N complete"
 ### Task 22: `spawn_agent` preview
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx` (SpawnAgent)
 - Modify: `src/transcript/codex/Tool.test.tsx`
 
@@ -1807,17 +1902,18 @@ describe("spawn_agent preview", () => {
     const { container } = renderFn(
       "spawn_agent",
       { agent_type: "explorer", message: "Inspect commit b29189..." },
-      { ...okOutput, text: '{"agent_id":"019d","nickname":"Bacon"}' }
+      { ...okOutput, text: '{"agent_id":"019d","nickname":"Bacon"}' },
     )
-    expect(container.querySelector(".tool-preview-line")?.textContent)
-      .toBe("Bacon · Inspect commit b29189...")
+    expect(container.querySelector(".tool-preview-line")?.textContent).toBe(
+      "Bacon · Inspect commit b29189...",
+    )
   })
 
   test("falls back to nickname only when message missing", () => {
     const { container } = renderFn(
       "spawn_agent",
       { agent_type: "worker" },
-      { ...okOutput, text: '{"agent_id":"019d","nickname":"Faraday"}' }
+      { ...okOutput, text: '{"agent_id":"019d","nickname":"Faraday"}' },
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Faraday")
   })
@@ -1832,16 +1928,17 @@ Add a `<ToolCard.Preview>` block. Use the existing `tryParseAgentSpawnOutput(out
 
 ```tsx
 const meta = tryParseAgentSpawnOutput(output.text)
-const previewLine = meta.nickname && message
-  ? `${meta.nickname} · ${message}`
-  : meta.nickname || null
+const previewLine =
+  meta.nickname && message ? `${meta.nickname} · ${message}` : meta.nickname || null
 
 // In JSX, before <ToolCard.Content>:
-{previewLine && (
-  <ToolCard.Preview>
-    <div className="tool-preview-line">{previewLine}</div>
-  </ToolCard.Preview>
-)}
+{
+  previewLine && (
+    <ToolCard.Preview>
+      <div className="tool-preview-line">{previewLine}</div>
+    </ToolCard.Preview>
+  )
+}
 ```
 
 - [ ] **Step 4: Run + commit**
@@ -1857,6 +1954,7 @@ git commit -m "feat(codex): spawn_agent preview — nickname · message"
 ### Task 23: Nickname-resolution pre-pass
 
 **Files:**
+
 - Modify: `src/transcript/codex/CodexTranscript.tsx`
 - Modify: `src/transcript/codex/Tool.tsx` — `CodexFunctionCall` accepts an optional `agentNicknames: Map<string, string>` prop and threads it to `WaitAgent`
 - Create: `src/transcript/codex/CodexTranscript.test.tsx`
@@ -1875,35 +1973,47 @@ describe("nickname resolution", () => {
   test("WaitAgent header uses nickname from earlier spawn_agent output", () => {
     const entries: CodexEntry[] = [
       // spawn_agent function_call
-      { type: "response_item", payload: {
-        type: "function_call",
-        name: "spawn_agent",
-        arguments: JSON.stringify({ agent_type: "worker", message: "x" }),
-        call_id: "c1",
-      } },
+      {
+        type: "response_item",
+        payload: {
+          type: "function_call",
+          name: "spawn_agent",
+          arguments: JSON.stringify({ agent_type: "worker", message: "x" }),
+          call_id: "c1",
+        },
+      },
       // its output
-      { type: "response_item", payload: {
-        type: "function_call_output",
-        call_id: "c1",
-        output: '{"agent_id":"019d","nickname":"Bacon"}',
-      } },
+      {
+        type: "response_item",
+        payload: {
+          type: "function_call_output",
+          call_id: "c1",
+          output: '{"agent_id":"019d","nickname":"Bacon"}',
+        },
+      },
       // wait_agent
-      { type: "response_item", payload: {
-        type: "function_call",
-        name: "wait_agent",
-        arguments: JSON.stringify({ targets: ["019d"], timeout_ms: 60000 }),
-        call_id: "c2",
-      } },
-      { type: "response_item", payload: {
-        type: "function_call_output",
-        call_id: "c2",
-        output: '"aborted by user after 5s"',
-      } },
+      {
+        type: "response_item",
+        payload: {
+          type: "function_call",
+          name: "wait_agent",
+          arguments: JSON.stringify({ targets: ["019d"], timeout_ms: 60000 }),
+          call_id: "c2",
+        },
+      },
+      {
+        type: "response_item",
+        payload: {
+          type: "function_call_output",
+          call_id: "c2",
+          output: '"aborted by user after 5s"',
+        },
+      },
     ]
     const { container } = render(
       <SettingsProvider initial={{ renderMarkdown: true, viewMode: "normal" }}>
         <CodexTranscript entries={entries} />
-      </SettingsProvider>
+      </SettingsProvider>,
     )
     expect(container.textContent).toContain("Bacon")
     // Should NOT show the bare UUID in the wait_agent header
@@ -1973,6 +2083,7 @@ git commit -m "feat(codex): nickname-resolution pre-pass for wait_agent"
 ### Task 24: `wait_agent` preview
 
 **Files:**
+
 - Modify: `src/transcript/codex/Tool.tsx` (WaitAgent)
 - Modify: `src/transcript/codex/Tool.test.tsx`
 
@@ -1984,7 +2095,7 @@ describe("wait_agent preview", () => {
     const { container } = renderFn(
       "wait_agent",
       { targets: ["019d"], timeout_ms: 60000 },
-      { ...okOutput, text: '"aborted by user after 274.4s"' }
+      { ...okOutput, text: '"aborted by user after 274.4s"' },
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toContain("aborted by user")
   })
@@ -1993,7 +2104,7 @@ describe("wait_agent preview", () => {
     const { container } = renderFn(
       "wait_agent",
       { targets: ["019d"], timeout_ms: 600000 },
-      { ...okOutput, text: '{"status":{},"timed_out":true}' }
+      { ...okOutput, text: '{"status":{},"timed_out":true}' },
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("Timed out after 600s")
   })
@@ -2002,7 +2113,7 @@ describe("wait_agent preview", () => {
     const { container } = renderFn(
       "wait_agent",
       { targets: ["019d"], timeout_ms: 60000 },
-      { ...okOutput, text: '{"status":{},"timed_out":false}' }
+      { ...okOutput, text: '{"status":{},"timed_out":false}' },
     )
     expect(container.querySelector(".tool-preview-line")?.textContent).toBe("(no agent results)")
   })
@@ -2018,7 +2129,7 @@ describe("wait_agent preview", () => {
     const { container } = renderFn(
       "wait_agent",
       { targets: ["019d-A", "019d-B"], timeout_ms: 60000 },
-      { ...okOutput, text: out }
+      { ...okOutput, text: out },
     )
     const rows = container.querySelectorAll(".tool-preview-line")
     expect(rows.length).toBe(2)
@@ -2061,8 +2172,15 @@ function statusLabel(s: WaitStatus): { name: string; message?: string } {
   return { name: "Unknown" }
 }
 
-function WaitAgent({ input, output, agentNicknames }:
-  { input: WaitAgentInput; output: ToolResult; agentNicknames?: Map<string, string> }) {
+function WaitAgent({
+  input,
+  output,
+  agentNicknames,
+}: {
+  input: WaitAgentInput
+  output: ToolResult
+  agentNicknames?: Map<string, string>
+}) {
   const { targets, timeout_ms } = input
   const labels = (targets ?? []).map((id) => agentNicknames?.get(id) ?? id.slice(0, 8))
   const detail = labels.join(", ")
@@ -2094,18 +2212,24 @@ function WaitAgent({ input, output, agentNicknames }:
   return (
     <ToolCard.Root hasContent={true} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
-        <Header><ToolTitle name="wait_agent" detail={detail} /></Header>
+        <Header>
+          <ToolTitle name="wait_agent" detail={detail} />
+        </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview>
         {singleLine && <div className="tool-preview-line">{singleLine}</div>}
         {previewRows.map((r) => (
-          <div key={r.id} className="tool-preview-line">{r.line}</div>
+          <div key={r.id} className="tool-preview-line">
+            {r.line}
+          </div>
         ))}
       </ToolCard.Preview>
       <ToolCard.Content>
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([k, v]) => <Field key={k} name={k} value={v} />)}
+            {fields.map(([k, v]) => (
+              <Field key={k} name={k} value={v} />
+            ))}
           </dl>
         )}
         <Output output={output} />
@@ -2130,6 +2254,7 @@ git commit -m "feat(codex): wait_agent preview — handles string/JSON/timeout/e
 ### Task 25: Fixtures
 
 **Files:**
+
 - Create: `src/__fixtures__/normal-mode-claude.jsonl`
 - Create: `src/__fixtures__/normal-mode-codex.jsonl`
 
@@ -2161,6 +2286,7 @@ git commit -m "test: minimal fixtures for view-mode previews"
 ### Task 26: agent-browser end-to-end
 
 **Files:**
+
 - (No source changes; this task captures screenshots and verifies behavior.)
 
 - [ ] **Step 1: Start dev server**
@@ -2170,6 +2296,7 @@ Run: `bun dev` (background). Capture the URL it prints.
 - [ ] **Step 2: Verify settings + Claude fixture in agent-browser**
 
 Use the `agent-browser` skill to:
+
 1. Open the dev URL.
 2. Open settings popover. Confirm "View mode" dropdown is present, default value is "Normal". Screenshot.
 3. Drag in `src/__fixtures__/normal-mode-claude.jsonl`. Screenshot.
@@ -2186,6 +2313,7 @@ Use the `agent-browser` skill to:
 - [ ] **Step 3: Verify Codex fixture**
 
 Drag in `src/__fixtures__/normal-mode-codex.jsonl`. Confirm:
+
 - shell_command 3-line tail.
 - apply_patch full diff inline, non-clickable.
 - spawn_agent `Bacon · Inspect ...` style line.
@@ -2196,6 +2324,7 @@ Screenshot.
 - [ ] **Step 4: Regression check existing fixtures**
 
 Drag in `src/__fixtures__/sample.jsonl` (Claude) and `src/__fixtures__/codex-sample.jsonl` (Codex). Confirm:
+
 - No console errors.
 - Every tool row renders without crashing.
 - Previews display sensible content.
@@ -2220,6 +2349,7 @@ Per `AGENTS.md`: do not stop the dev server. Print the URL one more time and sur
 ## Self-review
 
 Spec coverage:
+
 - [x] Setting + dropdown (Tasks 4, 5)
 - [x] ToolCard Preview slot + render rules (Task 7)
 - [x] CSS line-clamp (Task 7)
@@ -2232,6 +2362,7 @@ Spec coverage:
 - [x] Definition of done (covered in Task 26 final check)
 
 Type consistency:
+
 - `tailLines` / `headLines` return `{ text: string; remaining: number }` everywhere.
 - `parseFrontmatter` returns `Record<string, string> | undefined`.
 - `Map<string, string>` for nicknames; consistent across pre-pass + WaitAgent.

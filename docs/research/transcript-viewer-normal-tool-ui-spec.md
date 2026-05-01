@@ -65,10 +65,10 @@ This document describes **what the user sees**, not implementation. Values like 
 ### Collapsed body
 
 - One compact line only, for example:
-  - **Read *N* line(s)** (text files)
-  - **Read *N* cell(s)** (notebook)
+  - **Read _N_ line(s)** (text files)
+  - **Read _N_ cell(s)** (notebook)
   - **Read PDF (size)** / **Read image (size)**
-  - **Read *N* page(s)** (multipart PDF)
+  - **Read _N_ page(s)** (multipart PDF)
   - **Unchanged since last read**
 
 ### Errors (compact)
@@ -90,7 +90,7 @@ The product exposes one primary **Edit** tool; some transcripts may use another 
 
 ### Collapsed body
 
-- **Summarized edits:** **Added *N* line(s)** / **Removed *N* line(s)** (both when relevant).
+- **Summarized edits:** **Added _N_ line(s)** / **Removed _N_ line(s)** (both when relevant).
 - **Full diff preview** appears in default (non-subagent-constrained) view: structured diff rendered at **terminal width minus a fixed gutter** (~12 cols).
 - **Plan files:** in the default view, sometimes only a dim hint like **`/plan to preview`** instead of an inline diff. In **condensed** (e.g. nested) context the diff may still appear with the counts line only or full diff depending on mode.
 
@@ -111,7 +111,7 @@ The product exposes one primary **Edit** tool; some transcripts may use another 
 
 ### Collapsed body
 
-- **Creating a file:** a line **Wrote *N* lines to *path*** plus a **syntax-highlighted snippet of the content — first 10 lines**; if longer, **`… +K lines`** and expand hint.
+- **Creating a file:** a line **Wrote _N_ lines to _path_** plus a **syntax-highlighted snippet of the content — first 10 lines**; if longer, **`… +K lines`** and expand hint.
 - **Updating:** same pattern as **Edit** (counts + structured diff).
 
 ### Errors
@@ -131,9 +131,9 @@ Both use the **same** friendly label (**Search**) in the UI though the underlyin
 ### Collapsed body
 
 - One summary line depending on mode, e.g.
-  - **Found *N* files**
-  - **Found *N* lines** across content mode
-  - **Found *N* matches** across *M* files
+  - **Found _N_ files**
+  - **Found _N_ lines** across content mode
+  - **Found _N_ matches** across _M_ files
 - Non-verbose: if **`N > 0`**, append **expand shortcut hint** beside the summary.
 - Verbose transcripts: extra lines with indent and gutter for listing.
 
@@ -157,7 +157,7 @@ Both use the **same** friendly label (**Search**) in the UI though the underlyin
 
 ### Collapsed body (success)
 
-- One line: **Received *&lt;formatted size&gt;* (*status code status text*)**.  
+- One line: **Received _&lt;formatted size&gt;_ (_status code status text_)**.
 - **Fetched body text is omitted** when not verbose.
 
 ---
@@ -171,12 +171,12 @@ Both use the **same** friendly label (**Search**) in the UI though the underlyin
 
 ### While running / streaming
 
-- **Searching: *&lt;query&gt;***
-- Optional: **Found *N* results for "&lt;query&gt;"**
+- **Searching: _&lt;query&gt;_**
+- Optional: **Found _N_ results for "&lt;query&gt;"**
 
 ### Collapsed body (success)
 
-- One line: **Did *N* search(es) in *&lt;time&gt;*** (`ms` if under ~1 second, otherwise `s` rounded).
+- One line: **Did _N_ search(es) in _&lt;time&gt;_** (`ms` if under ~1 second, otherwise `s` rounded).
 
 ---
 
@@ -197,7 +197,7 @@ Historical transcripts may say **Task**; current primary name may be **Agent**.
 
 ### Collapsed completion
 
-- Embedded compact completion line resembling: **Done (*tool uses* · *tokens* · *duration*)** (exact joiner is **middle dot**).
+- Embedded compact completion line resembling: **Done (_tool uses_ · _tokens_ · _duration_)** (exact joiner is **middle dot**).
 - Optional **expand** hint on the interactive client.
 
 ### Errors
@@ -212,7 +212,7 @@ Historical transcripts may say **Task**; current primary name may be **Agent**.
 
 - **No assistant tool-use row.** The friendly label is intentionally **empty**, so nothing appears where **Bash** / **Read** would show bold tool name plus optional parentheses subtitle.
 
-*(You may still show the raw **`tool_use`** payload in an advanced / JSON pane; the canonical Claude Code transcript strip skips this banner.)*
+_(You may still show the raw **`tool_use`** payload in an advanced / JSON pane; the canonical Claude Code transcript strip skips this banner.)_
 
 ### User / **`tool_result` row (canonical TUI)**
 
@@ -226,7 +226,7 @@ Historical transcripts may say **Task**; current primary name may be **Agent**.
 
 - Rarely (heuristic gated on product analytics), success may **append an extra NOTE** urging a **verification** sub-agent when several tasks closed without any verification-themed item—the exact wording evolves with prompts; parity viewers should paste the **`tool_result` string verbatim** rather than guessing.
 
-*(If your viewer distinguishes “assistant chip” vs “model echo”, place the prose in the latter only.)*
+_(If your viewer distinguishes “assistant chip” vs “model echo”, place the prose in the latter only.)_
 
 ---
 
@@ -251,11 +251,11 @@ Historical transcripts may say **Task**; current primary name may be **Agent**.
 
 Roughly stacked like other **MessageResponse**-style tails (narrow gutter indent in the terminal; your web viewer can mimic with a muted left accent).
 
-| Situation | First line(s) | Follow-up |
-|-----------|---------------|-----------|
-| Empty / no substantive plan body | **`Exited plan mode`** only | — |
-| Submitted while awaiting reviewer | **`Plan submitted for team lead approval`** | Dim **`Plan file:`** *relative display path* (if any); dim **`Waiting for team lead to review and approve…`** |
-| User approved returned plan body | **`User approved Claude's plan`** | Dim **Plan saved to:** *display path* **·**/plan **to edit** (middle dot separates path from the **`/plan`** slash command hint); Markdown body follows |
+| Situation                         | First line(s)                               | Follow-up                                                                                                                                               |
+| --------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Empty / no substantive plan body  | **`Exited plan mode`** only                 | —                                                                                                                                                       |
+| Submitted while awaiting reviewer | **`Plan submitted for team lead approval`** | Dim **`Plan file:`** _relative display path_ (if any); dim **`Waiting for team lead to review and approve…`**                                           |
+| User approved returned plan body  | **`User approved Claude's plan`**           | Dim **Plan saved to:** _display path_ **·**/plan **to edit** (middle dot separates path from the **`/plan`** slash command hint); Markdown body follows |
 
 **Rejected approval** flows use a distinct **“rejected plan”** composition (human-facing copy varies; retain error/rejection framing rather than the short bullets above).
 
@@ -280,7 +280,7 @@ Roughly stacked like other **MessageResponse**-style tails (narrow gutter indent
   …Markdown body continues…
 ```
 
-*(Paths mirror **display-only** truncation (e.g. homedir elision)—do not insist on literals from this doc.)*
+_(Paths mirror **display-only** truncation (e.g. homedir elision)—do not insist on literals from this doc.)_
 
 ---
 
@@ -293,7 +293,7 @@ Roughly stacked like other **MessageResponse**-style tails (narrow gutter indent
 
 ### Collapsed body
 
-- **Success:** **Updated cell *&lt;id&gt;*:** plus **full new cell source** in a code block (no separate line cap found for the spec beyond normal terminal wrap).
+- **Success:** **Updated cell _&lt;id&gt;_:** plus **full new cell source** in a code block (no separate line cap found for the spec beyond normal terminal wrap).
 
 ### Errors
 
@@ -334,7 +334,7 @@ Roughly stacked like other **MessageResponse**-style tails (narrow gutter indent
 
 ### Model-facing **`tool_result` shapes**
 
-- **Hits:** **`tool_result` content uses tool-reference items** listing deferred tools to expand (opaque to prose-only viewers; preserve references or annotate as “references *N* tools” depending on fidelity goals).
+- **Hits:** **`tool_result` content uses tool-reference items** listing deferred tools to expand (opaque to prose-only viewers; preserve references or annotate as “references _N_ tools” depending on fidelity goals).
 
 - **No hits:** **`tool_result` is plain prose**, starting exactly with **`No matching deferred tools found`**.
   - Optionally continues (same paragraph): **`Some MCP servers are still connecting: … Their tools will become available shortly — try searching again.`** when connection lag is signaled (server identifiers appear only in this sentence).
@@ -356,7 +356,7 @@ Roughly stacked like other **MessageResponse**-style tails (narrow gutter indent
 
 ### While running
 
-- **Running…**; or labeled **progress message** plus **percentage** bar; or **Processing… *&lt;n&gt;***.
+- **Running…**; or labeled **progress message** plus **percentage** bar; or **Processing… _&lt;n&gt;_**.
 
 ### Collapsed body
 
@@ -371,15 +371,15 @@ Roughly stacked like other **MessageResponse**-style tails (narrow gutter indent
 
 ## Constants worth centralizing in your viewer
 
-| Behavior | Value |
-|----------|--------|
-| Bash command subtitle max lines | **2** |
-| Bash command subtitle max chars | **160** |
-| Bash streaming tail lines | **5** |
+| Behavior                                     | Value                                                |
+| -------------------------------------------- | ---------------------------------------------------- |
+| Bash command subtitle max lines              | **2**                                                |
+| Bash command subtitle max chars              | **160**                                              |
+| Bash streaming tail lines                    | **5**                                                |
 | Default text block lines (shell-like output) | **3** (with a special case when “only 1 extra line”) |
-| Error strip default lines | **10** |
-| Write snippet lines | **10** |
-| Notebook verbose header snippet | **30** chars |
+| Error strip default lines                    | **10**                                               |
+| Write snippet lines                          | **10**                                               |
+| Notebook verbose header snippet              | **30** chars                                         |
 
 ---
 
