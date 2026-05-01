@@ -15,7 +15,7 @@ export function headLines(text: string, n: number): { text: string; remaining: n
 }
 
 export function parseFrontmatter(text: string): Record<string, string> | undefined {
-  if (!text || !text.startsWith("---")) return undefined
+  if (!text) return undefined
   const lines = text.split("\n")
   if (lines[0] !== "---") return undefined
   let endIdx = -1
