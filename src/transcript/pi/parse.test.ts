@@ -1,4 +1,5 @@
 import { test, expect } from "bun:test"
+import { iterJsonlLines } from "../../parse/iter"
 import { parsePiEntries } from "./parse"
 
 const header = {
@@ -119,4 +120,17 @@ test("parsePiEntries: preserves assistant messages with unknown content blocks",
 
   expect(parsed.entries).toHaveLength(1)
   expect(parsed.activeEntries.map((e) => e.id)).toEqual(["a1"])
+})
+
+test("parsePiEntries: loads representative real pi fixture", async () => {
+  const text = await Bun.file(
+    new URL(
+      "../__fixtures__/2026-05-01T19-25-45-661Z_019de501-113d-715a-bbf4-0578a671ba94.jsonl",
+      import.meta.url,
+    ),
+  ).text()
+  const parsed = parsePiEntries(iterJsonlLines(text))
+
+  expect(parsed.header?.id).toBe("019de501-113d-715a-bbf4-0578a671ba94")
+  expect(parsed.activeEntries.length).toBeGreaterThan(0)
 })
