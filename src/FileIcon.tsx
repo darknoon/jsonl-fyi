@@ -1,4 +1,4 @@
-export type FileIconFormat = "claude" | "codex"
+export type FileIconFormat = "claude" | "codex" | "pi"
 
 export function FileIcon({ format }: { format: FileIconFormat }) {
   return (

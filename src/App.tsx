@@ -3,10 +3,13 @@ import { iterJsonlLines } from "./parse/iter"
 import { classifyJsonl } from "./parse/classify"
 import { parseJsonl } from "./transcript/claude/parse"
 import { parseCodexEntries } from "./transcript/codex/parse"
+import { parsePiEntries } from "./transcript/pi/parse"
 import type { Entry } from "./types"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
+import { PiTranscript } from "./transcript/pi/PiTranscript"
 import type { CodexEntry } from "./transcript/codex/types"
+import type { PiParsedSession } from "./transcript/pi/types"
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -61,6 +64,7 @@ const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
 type LoadedSession =
   | { format: "claude"; entries: Entry[] }
   | { format: "codex"; entries: CodexEntry[] }
+  | { format: "pi"; session: PiParsedSession }
 
 export function App() {
   const [session, setSession] = useState<LoadedSession | null>(null)
@@ -84,6 +88,9 @@ export function App() {
     if (format === "codex") {
       setSession({ format: "codex", entries: parseCodexEntries(allLines) })
       setDropError(null)
+    } else if (format === "pi") {
+      setSession({ format: "pi", session: parsePiEntries(allLines) })
+      setDropError(null)
     } else if (format === "claude") {
       // parseJsonl re-parses the text; small overhead, fine for now.
       const r = parseJsonl(text)
@@ -91,7 +98,7 @@ export function App() {
       setDropError(null)
     } else {
       setSession(null)
-      setDropError(`Couldn't parse ${name} as a Claude Code or Codex JSONL file`)
+      setDropError(`Couldn't parse ${name} as a Claude Code, OpenAI Codex, or pi JSONL file`)
     }
     setFileName(name)
     setSkipped(skippedCount)
@@ -260,7 +267,7 @@ export function App() {
                   </>
                 ) : (
                   <>
-                    Drop a Claude Code or OpenAI Codex <code>.jsonl</code> here
+                    Drop a Claude Code, OpenAI Codex, or pi <code>.jsonl</code> here
                     <div className="drop-zone-sub">
                       or
                       <div className="drop-zone-button-row">
@@ -299,6 +306,10 @@ export function App() {
               </p>
               <TerminalCommand command="open ~/.codex/sessions/" />
               <p className="drop-zone-hint">
+                pi stores sessions in <code>~/.pi/agent/sessions/</code>:
+              </p>
+              <TerminalCommand command="open ~/.pi/agent/sessions/" />
+              <p className="drop-zone-hint">
                 Note: since Claude Code{" "}
                 <a
                   href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#2189"
@@ -317,6 +328,7 @@ export function App() {
         )}
 
         {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
+        {session && session.format === "pi" && <PiTranscript session={session.session} />}
         {session && session.format === "claude" && (
           <ClaudeCodeTranscript entries={session.entries} />
         )}
