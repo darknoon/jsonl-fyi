@@ -31,12 +31,18 @@ export function UnknownTool({
       </ToolCard.Trigger>
       {hasMixedContent ? (
         <ToolCard.Preview>
+          {keys.length > 0 && <div className="tool-preview-line">{keys.join(", ")}</div>}
           <ToolResultContent output={output} />
         </ToolCard.Preview>
       ) : head ? (
         <ToolCard.Preview>
+          {keys.length > 0 && <div className="tool-preview-line">{keys.join(", ")}</div>}
           <div className="tool-preview-prose">{head.text}</div>
           <MoreHint count={head.remaining} />
+        </ToolCard.Preview>
+      ) : keys.length > 0 ? (
+        <ToolCard.Preview>
+          <div className="tool-preview-line">{keys.join(", ")}</div>
         </ToolCard.Preview>
       ) : null}
       <ToolCard.Content>
