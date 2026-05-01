@@ -197,7 +197,9 @@ type UpdatePlanInput = {
 
 function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolResult }) {
   const { explanation, plan } = input
-  const hasContent = !!explanation || (plan && plan.length > 0) || hasOutput(output)
+  const total = plan?.length ?? 0
+  const done = plan?.filter((p) => p.status === "completed").length ?? 0
+  const hasContent = !!explanation || total > 0 || hasOutput(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -205,6 +207,9 @@ function UpdatePlan({ input, output }: { input: UpdatePlanInput; output: ToolRes
           <ToolTitle name="update_plan" detail={explanation} />
         </Header>
       </ToolCard.Trigger>
+      <ToolCard.Preview>
+        <div className="tool-preview-line">{done} / {total} complete</div>
+      </ToolCard.Preview>
       <ToolCard.Content>
         {plan && plan.length > 0 && (
           <ul className="todo-list">

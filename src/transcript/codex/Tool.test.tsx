@@ -99,3 +99,25 @@ test("apply_patch: full patch renders inside Preview slot", () => {
   // Header detail uses the file name
   expect(html).toContain("hello.ts")
 })
+
+test("update_plan preview: M / N complete with explanation in header detail", () => {
+  const html = renderFnHtml(
+    "update_plan",
+    {
+      explanation: "Refactoring auth",
+      plan: [
+        { step: "Read files", status: "completed" },
+        { step: "Update fn", status: "in_progress" },
+        { step: "Run tests", status: "pending" },
+      ],
+    },
+    okOutput,
+  )
+  expect(html).toContain("Refactoring auth")
+  expect(html).toContain("1 / 3 complete")
+})
+
+test("update_plan preview: empty plan shows 0 / 0 complete", () => {
+  const html = renderFnHtml("update_plan", { explanation: "Starting" }, okOutput)
+  expect(html).toContain("0 / 0 complete")
+})
