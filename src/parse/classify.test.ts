@@ -45,6 +45,63 @@ test("classifyJsonl: claude from system entries (turn_duration)", () => {
   ).toBe("claude")
 })
 
+test("classifyJsonl: pi from session header", () => {
+  expect(
+    classifyJsonl([
+      {
+        type: "session",
+        version: 3,
+        id: "019de507-1cf4-74ae-b5bc-907e992ba866",
+        timestamp: "2026-05-01T19:32:21.877Z",
+        cwd: "/Users/andrew/Developer/Prefix/jsonl-fyi",
+      },
+    ]),
+  ).toBe("pi")
+})
+
+test("classifyJsonl: pi from model_change", () => {
+  expect(
+    classifyJsonl([
+      {
+        type: "model_change",
+        id: "63ff15ff",
+        parentId: null,
+        timestamp: "2026-05-01T19:32:21.917Z",
+        provider: "openai-codex",
+        modelId: "gpt-5.5",
+      },
+    ]),
+  ).toBe("pi")
+})
+
+test("classifyJsonl: pi from thinking_level_change", () => {
+  expect(
+    classifyJsonl([
+      {
+        type: "thinking_level_change",
+        id: "4b424fab",
+        parentId: "63ff15ff",
+        timestamp: "2026-05-01T19:32:21.917Z",
+        thinkingLevel: "medium",
+      },
+    ]),
+  ).toBe("pi")
+})
+
+test("classifyJsonl: generic message role alone is unknown", () => {
+  expect(
+    classifyJsonl([
+      {
+        type: "message",
+        id: "m1",
+        parentId: null,
+        timestamp: "2026-01-01T00:00:00.000Z",
+        message: { role: "user", content: "hello" },
+      },
+    ]),
+  ).toBe("unknown")
+})
+
 test("classifyJsonl: unknown when nothing matches", () => {
   expect(classifyJsonl([{ foo: "bar" }, "string", null, 42])).toBe("unknown")
 })
