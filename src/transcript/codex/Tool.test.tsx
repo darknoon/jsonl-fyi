@@ -42,3 +42,42 @@ test("Codex Tool.test.tsx scaffolding loads", () => {
   expect(typeof renderCustomHtml).toBe("function")
   expect(okOutput.isError).toBe(false)
 })
+
+test("shell_command preview: last 3 lines tail", () => {
+  const html = renderFnHtml(
+    "shell_command",
+    { command: "ls" },
+    { ...okOutput, text: "1\n2\n3\n4\n5" },
+  )
+  expect(html).toContain('class="tool-preview-snippet"')
+  expect(html).toContain("3\n4\n5")
+  expect(html).toContain("+2 lines")
+})
+
+test("exec_command preview: last 10 lines on error with snippet-error class", () => {
+  const text = Array.from({ length: 12 }, (_, i) => String(i + 1)).join("\n")
+  const html = renderFnHtml(
+    "exec_command",
+    { cmd: "fail" },
+    { ...okOutput, text, isError: true },
+  )
+  expect(html).toContain("snippet-error")
+  expect(html).toContain("3\n4\n5\n6\n7\n8\n9\n10\n11\n12")
+})
+
+test("shell preview: last 3 lines tail with array command", () => {
+  const html = renderFnHtml(
+    "shell",
+    { command: ["ls", "-la"] },
+    { ...okOutput, text: "a\nb\nc\nd" },
+  )
+  expect(html).toContain("ls -la")
+  expect(html).toContain('class="tool-preview-snippet"')
+  expect(html).toContain("b\nc\nd")
+  expect(html).toContain("+1 line")
+})
+
+test("shell_command preview: no preview when output empty", () => {
+  const html = renderFnHtml("shell_command", { command: "noop" }, okOutput)
+  expect(html).not.toContain("tool-preview-snippet")
+})

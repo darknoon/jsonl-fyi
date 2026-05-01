@@ -5,6 +5,22 @@ import { Header, Field, Output, ToolTitle, hasOutput } from "../shared"
 import { UnknownTool } from "../UnknownTool"
 import { ImageBlock } from "../ImageBlock"
 import { ApplyPatch } from "./ApplyPatch"
+import { tailLines } from "../preview"
+import { MoreHint } from "../MoreHint"
+
+function shellTailPreview(output: ToolResult): {
+  text: string
+  remaining: number
+  className: string
+} | null {
+  if (!output.text) return null
+  const tailN = output.isError ? 10 : 3
+  const tail = tailLines(output.text, tailN)
+  const className = output.isError
+    ? "tool-preview-snippet snippet-error"
+    : "tool-preview-snippet"
+  return { ...tail, className }
+}
 
 // Helper: extract exit code from a Codex shell-tool output. Used to derive
 // `isError` for the tool result and (optionally) for header decoration.
@@ -35,6 +51,7 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
   if (sandbox_permissions) fields.push(["sandbox_permissions", JSON.stringify(sandbox_permissions)])
   if (justification) fields.push(["justification", justification])
   const hasContent = !!command || fields.length > 0 || hasOutput(output)
+  const tail = shellTailPreview(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -42,6 +59,12 @@ function ShellCommand({ input, output }: { input: ShellCommandInput; output: Too
           <ToolTitle name="shell_command" detail={command} />
         </Header>
       </ToolCard.Trigger>
+      {tail && (
+        <ToolCard.Preview>
+          <pre className={tail.className}>{tail.text}</pre>
+          <MoreHint count={tail.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {command && <pre className="output cmd">{command}</pre>}
         {fields.length > 0 && (
@@ -88,6 +111,7 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
   if (sandbox_permissions) fields.push(["sandbox_permissions", JSON.stringify(sandbox_permissions)])
   if (justification) fields.push(["justification", justification])
   const hasContent = !!cmd || fields.length > 0 || hasOutput(output)
+  const tail = shellTailPreview(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -95,6 +119,12 @@ function ExecCommand({ input, output }: { input: ExecCommandInput; output: ToolR
           <ToolTitle name="exec_command" detail={cmd} />
         </Header>
       </ToolCard.Trigger>
+      {tail && (
+        <ToolCard.Preview>
+          <pre className={tail.className}>{tail.text}</pre>
+          <MoreHint count={tail.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {cmd && <pre className="output cmd">{cmd}</pre>}
         {fields.length > 0 && (
@@ -127,6 +157,7 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
   if (with_escalated_permissions) fields.push(["with_escalated_permissions", "true"])
   if (justification) fields.push(["justification", justification])
   const hasContent = !!joined || fields.length > 0 || hasOutput(output)
+  const tail = shellTailPreview(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
       <ToolCard.Trigger>
@@ -134,6 +165,12 @@ function Shell({ input, output }: { input: ShellInput; output: ToolResult }) {
           <ToolTitle name="shell" detail={joined} />
         </Header>
       </ToolCard.Trigger>
+      {tail && (
+        <ToolCard.Preview>
+          <pre className={tail.className}>{tail.text}</pre>
+          <MoreHint count={tail.remaining} />
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
         {joined && <pre className="output cmd">{joined}</pre>}
         {fields.length > 0 && (
