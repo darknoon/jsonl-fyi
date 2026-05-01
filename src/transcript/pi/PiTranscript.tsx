@@ -11,14 +11,8 @@ function buildPiHeaderModels(session: PiParsedSession): ModelDisplay[] {
   let model: { provider?: string; modelId: string } | null = null
   let thinkingLevel: string | undefined
 
-  for (const entry of session.activeEntries) {
-    if (entry.type === "model_change") {
-      model = { provider: entry.provider, modelId: entry.modelId }
-    } else if (entry.type === "thinking_level_change") {
-      thinkingLevel = entry.thinkingLevel
-    }
-
-    if (!model) continue
+  function addCurrentModel() {
+    if (!model) return
     const display = formatCodexModel(model.modelId, thinkingLevel)
     const raw = model.provider ? `${model.provider}/${model.modelId}` : model.modelId
     const labeled = { ...display, raw: thinkingLevel ? `${raw}/${thinkingLevel}` : raw }
@@ -29,6 +23,17 @@ function buildPiHeaderModels(session: PiParsedSession): ModelDisplay[] {
     }
   }
 
+  for (const entry of session.activeEntries) {
+    if (entry.type === "model_change") {
+      model = { provider: entry.provider, modelId: entry.modelId }
+    } else if (entry.type === "thinking_level_change") {
+      thinkingLevel = entry.thinkingLevel
+    } else if (entry.type === "message" && entry.message.role === "assistant") {
+      addCurrentModel()
+    }
+  }
+
+  if (models.length === 0) addCurrentModel()
   return models
 }
 

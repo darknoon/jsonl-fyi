@@ -37,6 +37,13 @@ test("PiTranscript: model and thinking level render in transcript header", () =>
         timestamp: "2026-05-01T00:00:00.001Z",
         thinkingLevel: "medium",
       },
+      {
+        type: "message",
+        id: "a1",
+        parentId: "t1",
+        timestamp: "2026-05-01T00:00:00.002Z",
+        message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
+      },
     ],
     hiddenBranchEntryCount: 0,
     orphanedEntryCount: 0,
