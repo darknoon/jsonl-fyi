@@ -10,14 +10,17 @@
 - [x] Render limited agent markdown
 - [x] Show tokens used? (per-turn only; session totals deferred)
 - [x] Show model used!
-- [ ] Add copy buttons to messages
+- [x] Add copy buttons to messages
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
-  - [x] **Compact** tool calls are hidden, click to expand
+  - [ ] **Micro** tool calls are all grouped together per-message
+  - [x] **Compact** tool calls collapsed to a single line
   - [x] **Normal** shows a snippet of code changes, a concise output, mimics claude code
   - [ ] **Expanded** shows all content
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
+- [ ] Table of contents index, easy to jump to messages
+- [ ] Some way to view raw tool call?
 - [ ] Syntax-highlight Write tool calls?
 - [ ] Have a nice affordance for compactions, eg a hr + summary card?
-- [ ] Some way of sharing / upload to cdn from cli? or curl / skill?
+- [ ] Sharing / saved transcripts?
 - [ ] Search / highlight matches
