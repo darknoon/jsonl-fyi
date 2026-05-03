@@ -29,6 +29,12 @@ test("findExampleByPath returns the first bundled example by its filename", () =
   expect(real?.name).toBe("Centering the filename in the header")
 })
 
+test("findExampleByPath returns the bundled pi example by its filename", () => {
+  const real = findExampleByPath("/examples/019de00a-80cd-72e8-a9aa-47ac24e53f40.jsonl")
+  expect(real?.format).toBe("pi")
+  expect(real?.turns).toBe(20)
+})
+
 test("findExampleByPath ignores non-example and unknown example routes", () => {
   expect(findExampleByPath("/")).toBeNull()
   expect(findExampleByPath("/examples/missing.jsonl")).toBeNull()

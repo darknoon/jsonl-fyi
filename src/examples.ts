@@ -5,11 +5,12 @@
 // row.
 import sampleUrl from "./__fixtures__/sample.jsonl?url"
 import codexSampleUrl from "./__fixtures__/codex-sample.jsonl?url"
+import piSampleUrl from "./__fixtures__/019de00a-80cd-72e8-a9aa-47ac24e53f40.jsonl?url"
 
 export type Example = {
   name: string
   fileName: string
-  format: "claude" | "codex"
+  format: "claude" | "codex" | "pi"
   turns: number
   sizeBytes: number
   load: () => Promise<string>
@@ -37,6 +38,14 @@ export const EXAMPLES: Example[] = [
     turns: 20,
     sizeBytes: 776298,
     load: () => fetchText(codexSampleUrl),
+  },
+  {
+    name: "Building a FigJam to Markdown extension",
+    fileName: "019de00a-80cd-72e8-a9aa-47ac24e53f40.jsonl",
+    format: "pi",
+    turns: 20,
+    sizeBytes: 1405062,
+    load: () => fetchText(piSampleUrl),
   },
 ]
 

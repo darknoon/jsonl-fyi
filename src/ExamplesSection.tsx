@@ -6,6 +6,12 @@ type Props = {
   onSelect: (example: Example) => void
 }
 
+const FORMAT_LABELS: Record<Example["format"], string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  pi: "Pi",
+}
+
 export function Examples({ onSelect }: Props) {
   if (EXAMPLES.length === 0) return null
   return (
@@ -25,7 +31,7 @@ export function Examples({ onSelect }: Props) {
               <FileIcon format={example.format} />
               <span className="example-row-title">{example.name}</span>
               <span className="example-row-meta">
-                {example.format === "codex" ? "Codex" : "Claude Code"} • {example.turns} turns •{" "}
+                {FORMAT_LABELS[example.format]} • {example.turns} turns •{" "}
                 {formatBytes(example.sizeBytes)}
               </span>
             </a>
