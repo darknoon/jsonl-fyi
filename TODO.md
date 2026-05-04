@@ -13,13 +13,13 @@
 - [x] Add copy buttons to messages
 - [ ] A nice set of example .jsonl files? Should be on CDN I think.
 - [ ] View modes
-  - [ ] **Micro** tool calls are all grouped together per-message
+  - [ ] **Chat** tool calls are all grouped together per-message [wip](docs/superpowers/specs/2026-05-04-chat-view-mode-design.md)
   - [x] **Compact** tool calls collapsed to a single line
   - [x] **Normal** shows a snippet of code changes, a concise output, mimics claude code
   - [ ] **Expanded** shows all content
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
 - [ ] Table of contents index, easy to jump to messages
-- [ ] Some way to view raw tool call?
+- [ ] Some way to view one-off raw tool call? (separate from Raw mode)
 - [ ] Syntax-highlight Write tool calls?
 - [ ] Have a nice affordance for compactions, eg a hr + summary card?
 - [ ] Sharing / saved transcripts?

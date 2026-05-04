@@ -5,3 +5,4 @@ bun.lockb
 .vercel
 .claude/settings.local.json
 .worktrees
+.superpowers/brainstorm/
