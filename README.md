@@ -1,4 +1,4 @@
-# jsonl.fyi
+# [jsonl.fyi](https://jsonl.fyi/)
 
 A local-first web viewer for agent transcript `.jsonl` files. Drop in a transcript and `jsonl.fyi` renders the conversation with messages, tool calls, diffs, images, thinking blocks, timing, token usage, and model labels.
 
