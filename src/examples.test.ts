@@ -6,6 +6,7 @@ const stub: Example = {
   fileName: "demo.jsonl",
   format: "claude",
   turns: 0,
+  toolCalls: 0,
   sizeBytes: 0,
   load: async () => "",
 }
@@ -33,6 +34,7 @@ test("findExampleByPath returns the bundled pi example by its filename", () => {
   const real = findExampleByPath("/examples/019de00a-80cd-72e8-a9aa-47ac24e53f40.jsonl")
   expect(real?.format).toBe("pi")
   expect(real?.turns).toBe(20)
+  expect(real?.toolCalls).toBe(170)
 })
 
 test("findExampleByPath ignores non-example and unknown example routes", () => {

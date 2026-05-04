@@ -12,6 +12,7 @@ export type Example = {
   fileName: string
   format: "claude" | "codex" | "pi"
   turns: number
+  toolCalls: number
   sizeBytes: number
   load: () => Promise<string>
 }
@@ -28,6 +29,7 @@ export const EXAMPLES: Example[] = [
     fileName: "0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl",
     format: "claude",
     turns: 8,
+    toolCalls: 45,
     sizeBytes: 437659,
     load: () => fetchText(sampleUrl),
   },
@@ -36,6 +38,7 @@ export const EXAMPLES: Example[] = [
     fileName: "rollout-2026-04-29T21-53-05-019ddc16-f5f2-7940-8892-8495d619b213.jsonl",
     format: "codex",
     turns: 20,
+    toolCalls: 117,
     sizeBytes: 776298,
     load: () => fetchText(codexSampleUrl),
   },
@@ -44,6 +47,7 @@ export const EXAMPLES: Example[] = [
     fileName: "019de00a-80cd-72e8-a9aa-47ac24e53f40.jsonl",
     format: "pi",
     turns: 20,
+    toolCalls: 170,
     sizeBytes: 1405062,
     load: () => fetchText(piSampleUrl),
   },
