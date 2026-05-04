@@ -608,6 +608,14 @@ textarea {
   gap: 6px;
   color: var(--color-muted);
 }
+.app-footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.app-footer a:hover {
+  color: var(--color-fg);
+}
 .examples {
   margin-top: 32px;
 }
