@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "og:render": "bash scripts/render-og-image.sh",
     "check": "tsgo --noEmit && oxlint --type-aware && oxfmt --check"
   },
   "dependencies": {

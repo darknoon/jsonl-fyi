@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>jsonl.fyi OG Image</title>
+    <style>
+      :root {
+        --color-bg: #ffffff;
+        --color-fg: #18191b;
+        --color-muted: #70757f;
+        --color-border: #dde2ea;
+        --color-claude: #a9573d;
+        --color-codex: #4f5661;
+        --color-pi: #171717;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        margin: 0;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 66% 92%, rgb(88 94 102 / 0.1), transparent 34%),
+          radial-gradient(circle at 87% 82%, rgb(24 25 27 / 0.06), transparent 30%), var(--color-bg);
+        color: var(--color-fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+
+      .frame {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        padding: 62px 76px;
+        overflow: hidden;
+      }
+
+      .brand {
+        margin: 0 0 54px;
+        color: var(--color-muted);
+        font-size: 28px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+
+      .headline {
+        position: relative;
+        z-index: 2;
+        max-width: 760px;
+        margin: 0;
+        font-size: 74px;
+        font-weight: 720;
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+      }
+
+      .headline em {
+        color: var(--color-claude);
+        font-style: normal;
+      }
+
+      .cards {
+        position: absolute;
+        left: 50%;
+        bottom: -58px;
+        z-index: 3;
+        display: grid;
+        grid-template-columns: repeat(3, 250px);
+        gap: 24px;
+        align-items: end;
+        transform: translateX(-50%);
+      }
+
+      .card {
+        position: relative;
+        height: 262px;
+        padding: 24px;
+        border-radius: 20px;
+        color: #fff;
+        box-shadow:
+          0 1px 0 rgb(255 255 255 / 0.18) inset,
+          0 18px 44px rgb(0 0 0 / 0.15);
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        top: 108px;
+        height: 18px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.32;
+        box-shadow:
+          0 40px 0 rgb(255 255 255 / 0.74),
+          0 80px 0 rgb(255 255 255 / 0.88);
+      }
+
+      .card::after {
+        content: "";
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 28px;
+        height: 15px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.22;
+      }
+
+      .card-claude {
+        transform: rotate(-4deg) translateY(10px);
+        background: var(--color-claude);
+      }
+
+      .card-codex {
+        transform: rotate(1.4deg);
+        background: var(--color-codex);
+      }
+
+      .card-pi {
+        transform: rotate(-1.8deg) translateY(6px);
+        background: var(--color-pi);
+      }
+
+      .card-top {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        top: 24px;
+        display: block;
+      }
+
+      .card-heading {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: start;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .file-icon {
+        width: 26px;
+        height: 26px;
+        color: currentColor;
+        opacity: 0.88;
+      }
+
+      .card-model {
+        min-width: 0;
+        color: currentColor;
+        font-size: 20px;
+        font-weight: 520;
+        line-height: 1.32;
+      }
+
+      .accent {
+        position: absolute;
+        inset: auto -130px -190px auto;
+        width: 420px;
+        height: 420px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgb(88 94 102 / 0.12), transparent 68%);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="frame" aria-label="jsonl.fyi Open Graph preview">
+      <p class="brand">jsonl.fyi</p>
+      <h1 class="headline">View and debug your <em>agent</em> sessions.</h1>
+      <div class="cards" aria-hidden="true">
+        <div class="card card-claude">
+          <div class="card-top">
+            <div class="card-heading">
+              <svg class="file-icon" viewBox="0 0 16 16" fill="currentColor">
+                <path
+                  d="M3 5C3 3.59987 3 2.8998 3.27248 2.36502C3.51217 1.89462 3.89462 1.51217 4.36502 1.27248C4.8998 1 5.59987 1 7 1H8.67452C9.1637 1 9.40829 1 9.63846 1.05526C9.84254 1.10425 10.0376 1.18506 10.2166 1.29472C10.4184 1.4184 10.5914 1.59135 10.9373 1.93726L13.0627 4.06274C13.4086 4.40865 13.5816 4.5816 13.7053 4.78343C13.8149 4.96237 13.8957 5.15746 13.9447 5.36154C14 5.59171 14 5.8363 14 6.32548V10C14 11.4001 14 12.1002 13.7275 12.635C13.4878 13.1054 13.1054 13.4878 12.635 13.7275C12.1002 14 11.4001 14 10 14H7C5.59987 14 4.8998 14 4.36502 13.7275C3.89462 13.4878 3.51217 13.1054 3.27248 12.635C3 12.1002 3 11.4001 3 10V5Z"
+                />
+              </svg>
+              <span class="card-model">Claude Code</span>
+            </div>
+          </div>
+        </div>
+        <div class="card card-codex">
+          <div class="card-top">
+            <div class="card-heading">
+              <svg class="file-icon" viewBox="0 0 16 16" fill="currentColor">
+                <path
+                  d="M3 5C3 3.59987 3 2.8998 3.27248 2.36502C3.51217 1.89462 3.89462 1.51217 4.36502 1.27248C4.8998 1 5.59987 1 7 1H8.67452C9.1637 1 9.40829 1 9.63846 1.05526C9.84254 1.10425 10.0376 1.18506 10.2166 1.29472C10.4184 1.4184 10.5914 1.59135 10.9373 1.93726L13.0627 4.06274C13.4086 4.40865 13.5816 4.5816 13.7053 4.78343C13.8149 4.96237 13.8957 5.15746 13.9447 5.36154C14 5.59171 14 5.8363 14 6.32548V10C14 11.4001 14 12.1002 13.7275 12.635C13.4878 13.1054 13.1054 13.4878 12.635 13.7275C12.1002 14 11.4001 14 10 14H7C5.59987 14 4.8998 14 4.36502 13.7275C3.89462 13.4878 3.51217 13.1054 3.27248 12.635C3 12.1002 3 11.4001 3 10V5Z"
+                />
+              </svg>
+              <span class="card-model">OpenAI Codex</span>
+            </div>
+          </div>
+        </div>
+        <div class="card card-pi">
+          <div class="card-top">
+            <div class="card-heading">
+              <svg class="file-icon" viewBox="0 0 16 16" fill="currentColor">
+                <path
+                  d="M3 5C3 3.59987 3 2.8998 3.27248 2.36502C3.51217 1.89462 3.89462 1.51217 4.36502 1.27248C4.8998 1 5.59987 1 7 1H8.67452C9.1637 1 9.40829 1 9.63846 1.05526C9.84254 1.10425 10.0376 1.18506 10.2166 1.29472C10.4184 1.4184 10.5914 1.59135 10.9373 1.93726L13.0627 4.06274C13.4086 4.40865 13.5816 4.5816 13.7053 4.78343C13.8149 4.96237 13.8957 5.15746 13.9447 5.36154C14 5.59171 14 5.8363 14 6.32548V10C14 11.4001 14 12.1002 13.7275 12.635C13.4878 13.1054 13.1054 13.4878 12.635 13.7275C12.1002 14 11.4001 14 10 14H7C5.59987 14 4.8998 14 4.36502 13.7275C3.89462 13.4878 3.51217 13.1054 3.27248 12.635C3 12.1002 3 11.4001 3 10V5Z"
+                />
+              </svg>
+              <span class="card-model">Pi Coding Agent</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="accent" aria-hidden="true"></div>
+    </main>
+  </body>
+</html>
