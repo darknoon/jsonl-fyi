@@ -6,3 +6,4 @@ bun.lockb
 .claude/settings.local.json
 .worktrees
 .superpowers/brainstorm/
+.dave/
