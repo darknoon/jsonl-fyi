@@ -101,10 +101,13 @@ tokenized; literal px values are OK for now.
 
 ## Verification
 
-UI verification happens via the `agent-browser` skill: start `bun dev`,
-drive the page (drag in fixture files, click toggles, take screenshots),
-read the captured output. Don't tell the user "please open the browser
-and try X" — verify it yourself.
+UI verification happens via the `agent-browser` skill: first check whether
+there is already a dev server running for the current workspace. If working
+in a worktree, use that worktree's dev server; if working in the main
+workspace, use the normal port 3000 server. If no appropriate server is
+running, start `bun dev` on the appropriate port, then drive the page (drag
+in fixture files, click toggles, take screenshots), read the captured output.
+Don't tell the user "please open the browser and try X" — verify it yourself.
 
 If you are targeting a specific case, eg certain tool calls or images, make sure you have specific .jsonl files ready you can use for verification before starting work, so you can verify you have done it correctly on real data.
 
