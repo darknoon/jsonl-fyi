@@ -326,6 +326,9 @@ textarea {
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
+.thinking-static {
+  cursor: default;
+}
 .thinking-expanded {
   align-items: flex-start;
 }
@@ -611,6 +614,7 @@ textarea {
   justify-self: end;
   width: 34px;
   height: 34px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 .settings-btn:hover {
   background: color-mix(in srgb, var(--color-border) 60%, transparent);
