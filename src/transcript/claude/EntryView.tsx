@@ -9,6 +9,8 @@ import { narrowToolUse } from "./toolTypes"
 
 const EMPTY_RESULT: ToolResult = { content: [], isError: false }
 
+// tool_use_id → tool names referenced in that result's content.
+// Used by the ToolSearch card to show which tools were discovered.
 export type ToolRefsById = Map<string, string[]>
 
 type Props = {
