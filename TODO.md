@@ -25,3 +25,4 @@
 - [ ] Have a nice affordance for compactions, eg a hr + summary card?
 - [ ] Sharing / saved transcripts?
 - [ ] Search / highlight matches
+- [ ] Use Claude Code's `toolUseResult` sidecar (per-tool structured data: `structuredPatch`, `userModified`, …) — currently ignored

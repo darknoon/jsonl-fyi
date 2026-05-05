@@ -160,6 +160,22 @@ function Edit({ input, output }: CardProps<EditInput>) {
   const { file_path, old_string, new_string, replace_all, ...rest } = input
   assertExhaustive(rest)
   const hasDiff = !!old_string || !!new_string
+  const outputText = toolResultText(output)
+  const errorBlock = output.isError && outputText ? (
+    <pre className="tool-preview-snippet snippet-error copy-host">
+      {outputText}
+      <CopyButton text={outputText} ariaLabel="Copy error" />
+    </pre>
+  ) : null
+  const diffBlock = hasDiff ? (
+    <EditDiff filePath={file_path} oldString={old_string} newString={new_string} />
+  ) : null
+  const replaceAllBlock = replace_all ? (
+    <dl className="tool-fields">
+      <Field name="replace_all" value="true" />
+    </dl>
+  ) : null
+  const hasExpandable = !output.isError && hasOutput(output)
   const hasContent = hasDiff || replace_all || hasOutput(output)
   return (
     <ToolCard.Root hasContent={hasContent} status={output.isError ? "error" : "success"}>
@@ -169,13 +185,18 @@ function Edit({ input, output }: CardProps<EditInput>) {
         </Header>
       </ToolCard.Trigger>
       <ToolCard.Preview>
-        {hasDiff && <EditDiff filePath={file_path} oldString={old_string} newString={new_string} />}
-        {replace_all && (
-          <dl className="tool-fields">
-            <Field name="replace_all" value="true" />
-          </dl>
-        )}
+        {diffBlock}
+        {replaceAllBlock}
+        {errorBlock}
       </ToolCard.Preview>
+      {hasExpandable && (
+        <ToolCard.Content>
+          {diffBlock}
+          {replaceAllBlock}
+          <Output output={output} />
+          <Extras output={output} />
+        </ToolCard.Content>
+      )}
     </ToolCard.Root>
   )
 }
