@@ -127,6 +127,11 @@ export function App() {
 
   async function loadFile(file: File) {
     const text = await file.text()
+    // Push a history entry when transitioning into a loaded session so the
+    // browser back button returns to the file picker.
+    if (!session && window.location.pathname === "/") {
+      window.history.pushState({ jsonlFyiLoaded: true }, "", window.location.href)
+    }
     loadText(text, file.name)
   }
 
