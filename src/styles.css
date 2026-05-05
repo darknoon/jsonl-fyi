@@ -513,25 +513,6 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 10;
-  isolation: isolate;
-}
-.app-header::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: -24px;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    var(--color-bg) 0%,
-    color-mix(in srgb, var(--color-bg) 92%, transparent) 25%,
-    color-mix(in srgb, var(--color-bg) 75%, transparent) 50%,
-    color-mix(in srgb, var(--color-bg) 40%, transparent) 75%,
-    color-mix(in srgb, var(--color-bg) 0%, transparent) 100%
-  );
 }
 .app-header-inner {
   max-width: 880px;
@@ -543,6 +524,13 @@ textarea {
   align-items: center;
   gap: 12px;
 }
+.title-pill, .filename-group, .settings-btn {
+  background: color-mix(in srgb, var(--color-card) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  border-radius: var(--radius-pill);
+}
 .title-pill {
   appearance: none;
   -webkit-appearance: none;
@@ -553,10 +541,6 @@ textarea {
   min-width: 0;
   height: 34px;
   padding: 0 12px 0 10px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: var(--color-card);
-  color: var(--color-fg);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   font: inherit;
@@ -587,8 +571,6 @@ textarea {
   max-width: min(52vw, 420px);
   height: 34px;
   padding: 0 7px 0 8px;
-  border-radius: var(--radius-pill);
-  background: var(--color-card);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   color: var(--color-muted);
   min-width: 0;
@@ -613,26 +595,25 @@ textarea {
   padding: 0;
   border: none;
   border-radius: var(--radius-pill);
-  background: var(--color-card);
+  background: color-mix(in srgb, var(--color-card) 40%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--color-muted);
   cursor: pointer;
   font: inherit;
   flex-shrink: 0;
 }
 .icon-btn:hover {
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) 60%, transparent);
   color: var(--color-fg);
 }
 .settings-btn {
   justify-self: end;
   width: 34px;
   height: 34px;
-  border: none;
-  background: var(--color-card);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
 .settings-btn:hover {
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) 60%, transparent);
 }
 .drop-zone-sub {
   margin-top: 8px;
