@@ -19,6 +19,7 @@
   - [ ] **Expanded** shows all content
   - [ ] **Raw** shows the json for each message, with some minor pretty-printing
 - [ ] Table of contents index, easy to jump to messages
+- [ ] Aggregate statistics (# of each tool call? # failed tool calls?)
 - [ ] Some way to view one-off raw tool call? (separate from Raw mode)
 - [ ] Syntax-highlight Write tool calls?
 - [ ] Have a nice affordance for compactions, eg a hr + summary card?
