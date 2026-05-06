@@ -4,7 +4,7 @@ Thanks for using jsonl.fyi. A quick note on what's open and what isn't:
 
 ## Bug reports — yes, please
 
-Open an [issue](https://github.com/darknoon/jsonl-fyi/issues) and **attach the `.jsonl` file** that triggered the bug (or a minimal slice of it). Without the actual transcript I usually can't reproduce — the bugs are almost always shape-of-data bugs.
+Open an [issue](https://github.com/darknoon/jsonl-fyi/issues) and **attach the `.jsonl` file** that triggered the bug. Without the actual transcript I usually can't reproduce — the bugs are almost always shape-of-data bugs.
 
 If the file contains anything sensitive, redact it locally first or email me instead.
 
