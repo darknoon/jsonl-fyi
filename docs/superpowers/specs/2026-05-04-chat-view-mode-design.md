@@ -31,8 +31,34 @@ from Normal/Compact).
 - **Individual tool cards**: unchanged rendering when visible.
 
 The **only** layout change: consecutive `tool_use` / `function_call` /
-`custom_tool_call` entries in the same assistant message collapse into
+`custom_tool_call` entries between user-visible content collapse into
 one summary row instead of rendering as separate bullet rows.
+
+### Grouping boundaries
+
+A "tool run" is the contiguous sequence of tool calls between two
+user-visible content boundaries. The boundaries are:
+
+- A real user message (user-typed input — NOT a synthesized
+  tool_result-only entry that the harness emits to pair with a tool
+  call).
+- An assistant **text** or **image** block (the user-visible response
+  content).
+- The end of the transcript.
+
+Notably:
+
+- **Thinking blocks do not flush** — thinking is internal scaffolding,
+  conceptually part of the tool run, not a response.
+- **tool_result-paired user entries do not flush** — Claude emits
+  synthesized "user" messages whose only content is `tool_result` blocks
+  to satisfy the API's strict alternation; these are part of the run
+  bookkeeping, not the user's input.
+- This means a run can span multiple assistant messages. For Claude and
+  Pi (where the harness emits one tool call per assistant message), this
+  is the only way grouping triggers in practice. For Codex (where
+  multiple `function_call` entries appear consecutively at the top
+  level), the within-turn grouping is the same shape under this rule.
 
 ## Collapsed tool group
 
