@@ -667,11 +667,12 @@ textarea {
 }
 .app-footer a {
   color: inherit;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: 2px;
 }
 .app-footer a:hover {
   color: var(--color-fg);
+  text-decoration: underline;
 }
 .examples {
   position: relative;
