@@ -20,10 +20,71 @@ The shipped behavior:
 The intended behavior:
 
 ```
-● 5 tool calls — Read · Edit · Bash · Read · Edit
+● Read x2 · Edit x2 · Bash · Thinking x4
   .../src/foo.ts  [diff peek]
   (thinking hidden in collapsed state; appears inline among the cards on expand)
 ```
+
+## Summary line format change
+
+The shipped summary line is `N tool call(s) — name · name · name`,
+listing tool names in the order they appeared. Andrew wants a denser,
+aggregated form that also surfaces thinking presence:
+
+```
+Read x2 · Edit x2 · Bash · Thinking x4
+```
+
+Rules:
+
+- Drop the `N tool call(s) — ` prefix; the per-name counts carry the
+  information.
+- **Aggregate adjacent runs by first-occurrence order.** Walk
+  `items[]`; emit each unique name in the order it first appears, with
+  the total count for that name. Example sequence
+  `[Read, Edit, Bash, Read, Edit]` aggregates to `Read x2 · Edit x2 ·
+  Bash` — `Read` first appeared at index 0 so it leads even though its
+  second occurrence is later. Chronology is preserved at the level of
+  first appearance.
+- Omit `x1` — just the bare name. `Bash` not `Bash x1`.
+- `Thinking` is included as if it were a name, with its own count
+  (only when present).
+- Separator stays `· ` (middle dot + space).
+
+Per-format label for thinking entries:
+
+- Claude → `Thinking` (matches Claude's PascalCase tool names like
+  `Read`/`Edit`).
+- Pi → `Thinking`. Pi tool names are lowercase (`edit`, `bash`), but
+  `Thinking` reads better as a category label than `thinking` and
+  visually distinguishes the absorbed reasoning from the tools. (Open
+  question: confirm or use lowercase to match.)
+- Codex → `Reasoning`. Codex's reasoning payloads are conventionally
+  called "reasoning". (Open question: lowercase `reasoning` vs
+  PascalCase `Reasoning`.)
+
+The aggregation function is shared and lives in
+`src/transcript/grouping.tsx` (or `ToolGroupRow.tsx`):
+
+```ts
+function summarizeNames(items: GroupItem[]): string {
+  const counts = new Map<string, { order: number; count: number }>()
+  let order = 0
+  for (const it of items) {
+    const name = it.kind === "thinking" ? it.label : it.name
+    const cur = counts.get(name)
+    if (cur) cur.count++
+    else counts.set(name, { order: order++, count: 1 })
+  }
+  return [...counts.entries()]
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([name, { count }]) => (count === 1 ? name : `${name} x${count}`))
+    .join(" · ")
+}
+```
+
+Per-format wrappers pass the appropriate label string for thinking
+items (e.g. `{ kind: "thinking", label: "Thinking", data }`).
 
 ## Boundary semantics — unchanged
 
@@ -74,7 +135,9 @@ type Props<T> = {
 }
 ```
 
-Summary label/list derived only from items where `kind === "tool"`. Aggregate status likewise.
+The summary line uses the new `summarizeNames(items)` helper (see above),
+which counts both tools and thinking. Aggregate status is derived from
+items where `kind === "tool"` only — thinking has no status.
 
 Inline diff peek and expanded view: walk `items[]`. For tools, render diff (peek) or `renderToolCard(data)` (expanded). For thinking, render nothing in peek, `renderThinking(data)` in expanded.
 
