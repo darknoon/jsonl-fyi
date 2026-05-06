@@ -26,3 +26,4 @@
 - [ ] Sharing / saved transcripts?
 - [ ] Search / highlight matches
 - [ ] Use Claude Code's `toolUseResult` sidecar (per-tool structured data: `structuredPatch`, `userModified`, …) — currently ignored
+- [ ] Surface Codex `apply_patch` renames in the inline diff filename badge (V4A `update` ops carry `movedTo`; currently we show only the original path)

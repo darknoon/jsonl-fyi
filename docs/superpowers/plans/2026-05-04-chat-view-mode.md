@@ -2,137 +2,298 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a "Chat" view mode that collapses consecutive tool calls in an assistant message into a single summary row, with Edit/Write diffs shown inline.
-
-**Architecture:** A `ToolGroupRow` component renders the collapsed summary ("3 tool calls — Read · Edit · Bash") and inline diffs. For Claude, `EntryView` groups consecutive `tool_use` blocks within one message. For Codex, `CodexTranscript` groups consecutive `function_call`/`custom_tool_call` entries within a turn. Individual tool cards render in expanded state with their existing `ToolCard` chrome. One small change to `ToolCard.tsx` makes chat mode previews behave like normal mode (so single-tool cards still show their preview).
-
-**Tech Stack:** React + TypeScript + CSS (existing stack; no new dependencies)
+**Goal:** Add a "Chat" view mode that collapses consecutive tool calls in a single assistant message/turn into one summary row, with structured diffs peeking out inline.
 
 **Spec:** `docs/superpowers/specs/2026-05-04-chat-view-mode-design.md`
 
----
+## Architecture (per spec §Architecture)
 
-## File Structure
+- **Pure preprocessor functions per format** produce `RenderItem[]`. The `tool_group` variant carries plain data only — no `ReactNode`. UI assembly happens at the render layer.
+- **Shared `ToolDiff` data type** (`src/transcript/grouping.ts`) — format-agnostic vocabulary for inline diffs:
+  ```ts
+  type ToolDiff =
+    | { kind: "edit"; filePath: string; oldString: string; newString: string }
+    | { kind: "patch"; filePath: string; patch: string; op: "add" | "update" | "delete" }
+  ```
+  Each `ToolDiff` is one file-level diff. A Claude `MultiEdit` with N edits → N edit ToolDiffs (same `filePath`). A Codex `apply_patch` over N files → N patch ToolDiffs (each its own `filePath`).
+- **Per-tool diff ownership.** Each tool in a group carries `diffs: ToolDiff[]` (0..N). The collapsed inline peek is a render-time flatten across `tools[]`; the expanded view renders each tool's card via existing components (which include their own diffs), so per-tool association survives expansion.
+- **Existing inline pre-passes fold into the preprocessors**: Claude (`results` + skill body absorption), Codex (`results` + agentNicknames + durations + usages + modelLabels), Pi (`results`).
+- **Diff-producing tools by format**:
+  - Claude `Edit`/`MultiEdit` → `kind: "edit"`. `Write` keeps existing rendering (no inline diff in v1).
+  - Codex `apply_patch` → `kind: "patch"` (parsed via `parseV4A`).
+  - Pi `edit` → `kind: "edit"`. **Pi `edit` Normal-mode rendering is also upgraded** from `GenericFileTool` to a new `PiEditTool` using `EditDiff` (small Normal-mode improvement bundled with this work; user-authorized). Pi `write` keeps existing rendering.
+- **Aggregate status**: `success | error | mixed`. `mixed` = a new `.tool-card-mixed` CSS class with a 50/50 linear-gradient bullet.
+
+## Cross-format type contract
+
+Each format declares its own `RenderItem` union with structurally-identical `tool_group`:
+
+```ts
+// src/transcript/claude (in timing.ts)
+type ClaudeToolGroup = {
+  kind: "tool_group"
+  tools: Array<{
+    name: string
+    status: "success" | "error"
+    diffs: ToolDiff[]
+    block: ToolUseBlock
+  }>
+}
+
+// src/transcript/codex/buildCodexItems.ts
+type CodexToolGroup = {
+  kind: "tool_group"
+  tools: Array<{
+    name: string
+    status: "success" | "error"
+    diffs: ToolDiff[]
+    entry: CodexResponseItem
+  }>
+}
+
+// src/transcript/pi/buildPiItems.ts
+type PiToolGroup = {
+  kind: "tool_group"
+  tools: Array<{
+    name: string
+    status: "success" | "error"
+    diffs: ToolDiff[]
+    call: PiToolCallContent
+  }>
+}
+```
+
+`ToolGroupRow` is generic over the per-format source-data type:
+
+```tsx
+type Props<T> = {
+  tools: Array<{ name: string; status: "success" | "error"; diffs: ToolDiff[]; data: T }>
+  renderDiff: (diff: ToolDiff) => ReactNode
+  renderCard: (data: T) => ReactNode
+}
+```
+
+Each format provides a thin wrapper (`ClaudeToolGroupRow`, `CodexToolGroupRow`, `PiToolGroupRow`) that closes over `renderCard`. `renderDiff` is a single shared helper exported from `grouping.tsx` (since it's pure-React rendering and identical across formats).
+
+## File map
 
 | File | Action | Responsibility |
 |------|--------|----------------|
 | `src/settings.tsx` | Modify | Add `"chat"` to `ViewMode` |
-| `src/SettingsPopover.tsx` | Modify | Add "Chat" option to select |
-| `src/transcript/ToolGroupRow.tsx` | **Create** | Renders collapsed summary row + inline diffs + expand toggle |
-| `src/transcript/claude/EntryView.tsx` | Modify | Group consecutive `tool_use` blocks in chat mode |
-| `src/transcript/codex/CodexTranscript.tsx` | Modify | Group consecutive tool entries in chat mode |
-| `src/transcript/ToolCard.tsx` | Modify | Treat `"chat"` like `"normal"` for body rendering |
-| `src/styles.css` | Modify | Add `.tool-group` and `.tool-group-diffs` styles |
+| `src/SettingsPopover.tsx` | Modify | Add "Chat" option |
+| `src/transcript/ToolCard.tsx` | Modify | Treat `"chat"` like `"normal"` for collapsed body |
+| `src/transcript/grouping.ts` | **Create** | `ToolDiff` data type (no JSX) |
+| `src/transcript/grouping.tsx` | **Create** | Shared `renderToolDiff` helper + `ToolGroupRow` |
+| `src/styles.css` | Modify | `.tool-group*` classes; `.tool-card-mixed` gradient bullet |
+| `src/transcript/timing.ts` | Modify | Extend `RenderItem` with `tool_group`; fold Claude pre-passes; emit groups |
+| `src/transcript/claude/ClaudeCodeTranscript.tsx` | Modify | Thin renderer over extended `buildTranscriptItems` |
+| `src/transcript/claude/ClaudeToolGroupRow.tsx` | **Create** | Format wrapper that closes over `Tool` for `renderCard` |
+| `src/transcript/codex/buildCodexItems.ts` | **Create** | Pure preprocessor: pre-passes + grouping |
+| `src/transcript/codex/CodexTranscript.tsx` | Modify | Thin renderer |
+| `src/transcript/codex/CodexToolGroupRow.tsx` | **Create** | Format wrapper |
+| `src/transcript/pi/PiEditTool.tsx` | **Create** | Pi-specific Edit renderer using `EditDiff` (Normal + Chat) |
+| `src/transcript/pi/Tool.tsx` | Modify | Route `name === "edit"` to `PiEditTool` |
+| `src/transcript/pi/buildPiItems.ts` | **Create** | Pure preprocessor |
+| `src/transcript/pi/PiTranscript.tsx` | Modify | Thin renderer |
+| `src/transcript/pi/EntryView.tsx` | Modify | Honor `skipBlocks` to suppress grouped tool calls |
+| `src/transcript/pi/PiToolGroupRow.tsx` | **Create** | Format wrapper |
+| `src/transcript/grouping.test.ts` | **Create** | `ToolDiff` + `renderToolDiff` tests |
+| `src/transcript/timing.test.ts` | Modify | Claude grouping data assertions |
+| `src/transcript/codex/buildCodexItems.test.ts` | **Create** | Codex grouping data assertions |
+| `src/transcript/pi/buildPiItems.test.ts` | **Create** | Pi grouping data assertions |
+| `src/transcript/pi/PiEditTool.test.tsx` | **Create** | Pi edit rendering tests |
+| `src/transcript/grouping.test.tsx` | **Create** | `ToolGroupRow` + `renderToolDiff` rendering tests |
 
 ---
 
-### Task 1: Settings — Add "chat" to ViewMode
+## Pre-implementation: fixture audit
 
-**Files:**
-- Modify: `src/settings.tsx:3`
-- Modify: `src/SettingsPopover.tsx`
+- [ ] **Step 1: Identify fixtures with consecutive tool calls per format**
 
-- [ ] **Step 1: Add "chat" to the type**
+```bash
+cd /Users/andrew/Developer/Prefix/jsonl-fyi
+ls src/__fixtures__ src/transcript/__fixtures__
+```
 
-In `src/settings.tsx`, line 3:
+Required:
+- Claude: assistant message with 2+ consecutive `tool_use` blocks, including ≥1 `Edit` or `MultiEdit`.
+- Codex: 2+ consecutive `function_call`/`custom_tool_call` items in a turn, including ≥1 `apply_patch`.
+- Pi: assistant message with 2+ consecutive `toolCall` blocks, including ≥1 `edit`.
+
+Pi `edit` argument shape (confirmed from `src/__fixtures__/019de00a-…jsonl`): `{ path: string, edits: Array<{ oldText: string, newText: string }> }`.
+
+If a fixture lacks a 2+ consecutive run for any format, copy the closest one and edit by hand. Commit the fixture before code work.
+
+Record fixture paths:
+- Claude: `___________________________`
+- Codex: `___________________________`
+- Pi:    `___________________________`
+
+- [ ] **Step 2: Capture Normal/Compact baselines (regression gate)**
+
+Start dev server (port 3000 in main workspace per CLAUDE.md). For each format and each baseline fixture:
+1. Drag in fixture, set Normal mode.
+2. Save `document.querySelector('.transcript').outerHTML` → `/tmp/baseline-{format}-normal.html`.
+3. Save full-page screenshot → `/tmp/baseline-{format}-normal.png`.
+4. Repeat for Compact mode.
+
+**Pi caveat:** Pi `edit` Normal-mode rendering changes intentionally in Task 6. Capture pi baselines for documentation but enforce regression only for Claude and Codex. Pi diffs are allowed only inside elements rendering `edit` calls.
+
+---
+
+## Task 1 — Settings: add "chat" to ViewMode
+
+**Files:** `src/settings.tsx`, `src/SettingsPopover.tsx`
+
+- [ ] **Step 1:** In `src/settings.tsx`:
+  ```ts
+  export type ViewMode = "compact" | "normal" | "chat"
+  ```
+
+- [ ] **Step 2:** In `src/SettingsPopover.tsx`, after the "Compact" option:
+  ```tsx
+  <option value="chat">Chat</option>
+  ```
+  Final order: Normal, Compact, Chat.
+
+- [ ] **Step 3:** Type-check.
+  ```bash
+  cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
+  ```
+
+- [ ] **Step 4:** Commit.
+  ```bash
+  git add src/settings.tsx src/SettingsPopover.tsx
+  git commit -m "feat: add chat view mode to settings"
+  ```
+
+---
+
+## Task 2 — Shared `ToolDiff` + `renderToolDiff` + `ToolGroupRow` + CSS
+
+**Files:** `src/transcript/grouping.ts` (new, data only), `src/transcript/grouping.tsx` (new, JSX helpers + component), `src/styles.css`
+
+- [ ] **Step 1:** Create `src/transcript/grouping.ts`:
 
 ```ts
-export type ViewMode = "compact" | "normal" | "chat"
+// src/transcript/grouping.ts — pure data, no React.
+export type ToolDiff =
+  | { kind: "edit"; filePath: string; oldString: string; newString: string }
+  | {
+      kind: "patch"
+      filePath: string
+      patch: string                  // unified-diff text for this single file
+      op: "add" | "update" | "delete"
+    }
 ```
 
-- [ ] **Step 2: Add "Chat" option to SettingsPopover**
-
-In `src/SettingsPopover.tsx`, inside the `<select>`, add between "Compact" and the closing `</select>`:
+- [ ] **Step 2:** Create `src/transcript/grouping.tsx`:
 
 ```tsx
-<option value="chat">Chat</option>
-```
-
-Final select:
-```tsx
-<select value={viewMode} onChange={(e) => setViewMode(e.currentTarget.value as ViewMode)}>
-  <option value="normal">Normal</option>
-  <option value="compact">Compact</option>
-  <option value="chat">Chat</option>
-</select>
-```
-
-- [ ] **Step 3: Verify type-check**
-
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
-```
-
-Expected: clean. The ToolCard.tsx viewMode branch uses `if/else` not `switch`, so adding a third value doesn't trigger exhaustiveness checks — but a later task fixes the branch.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/settings.tsx src/SettingsPopover.tsx
-git commit -m "feat: add chat view mode to settings"
-```
-
----
-
-### Task 2: Create ToolGroupRow component
-
-**Files:**
-- Create: `src/transcript/ToolGroupRow.tsx`
-- Modify: `src/styles.css` (append styles)
-
-The component renders the collapsed group row with a shared bullet, tool name list, inline diffs, and expand toggle. It reuses the existing `.tool-row`, `.tool-title`, `.tool-title-name`, `.tool-title-paren`, `.tool-title-detail` CSS classes so the summary line looks native.
-
-- [ ] **Step 1: Create the component**
-
-```tsx
-// src/transcript/ToolGroupRow.tsx
+// src/transcript/grouping.tsx — JSX helpers + presentational component.
 import { useState, type ReactNode } from "react"
+import { EditDiff } from "./EditDiff"
+import { PatchDiff } from "@pierre/diffs/react"
+import type { ToolDiff } from "./grouping"
 
-type Props = {
-  toolNames: string[]         // e.g. ["Read", "Edit", "Bash"]
-  status: "success" | "error" // aggregate: error if any tool errored
-  inlineDiffs?: ReactNode[]   // EditDiff / PatchDiff elements for inline rendering
-  children: ReactNode         // full Tool cards for expanded view
+export function renderToolDiff(diff: ToolDiff): ReactNode {
+  if (diff.kind === "edit") {
+    return (
+      <EditDiff
+        filePath={diff.filePath}
+        oldString={diff.oldString}
+        newString={diff.newString}
+      />
+    )
+  }
+  return (
+    <PatchDiff
+      patch={diff.patch}
+      options={{
+        diffStyle: "unified",
+        diffIndicators: "classic",
+        disableFileHeader: true,
+        disableLineNumbers: true,
+      }}
+      disableWorkerPool
+    />
+  )
 }
 
-export function ToolGroupRow({ toolNames, status, inlineDiffs, children }: Props) {
+export function aggregateStatus(
+  statuses: Array<"success" | "error">,
+): "success" | "error" | "mixed" {
+  const hasErr = statuses.includes("error")
+  const hasOk = statuses.includes("success")
+  return hasErr && hasOk ? "mixed" : hasErr ? "error" : "success"
+}
+
+type Props<T> = {
+  tools: Array<{
+    name: string
+    status: "success" | "error"
+    diffs: ToolDiff[]
+    data: T
+  }>
+  renderCard: (data: T) => ReactNode
+}
+
+export function ToolGroupRow<T>({ tools, renderCard }: Props<T>) {
   const [expanded, setExpanded] = useState(false)
-  const count = toolNames.length
+  const count = tools.length
   const label = `${count} ${count === 1 ? "tool call" : "tool calls"}`
-  const list = toolNames.join(" · ")
-  const statusClass = status === "error" ? "tool-card-error" : "tool-card-success"
+  const list = tools.map((t) => t.name).join(" · ")
+  const status = aggregateStatus(tools.map((t) => t.status))
+  const statusClass =
+    status === "mixed"
+      ? "tool-card-mixed"
+      : status === "error"
+        ? "tool-card-error"
+        : "tool-card-success"
+
+  const flatDiffs = tools.flatMap((t) => t.diffs)
 
   return (
     <div className={`tool-group ${statusClass}`}>
       <button
-        className="tool-row clickable"
+        type="button"
+        className="tool-row clickable tool-group-row"
+        aria-expanded={expanded}
         onClick={() => setExpanded((e) => !e)}
       >
         <span className="tool-title">
           <strong className="tool-title-name">{label}</strong>
-          <span className="tool-title-paren">(</span>
+          <span className="tool-title-paren"> — </span>
           <span className="tool-title-detail">{list}</span>
-          <span className="tool-title-paren">)</span>
         </span>
       </button>
 
-      {inlineDiffs && inlineDiffs.length > 0 && (
+      {!expanded && flatDiffs.length > 0 && (
         <div className="tool-group-diffs">
-          {inlineDiffs}
+          {flatDiffs.map((d, i) => (
+            <div key={i} className="tool-group-diff">
+              <div className="tool-group-diff-file">{d.filePath}</div>
+              {renderToolDiff(d)}
+            </div>
+          ))}
         </div>
       )}
 
-      {expanded && <div className="tool-group-expanded">{children}</div>}
+      {expanded && (
+        <div className="tool-group-expanded">
+          {tools.map((t, i) => (
+            <div key={i}>{renderCard(t.data)}</div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 ```
 
-The `toolNames` prop contains display names like `"Read"`, `"Edit"`, `"Bash"` — the same names used in the existing ToolCard triggers.
+Note: when expanded, the inline peek hides because each tool's card already renders its own diff.
 
-- [ ] **Step 2: Add CSS**
-
-Append to `src/styles.css`:
+- [ ] **Step 3:** Append CSS to `src/styles.css`:
 
 ```css
 /* ── Chat mode tool group ── */
@@ -142,15 +303,21 @@ Append to `src/styles.css`:
   flex-direction: column;
 }
 
-.tool-group > .tool-row.clickable {
+.tool-group-row {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
   cursor: pointer;
 }
-.tool-group > .tool-row.clickable:hover {
+.tool-group-row:hover {
   background: var(--color-card);
 }
 
 .tool-group-diffs {
-  margin: 0 0 4px 24px;
+  margin: 0 0 4px calc(var(--bullet-size) + var(--bullet-gap));
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -163,678 +330,941 @@ Append to `src/styles.css`:
 }
 
 .tool-group-expanded {
-  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mixed-status bullet: half success / half error */
+.tool-card-mixed .tool-row::before {
+  background: linear-gradient(
+    90deg,
+    var(--color-success) 0 50%,
+    var(--color-error) 50% 100%
+  );
 }
 ```
 
-- [ ] **Step 3: Verify compilation**
+- [ ] **Step 4:** Confirm CSS variables `--bullet-size`, `--bullet-gap`, `--color-success`, `--color-error` exist in `:root` (already present).
+
+- [ ] **Step 5:** Type-check.
 
 ```bash
 cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6:** Commit.
 
 ```bash
-git add src/transcript/ToolGroupRow.tsx src/styles.css
-git commit -m "feat: add ToolGroupRow component for chat view mode"
+git add src/transcript/grouping.ts src/transcript/grouping.tsx src/styles.css
+git commit -m "feat: add ToolDiff data type, ToolGroupRow component, chat-mode styles"
 ```
 
 ---
 
-### Task 3: ToolCard — treat "chat" like "normal" for body rendering
+## Task 3 — ToolCard: treat "chat" like "normal"
 
-**Files:**
-- Modify: `src/transcript/ToolCard.tsx:56`
+**File:** `src/transcript/ToolCard.tsx`
 
-When a single tool card renders in chat mode (either standalone or inside an expanded ToolGroupRow), it should behave like Normal mode: show preview when collapsed, content when expanded. Currently chat falls through to `body = null` (compact behavior).
+- [ ] **Step 1:** Locate the `body` assignment near line 56. Change:
+  ```ts
+  else if (viewMode === "normal") body = preview
+  ```
+  to:
+  ```ts
+  else if (viewMode === "normal" || viewMode === "chat") body = preview
+  ```
 
-- [ ] **Step 1: Update the viewMode branch**
-
-In `src/transcript/ToolCard.tsx`, line 56, change:
-
-```ts
-else if (viewMode === "normal") body = preview
-```
-
-to:
-
-```ts
-else if (viewMode === "normal" || viewMode === "chat") body = preview
-```
-
-The full block after the change:
-
-```ts
-let body: ReactNode = null
-if (expanded) body = content ?? preview
-else if (viewMode === "normal" || viewMode === "chat") body = preview
-else body = null
-```
-
-- [ ] **Step 2: Verify type-check**
-
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/transcript/ToolCard.tsx
-git commit -m "fix: treat chat view mode like normal in ToolCard body rendering"
-```
+- [ ] **Step 2:** Type-check + commit.
+  ```bash
+  cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
+  git add src/transcript/ToolCard.tsx
+  git commit -m "fix: treat chat view mode like normal in ToolCard body rendering"
+  ```
 
 ---
 
-### Task 4: Grouping logic — Claude Code EntryView
+## Task 4 — Claude: extend `timing.ts` with pre-passes + grouping
 
-**Files:**
-- Modify: `src/transcript/claude/EntryView.tsx`
+**Files:** `src/transcript/timing.ts`, `src/transcript/claude/ClaudeCodeTranscript.tsx`, `src/transcript/claude/ClaudeToolGroupRow.tsx` (new)
 
-Consecutive `tool_use` blocks within one assistant message get merged into a `ToolGroupRow` when viewMode is `"chat"` and there are 2+ tool calls in the run. Edit/MultiEdit diffs are extracted and shown inline.
+- [ ] **Step 1:** Extend `timing.ts` types
 
-- [ ] **Step 1: Add imports**
+Imports (additions): `getBlocks`, `extractResult`, `narrowToolUse`, `detectSkill`, `ToolUseBlock`, `ToolRefsById`, `ToolDiff` (from `../grouping`), `ViewMode`.
 
-Replace the existing imports in `src/transcript/claude/EntryView.tsx`:
+Add to `RenderItem`:
+```ts
+| { kind: "tool_group"; tools: ClaudeToolGroupTool[] }
 
-```tsx
-import type { ReactNode } from "react"
-import type { MessageEntry, ToolResult } from "../../types"
-import { useSettings } from "../../settings"
-import { getBlocks } from "./extractResult"
-import { TextBlock } from "./TextBlock"
-import { ThinkingBlock } from "../ThinkingBlock"
-import { ImageBlock } from "../ImageBlock"
-import { Tool } from "./Tool"
-import { narrowToolUse } from "./toolTypes"
-import { ToolGroupRow } from "../ToolGroupRow"
-import { EditDiff } from "../EditDiff"
+export type ClaudeToolGroupTool = {
+  name: string
+  status: "success" | "error"
+  diffs: ToolDiff[]
+  block: ToolUseBlock
+}
 ```
 
-New imports added: `useSettings`, `ToolGroupRow`, `EditDiff`. Removed unused `type` import of `ReactNode` (but keep it since the function uses it).
-
-- [ ] **Step 2: Rewrite the component with grouping logic**
-
-Replace the `EntryView` function body in `src/transcript/claude/EntryView.tsx`:
-
-```tsx
-const EMPTY_RESULT: ToolResult = { content: [], isError: false }
-
-export type ToolRefsById = Map<string, string[]>
-
-type Props = {
-  entry: MessageEntry
+New return type:
+```ts
+export type BuildResult = {
+  items: RenderItem[]
+  models: ModelDisplay[]
   results: Map<string, ToolResult>
-  toolRefsById?: ToolRefsById
+  toolRefsById: ToolRefsById
   skipKeys: Set<string>
 }
+```
 
-export function EntryView({ entry, results, toolRefsById, skipKeys }: Props) {
-  const { viewMode } = useSettings()
-  const role = entry.message?.role ?? entry.type
-  const blocks = getBlocks(entry)
-  if (blocks.length === 0) return null
+New signature:
+```ts
+export function buildTranscriptItems(
+  entries: Entry[],
+  opts: { viewMode: ViewMode },
+): BuildResult
+```
 
-  const nodes: ReactNode[] = []
-  for (let j = 0; j < blocks.length; j++) {
-    const block = blocks[j]
-    if (skipKeys.has(`${entry.uuid}:${j}`)) continue
+- [ ] **Step 2:** Lift the two pre-passes verbatim from `ClaudeCodeTranscript.tsx` into `buildTranscriptItems` (positioned before the existing emit loop):
+  - Pass A: `results` + `toolRefsById` (current lines 30–43).
+  - Pass B: skill body absorption, producing `skipKeys` (current lines 50–76).
 
-    if (block.type === "text") {
-      nodes.push(<TextBlock key={j} text={block.text} role={role} />)
-    } else if (block.type === "thinking") {
-      nodes.push(<ThinkingBlock key={j} text={block.thinking} />)
-    } else if (block.type === "image") {
-      nodes.push(<ImageBlock key={j} source={block.source} role={role} />)
-    } else if (block.type === "tool_use") {
-      // Collect consecutive tool_use blocks
-      const run: typeof block[] = []
-      let k = j
-      while (k < blocks.length && blocks[k].type === "tool_use") {
-        run.push(blocks[k])
-        k++
-      }
+- [ ] **Step 3:** Add diff-extraction helpers:
 
-      if (viewMode === "chat" && run.length >= 2) {
-        // --- Chat mode: grouped row ---
-        const toolNames: string[] = []
-        const diffs: ReactNode[] = []
-        let anyError = false
-
-        for (const tb of run) {
-          const use = narrowToolUse(tb)
-          toolNames.push(use.name)
-          const output = results.get(tb.id) ?? EMPTY_RESULT
-          if (output.isError) anyError = true
-
-          // Extract inline diffs for Edit / MultiEdit
-          if (use.name === "Edit") {
-            const input = use.input
-            if (input.old_string || input.new_string) {
-              diffs.push(
-                <div key={tb.id}>
-                  <div className="tool-group-diff-file">{input.file_path}</div>
-                  <EditDiff
-                    filePath={input.file_path}
-                    oldString={input.old_string || ""}
-                    newString={input.new_string || ""}
-                  />
-                </div>,
-              )
-            }
-          } else if (use.name === "MultiEdit") {
-            const input = use.input
-            for (const [ei, ed] of input.edits.entries()) {
-              if (ed.old_string || ed.new_string) {
-                diffs.push(
-                  <div key={`${tb.id}-${ei}`}>
-                    <div className="tool-group-diff-file">{input.file_path}</div>
-                    <EditDiff
-                      filePath={input.file_path}
-                      oldString={ed.old_string || ""}
-                      newString={ed.new_string || ""}
-                    />
-                  </div>,
-                )
-              }
-            }
-          }
-          // Write tool: spec mentions it but Write doesn't produce a diff
-          // in the same way Edit does (Write has full content, not old/new).
-          // Skip Write for inline diffs — show only Edit/MultiEdit.
-        }
-
-        nodes.push(
-          <ToolGroupRow
-            key={`group-${j}`}
-            toolNames={toolNames}
-            status={anyError ? "error" : "success"}
-            inlineDiffs={diffs.length > 0 ? diffs : undefined}
-          >
-            {run.map((tb) => {
-              const use = narrowToolUse(tb)
-              const output = results.get(tb.id) ?? EMPTY_RESULT
-              return (
-                <Tool
-                  key={tb.id}
-                  use={use}
-                  output={output}
-                  toolRefs={toolRefsById?.get(tb.id)}
-                />
-              )
-            })}
-          </ToolGroupRow>,
-        )
-      } else {
-        // Non-chat mode, or single tool in chat mode: render normally
-        for (const tb of run) {
-          const use = narrowToolUse(tb)
-          const output = results.get(tb.id) ?? EMPTY_RESULT
-          nodes.push(
-            <Tool
-              key={tb.id}
-              use={use}
-              output={output}
-              toolRefs={toolRefsById?.get(tb.id)}
-            />,
-          )
-        }
-      }
-
-      j = k - 1 // skip past the run we just processed
-    }
+```ts
+function extractClaudeDiffs(block: ToolUseBlock): ToolDiff[] {
+  const use = narrowToolUse(block)
+  if (use.name === "Edit") {
+    const inp = use.input
+    if (!inp.old_string && !inp.new_string) return []
+    return [{
+      kind: "edit",
+      filePath: inp.file_path,
+      oldString: inp.old_string ?? "",
+      newString: inp.new_string ?? "",
+    }]
   }
-  return <>{nodes}</>
+  if (use.name === "MultiEdit") {
+    const inp = use.input
+    return inp.edits.map((ed) => ({
+      kind: "edit" as const,
+      filePath: inp.file_path,
+      oldString: ed.old_string ?? "",
+      newString: ed.new_string ?? "",
+    }))
+  }
+  return []
 }
 ```
 
-Key points:
-- The discriminated union (`use.name === "Edit"`) narrows `use.input` to `EditInput` / `MultiEditInput`, so TypeScript knows the exact fields available.
-- `diffs` accumulates `ReactNode` elements — each is a `div` with a filename label and `EditDiff`.
-- Non-Edit/MultiEdit tools (Bash, Read, etc.) contribute no inline diff — their content stays behind the collapse.
-- `j = k - 1` advances the outer loop past the grouped run.
+- [ ] **Step 4:** Add chat-mode group emission in the existing emit loop. After pushing `{ kind: "entry", entry }` for an assistant `MessageEntry`:
 
-- [ ] **Step 3: Verify type-check**
-
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
+```ts
+if (opts.viewMode === "chat" && entry.type === "assistant") {
+  const blocks = getBlocks(entry)
+  let j = 0
+  while (j < blocks.length) {
+    if (skipKeys.has(`${entry.uuid}:${j}`)) { j++; continue }
+    if (blocks[j].type !== "tool_use") { j++; continue }
+    const run: ToolUseBlock[] = []
+    let k = j
+    while (
+      k < blocks.length &&
+      blocks[k].type === "tool_use" &&
+      !skipKeys.has(`${entry.uuid}:${k}`)
+    ) {
+      run.push(blocks[k] as ToolUseBlock)
+      k++
+    }
+    if (run.length >= 2) {
+      // hide these blocks from EntryView
+      for (let m = j; m < k; m++) skipKeys.add(`${entry.uuid}:${m}`)
+      items.push({
+        kind: "tool_group",
+        tools: run.map((b) => {
+          const output = results.get(b.id) ?? EMPTY_RESULT
+          return {
+            name: narrowToolUse(b).name,
+            status: output.isError ? "error" : "success",
+            diffs: extractClaudeDiffs(b),
+            block: b,
+          }
+        }),
+      })
+    }
+    j = k
+  }
+}
 ```
 
-Expected: clean. The discriminated union narrowing on `use.name` is the key TypeScript check — if any `EditInput` / `MultiEditInput` field access is wrong, it'll fail here.
+The `tool_group` is emitted *after* the containing `entry`. `EntryView` honors the augmented `skipKeys` and naturally skips grouped blocks. Single-tool runs (`run.length === 1`) stay in the entry — they render as normal `<Tool>` cards.
 
-- [ ] **Step 4: Run existing tests**
+- [ ] **Step 5:** Create `src/transcript/claude/ClaudeToolGroupRow.tsx`:
 
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun test
+```tsx
+import { ToolGroupRow } from "../grouping"
+import { Tool } from "./Tool"
+import { narrowToolUse } from "./toolTypes"
+import type { ClaudeToolGroupTool } from "../timing"
+import type { ToolResult } from "../../types"
+import type { ToolRefsById } from "./EntryView"
+
+const EMPTY_RESULT: ToolResult = { content: [], isError: false }
+
+type Props = {
+  tools: ClaudeToolGroupTool[]
+  results: Map<string, ToolResult>
+  toolRefsById: ToolRefsById
+}
+
+export function ClaudeToolGroupRow({ tools, results, toolRefsById }: Props) {
+  return (
+    <ToolGroupRow
+      tools={tools.map((t) => ({
+        name: t.name,
+        status: t.status,
+        diffs: t.diffs,
+        data: t.block,
+      }))}
+      renderCard={(block) => {
+        const use = narrowToolUse(block)
+        const output = results.get(block.id) ?? EMPTY_RESULT
+        return <Tool use={use} output={output} toolRefs={toolRefsById.get(block.id)} />
+      }}
+    />
+  )
+}
 ```
 
-Expected: all existing tests pass. The viewMode default is still `"normal"`, so the grouping path is not exercised by existing tests — but existing rendering must not break.
+- [ ] **Step 6:** Slim `ClaudeCodeTranscript.tsx`:
 
-- [ ] **Step 5: Commit**
+```tsx
+import { useSettings } from "../../settings"
+import { buildTranscriptItems } from "../timing"
+import { ClaudeToolGroupRow } from "./ClaudeToolGroupRow"
+// ...
 
-```bash
-git add src/transcript/claude/EntryView.tsx
-git commit -m "feat: group consecutive tool calls in Claude chat view mode"
+export function ClaudeCodeTranscript({ entries }: { entries: Entry[] }) {
+  const { viewMode } = useSettings()
+  const { items, models, results, toolRefsById, skipKeys } = buildTranscriptItems(entries, { viewMode })
+
+  return (
+    <div className="transcript">
+      {items.map((item, idx) => {
+        switch (item.kind) {
+          case "header":
+            return <TranscriptHeader key={`hdr-${idx}`} startTimestamp={item.chatStartIso} models={models} />
+          case "separator":
+            return (
+              <TurnSeparator
+                key={`sep-${item.afterUuid}`}
+                durationMs={item.durationMs}
+                usage={item.usage}
+                verb={pickVerb(item.afterUuid)}
+                model={item.model}
+              />
+            )
+          case "entry":
+            return (
+              <EntryView
+                key={item.entry.uuid ?? `entry-${idx}`}
+                entry={item.entry}
+                results={results}
+                toolRefsById={toolRefsById}
+                skipKeys={skipKeys}
+              />
+            )
+          case "tool_group":
+            return (
+              <ClaudeToolGroupRow
+                key={`grp-${idx}`}
+                tools={item.tools}
+                results={results}
+                toolRefsById={toolRefsById}
+              />
+            )
+        }
+      })}
+    </div>
+  )
+}
 ```
+
+- [ ] **Step 7:** Type-check + tests.
+  ```bash
+  cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit && bun test
+  ```
+
+- [ ] **Step 8:** Commit.
+  ```bash
+  git add src/transcript/timing.ts src/transcript/claude/ClaudeCodeTranscript.tsx src/transcript/claude/ClaudeToolGroupRow.tsx
+  git commit -m "feat(claude): pure preprocessor with chat-mode tool grouping"
+  ```
 
 ---
 
-### Task 5: Grouping logic — Codex CodexTranscript
+## Task 5 — Codex: new `buildCodexItems.ts`
 
-**Files:**
-- Modify: `src/transcript/codex/CodexTranscript.tsx`
+**Files:** `src/transcript/codex/buildCodexItems.ts` (new), `src/transcript/codex/CodexTranscript.tsx`, `src/transcript/codex/CodexToolGroupRow.tsx` (new)
 
-For Codex, consecutive `function_call` or `custom_tool_call` entries in the same turn get grouped. The current `.map` loop over entries becomes a `for` loop with lookahead. For `apply_patch` in a group, the patch diff is extracted and shown inline.
+- [ ] **Step 1:** Create `buildCodexItems.ts` with types:
 
-- [ ] **Step 1: Add imports**
-
-In `src/transcript/codex/CodexTranscript.tsx`, add two imports at the top:
-
-```tsx
-import { useSettings } from "../../settings"
-import { ToolGroupRow } from "../ToolGroupRow"
-```
-
-Add them after the existing React import line:
-
-```tsx
-import React from "react"
-import { useSettings } from "../../settings"
+```ts
 import type { CodexEntry, CodexResponseItem } from "./types"
 import type { ToolResult } from "../../types"
-import { EntryView } from "./EntryView"
-import { CompactedMarker } from "./CompactedMarker"
-import { TurnSeparator } from "../TurnSeparator"
-import { TranscriptHeader } from "../TranscriptHeader"
-import { extractCodexTurnUsage } from "../usage"
 import type { TurnUsage } from "../usage"
-import { buildCodexModelLabels } from "./modelLabeling"
-import { tryParseAgentSpawnOutput } from "./Tool"
-import { ToolGroupRow } from "../ToolGroupRow"
+import type { ModelDisplay } from "../model"
+import type { ViewMode } from "../../settings"
+import type { ToolDiff } from "../grouping"
+
+export type CodexToolGroupTool = {
+  name: string
+  status: "success" | "error"
+  diffs: ToolDiff[]
+  entry: CodexResponseItem
+}
+
+export type RenderItem =
+  | { kind: "header"; chatStartIso: string }
+  | { kind: "entry"; entry: CodexResponseItem }
+  | { kind: "compacted"; index: number }
+  | { kind: "tool_group"; tools: CodexToolGroupTool[] }
+  | { kind: "separator"; durationMs: number; usage: TurnUsage | null; model: ModelDisplay | null }
+
+export type BuildCodexResult = {
+  items: RenderItem[]
+  results: Map<string, ToolResult>
+  agentNicknames: Map<string, string>
+  models: ModelDisplay[]
+}
+
+export function buildCodexItems(
+  entries: CodexEntry[],
+  opts: { viewMode: ViewMode },
+): BuildCodexResult { /* ... */ }
 ```
 
-Also add imports needed for apply_patch inline diffs:
+- [ ] **Step 2:** Lift existing pre-passes verbatim from `CodexTranscript.tsx`:
+  - `deriveIsError` helper.
+  - `results` map.
+  - `agentNicknames` map.
+  - `startTimestamp` discovery.
+  - `buildCodexTurnDurations` (already a top-level function — keep here, exported for testing).
+  - `buildCodexTurnUsage`.
+  - `modelLabels` via `buildCodexModelLabels`.
 
-```tsx
+- [ ] **Step 3:** Add the patch diff extractor:
+
+```ts
 import { parseV4A } from "./v4a"
-import { PatchDiff } from "@pierre/diffs/react"
-```
 
-- [ ] **Step 2: Add helper to check if an entry is a tool call**
-
-Add this helper function before the `CodexTranscript` component:
-
-```tsx
-function isToolEntry(entry: CodexEntry): entry is CodexResponseItem & {
-  payload: { type: "function_call" } | { type: "custom_tool_call" }
-} {
-  if (entry.type !== "response_item") return false
-  const p = entry.payload
-  return p.type === "function_call" || p.type === "custom_tool_call"
+function extractCodexDiffs(re: CodexResponseItem): ToolDiff[] {
+  const p = re.payload
+  if (p.type !== "custom_tool_call" || p.name !== "apply_patch" || !p.input) return []
+  const parsed = parseV4A(p.input)
+  if ("error" in parsed) return []
+  // V4A returns op of "add" | "update" | "delete". Delete files have no
+  // unifiedDiff body, so filter them from the inline peek for v1.
+  return parsed.files.flatMap((f) => {
+    if (f.op === "delete") return []
+    return [{
+      kind: "patch" as const,
+      filePath: f.path,
+      patch: f.unifiedDiff,
+      op: f.op,
+    }]
+  })
 }
 ```
 
-This type guard narrows entries so TypeScript knows they're `CodexResponseItem` with a tool payload.
+Confirmed against `src/transcript/codex/v4a.ts:1-4`: union is
+`{ op: "add"; path; unifiedDiff } | { op: "update"; path; movedTo?; unifiedDiff } | { op: "delete"; path }`.
+Delete files are filtered for v1 (no diff body to render). The `movedTo`
+field on update files is ignored for the inline peek (it would just rename
+in the badge — left as future polish).
 
-- [ ] **Step 3: Rewrite the entries rendering loop**
+- [ ] **Step 4:** Emit-loop with grouping:
 
-Replace the existing render block (lines 150-179 in the current file — the `return` statement and its `.map` call) with a `for` loop that groups consecutive tool entries:
+```ts
+const items: RenderItem[] = []
+if (startTimestamp) items.push({ kind: "header", chatStartIso: startTimestamp })
 
-```tsx
-const { viewMode } = useSettings()
+const isToolPayload = (e: CodexEntry): boolean =>
+  e.type === "response_item" &&
+  (e.payload.type === "function_call" || e.payload.type === "custom_tool_call")
 
-// Build rendering nodes with grouping for chat mode
-const renderingNodes: React.ReactNode[] = []
-
-for (let i = 0; i < entries.length; i++) {
+let i = 0
+while (i < entries.length) {
   const entry = entries[i]
 
-  if (isToolEntry(entry) && viewMode === "chat") {
-    // Collect consecutive tool entries
+  if (opts.viewMode === "chat" && isToolPayload(entry)) {
     const run: CodexResponseItem[] = []
     let k = i
-    while (k < entries.length && isToolEntry(entries[k])) {
+    while (k < entries.length && isToolPayload(entries[k])) {
       run.push(entries[k] as CodexResponseItem)
       k++
     }
-
     if (run.length >= 2) {
-      // --- Chat mode: grouped row ---
-      const toolNames = run.map((e) => e.payload.name)
-      const anyError = run.some((e) => {
-        const r = results.get(e.payload.call_id)
-        return r?.isError === true
-      })
-
-      // Inline diffs for apply_patch
-      const diffs: React.ReactNode[] = []
-      for (const re of run) {
-        const p = re.payload
-        if (p.type === "custom_tool_call" && p.name === "apply_patch") {
-          const parsed = parseV4A(p.input)
-          if (!("error" in parsed)) {
-            for (const [fi, f] of parsed.files.entries()) {
-              if (f.op === "delete") continue // no diff to show
-              diffs.push(
-                <div key={`${p.call_id}-${fi}`}>
-                  <div className="tool-group-diff-file">{f.path}</div>
-                  <PatchDiff
-                    patch={f.unifiedDiff}
-                    options={{
-                      diffStyle: "unified",
-                      diffIndicators: "classic",
-                      disableFileHeader: true,
-                      disableLineNumbers: true,
-                    }}
-                    disableWorkerPool
-                  />
-                </div>,
-              )
-            }
+      items.push({
+        kind: "tool_group",
+        tools: run.map((re) => {
+          const p = re.payload as { name: string; call_id: string }
+          const result = results.get(p.call_id)
+          return {
+            name: p.name,
+            status: result?.isError ? "error" : "success",
+            diffs: extractCodexDiffs(re),
+            entry: re,
           }
-        }
+        }),
+      })
+      const lastIdx = i + run.length - 1
+      const ms = durations.get(lastIdx)
+      if (ms != null) {
+        items.push({
+          kind: "separator",
+          durationMs: ms,
+          usage: usages.get(lastIdx) ?? null,
+          model: modelLabels.byIndex.get(lastIdx) ?? null,
+        })
       }
-
-      renderingNodes.push(
-        <React.Fragment key={`row-${i}`}>
-          <ToolGroupRow
-            toolNames={toolNames}
-            status={anyError ? "error" : "success"}
-            inlineDiffs={diffs.length > 0 ? diffs : undefined}
-          >
-            {run.map((re, ri) => (
-              <EntryView
-                key={ri}
-                entry={re}
-                results={results}
-                agentNicknames={agentNicknames}
-              />
-            ))}
-          </ToolGroupRow>
-          {/* Turn separator if this group's last entry ends a turn */}
-          {durations.get(i + run.length - 1) != null && (
-            <TurnSeparator
-              durationMs={durations.get(i + run.length - 1)!}
-              usage={usages.get(i + run.length - 1) ?? null}
-              model={modelLabels.byIndex.get(i + run.length - 1) ?? null}
-            />
-          )}
-        </React.Fragment>,
-      )
-
-      i = k - 1
+      i = k
       continue
     }
-    // Fall through: single tool gets rendered normally below
   }
 
-  // Normal rendering (unchanged logic)
-  let node: React.ReactNode = null
-  if (entry.type === "session_meta") node = null
-  else if (entry.type === "turn_context") node = null
-  else if (entry.type === "compacted")
-    node = <CompactedMarker key={`comp-${i}`} />
-  else if (entry.type === "event_msg") node = null
-  else
-    node = (
-      <EntryView
-        key={i}
-        entry={entry}
-        results={results}
-        agentNicknames={agentNicknames}
-      />
-    )
+  // Non-grouped path — preserve existing per-entry behavior.
+  if (entry.type === "session_meta" || entry.type === "turn_context" || entry.type === "event_msg") {
+    /* skip — these contributed `node = null` in the old loop */
+  } else if (entry.type === "compacted") {
+    items.push({ kind: "compacted", index: i })
+  } else {
+    items.push({ kind: "entry", entry: entry as CodexResponseItem })
+  }
 
   const ms = durations.get(i)
-  renderingNodes.push(
-    <React.Fragment key={`row-${i}`}>
-      {node}
-      {ms != null && (
-        <TurnSeparator
-          durationMs={ms}
-          usage={usages.get(i) ?? null}
-          model={modelLabels.byIndex.get(i) ?? null}
-        />
-      )}
-    </React.Fragment>,
-  )
+  if (ms != null) {
+    items.push({
+      kind: "separator",
+      durationMs: ms,
+      usage: usages.get(i) ?? null,
+      model: modelLabels.byIndex.get(i) ?? null,
+    })
+  }
+  i++
 }
-
-return (
-  <div className="transcript">
-    {startTimestamp && (
-      <TranscriptHeader startTimestamp={startTimestamp} models={modelLabels.models} />
-    )}
-    {renderingNodes}
-  </div>
-)
 ```
 
-Key points:
-- The `isToolEntry` type guard ensures entries in the run are `CodexResponseItem` (so they can be passed to `EntryView`).
-- `i = k - 1` advances past the grouped run.
-- Turn separators use `i + run.length - 1` (the last entry in the group) to check the durations map.
-- For apply_patch inline diffs, `parseV4A` extracts per-file unified diffs, and `PatchDiff` renders them — same rendering as ApplyPatch's preview.
-- Single tool calls in chat mode fall through to normal rendering (no grouping).
-
-- [ ] **Step 4: Verify type-check**
-
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
-```
-
-Expected: clean. The `PatchDiff` import from `@pierre/diffs/react` and `parseV4A` from `./v4a` should resolve correctly (both are already used in `ApplyPatch.tsx`).
-
-- [ ] **Step 5: Run existing tests**
-
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun test
-```
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/transcript/codex/CodexTranscript.tsx
-git commit -m "feat: group consecutive tool calls in Codex chat view mode"
-```
-
----
-
-### Task 6: Write tests
-
-**Files:**
-- Create: `src/transcript/ToolGroupRow.test.tsx`
-
-- [ ] **Step 1: Write ToolGroupRow tests**
+- [ ] **Step 5:** Create `CodexToolGroupRow.tsx`:
 
 ```tsx
-// src/transcript/ToolGroupRow.test.tsx
-import { describe, it, expect } from "bun:test"
-import { renderToString } from "react-dom/server"
-import { ToolGroupRow } from "./ToolGroupRow"
+import { ToolGroupRow } from "../grouping"
+import { EntryView } from "./EntryView"
+import type { CodexToolGroupTool } from "./buildCodexItems"
+import type { ToolResult } from "../../types"
+import type { CodexResponseItem } from "./types"
 
-describe("ToolGroupRow", () => {
-  it("renders the summary line with tool names", () => {
-    const html = renderToString(
-      <ToolGroupRow toolNames={["Read", "Edit", "Bash"]} status="success">
-        <div>expanded content</div>
-      </ToolGroupRow>,
-    )
-    expect(html).toContain("3 tool calls")
-    expect(html).toContain("Read · Edit · Bash")
-  })
+type Props = {
+  tools: CodexToolGroupTool[]
+  results: Map<string, ToolResult>
+  agentNicknames: Map<string, string>
+}
 
-  it("renders singular label for one tool", () => {
-    const html = renderToString(
-      <ToolGroupRow toolNames={["Edit"]} status="success">
-        <div>expanded content</div>
-      </ToolGroupRow>,
-    )
-    expect(html).toContain("1 tool call")
-    expect(html).toContain("Edit")
-    expect(html).not.toContain("·")
-  })
-
-  it("renders inline diffs when provided", () => {
-    const diffs = [<div key="1" className="test-diff">diff content</div>]
-    const html = renderToString(
-      <ToolGroupRow
-        toolNames={["Edit"]}
-        status="success"
-        inlineDiffs={diffs}
-      >
-        <div>expanded content</div>
-      </ToolGroupRow>,
-    )
-    expect(html).toContain("diff content")
-    expect(html).toContain("tool-group-diffs")
-  })
-
-  it("does not render expanded content when collapsed", () => {
-    const html = renderToString(
-      <ToolGroupRow toolNames={["Read", "Bash"]} status="success">
-        <div className="expanded-content">expanded stuff</div>
-      </ToolGroupRow>,
-    )
-    // SSR always renders collapsed state (useState(false))
-    expect(html).not.toContain("expanded stuff")
-  })
-
-  it("applies error status class", () => {
-    const html = renderToString(
-      <ToolGroupRow toolNames={["Bash"]} status="error">
-        <div>content</div>
-      </ToolGroupRow>,
-    )
-    expect(html).toContain("tool-card-error")
-  })
-
-  it("applies success status class", () => {
-    const html = renderToString(
-      <ToolGroupRow toolNames={["Bash"]} status="success">
-        <div>content</div>
-      </ToolGroupRow>,
-    )
-    expect(html).toContain("tool-card-success")
-  })
-
-  it("renders correct label with different counts", () => {
-    const two = renderToString(
-      <ToolGroupRow toolNames={["A", "B"]} status="success">
-        <div>x</div>
-      </ToolGroupRow>,
-    )
-    expect(two).toContain("2 tool calls")
-
-    const five = renderToString(
-      <ToolGroupRow toolNames={["A", "B", "C", "D", "E"]} status="success">
-        <div>x</div>
-      </ToolGroupRow>,
-    )
-    expect(five).toContain("5 tool calls")
-  })
-})
+export function CodexToolGroupRow({ tools, results, agentNicknames }: Props) {
+  return (
+    <ToolGroupRow
+      tools={tools.map((t) => ({
+        name: t.name,
+        status: t.status,
+        diffs: t.diffs,
+        data: t.entry,
+      }))}
+      renderCard={(entry: CodexResponseItem) => (
+        <EntryView entry={entry} results={results} agentNicknames={agentNicknames} />
+      )}
+    />
+  )
+}
 ```
 
-- [ ] **Step 2: Run the new tests**
+- [ ] **Step 6:** Slim `CodexTranscript.tsx`:
 
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun test src/transcript/ToolGroupRow.test.tsx
+```tsx
+import { useSettings } from "../../settings"
+import { buildCodexItems } from "./buildCodexItems"
+import { CodexToolGroupRow } from "./CodexToolGroupRow"
+
+export function CodexTranscript({ entries }: { entries: CodexEntry[] }) {
+  const { viewMode } = useSettings()
+  const { items, results, agentNicknames, models } = buildCodexItems(entries, { viewMode })
+
+  return (
+    <div className="transcript">
+      {items.map((it, idx) => {
+        switch (it.kind) {
+          case "header":
+            return <TranscriptHeader key={`hdr-${idx}`} startTimestamp={it.chatStartIso} models={models} />
+          case "compacted":
+            return <CompactedMarker key={`comp-${it.index}`} />
+          case "entry":
+            return <EntryView key={`e-${idx}`} entry={it.entry} results={results} agentNicknames={agentNicknames} />
+          case "tool_group":
+            return <CodexToolGroupRow key={`g-${idx}`} tools={it.tools} results={results} agentNicknames={agentNicknames} />
+          case "separator":
+            return <TurnSeparator key={`sep-${idx}`} durationMs={it.durationMs} usage={it.usage} model={it.model} />
+        }
+      })}
+    </div>
+  )
+}
 ```
 
-Expected: all 7 tests pass.
+- [ ] **Step 7:** Type-check + tests.
 
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/transcript/ToolGroupRow.test.tsx
-git commit -m "test: add ToolGroupRow unit tests"
-```
+- [ ] **Step 8:** Commit.
+  ```bash
+  git add src/transcript/codex/buildCodexItems.ts src/transcript/codex/CodexTranscript.tsx src/transcript/codex/CodexToolGroupRow.tsx
+  git commit -m "feat(codex): pure preprocessor with chat-mode tool grouping"
+  ```
 
 ---
 
-### Task 7: Verification — type-check, tests, agent-browser
+## Task 6 — Pi: structured `edit` rendering + grouping
 
-**Files:** none (verification only)
+**Files:** `src/transcript/pi/PiEditTool.tsx` (new), `src/transcript/pi/Tool.tsx`, `src/transcript/pi/buildPiItems.ts` (new), `src/transcript/pi/PiTranscript.tsx`, `src/transcript/pi/EntryView.tsx`, `src/transcript/pi/PiToolGroupRow.tsx` (new)
 
-- [ ] **Step 1: Full type-check**
+User authorized fixing pi's Normal mode for `edit` while we're at it. New `PiEditTool` uses `EditDiff` per `arguments.edits[]` entry; the chat-mode group reuses the same diff data via `extractPiDiffs`. Pi `write` keeps existing `GenericFileTool` rendering.
 
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit
+### 6a — PiEditTool
+
+- [ ] **Step 1:** Create `src/transcript/pi/PiEditTool.tsx`:
+
+```tsx
+import type { ToolResult } from "../../types"
+import { EditDiff } from "../EditDiff"
+import { ToolCard } from "../ToolCard"
+import { Header, ToolResultContent, ToolTitle, hasOutput } from "../shared"
+import type { PiToolCallContent } from "./types"
+
+type PiEdit = { oldText: string; newText: string }
+
+function shortPath(path: string): string {
+  const parts = path.split("/").filter(Boolean)
+  return parts.at(-1) ?? path
+}
+
+export function parsePiEdits(args: Record<string, unknown>): { path: string; edits: PiEdit[] } | null {
+  const path = typeof args.path === "string" ? args.path : null
+  const rawEdits = Array.isArray(args.edits) ? args.edits : null
+  if (!path || !rawEdits) return null
+  const edits: PiEdit[] = []
+  for (const e of rawEdits) {
+    if (e && typeof e === "object") {
+      const o = e as Record<string, unknown>
+      const oldText = typeof o.oldText === "string" ? o.oldText : ""
+      const newText = typeof o.newText === "string" ? o.newText : ""
+      edits.push({ oldText, newText })
+    }
+  }
+  return { path, edits }
+}
+
+export function PiEditTool({ call, output }: { call: PiToolCallContent; output: ToolResult }) {
+  const parsed = parsePiEdits(call.arguments)
+  if (!parsed) {
+    return (
+      <ToolCard.Root hasContent={hasOutput(output)} status={output.isError ? "error" : "success"}>
+        <ToolCard.Trigger>
+          <Header>
+            <ToolTitle name="edit" />
+          </Header>
+        </ToolCard.Trigger>
+        <ToolCard.Content>
+          <ToolResultContent output={output} />
+        </ToolCard.Content>
+      </ToolCard.Root>
+    )
+  }
+
+  const { path, edits } = parsed
+  return (
+    <ToolCard.Root hasContent status={output.isError ? "error" : "success"}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name="edit" detail={shortPath(path)} />
+        </Header>
+      </ToolCard.Trigger>
+      <ToolCard.Preview>
+        {edits.map((ed, i) => (
+          <EditDiff key={i} filePath={path} oldString={ed.oldText} newString={ed.newText} />
+        ))}
+      </ToolCard.Preview>
+      <ToolCard.Content>
+        {edits.map((ed, i) => (
+          <EditDiff key={i} filePath={path} oldString={ed.oldText} newString={ed.newText} />
+        ))}
+        {hasOutput(output) && <ToolResultContent output={output} />}
+      </ToolCard.Content>
+    </ToolCard.Root>
+  )
+}
 ```
 
-Expected: clean, zero errors.
+- [ ] **Step 2:** Route `edit` in `src/transcript/pi/Tool.tsx` `PiTool` switch (~line 268):
 
-- [ ] **Step 2: Full test suite**
-
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun test
+```ts
+case "edit":
+  return <PiEditTool call={call} output={output} />
+case "write":
+case "grep":
+case "find":
+case "ls":
+  return <GenericFileTool call={call} output={output} />
 ```
 
-Expected: all existing tests + new ToolGroupRow tests pass.
+Add `import { PiEditTool } from "./PiEditTool"`.
 
-- [ ] **Step 3: Start dev server and verify with agent-browser**
+- [ ] **Step 3:** Add `src/transcript/pi/PiEditTool.test.tsx`:
+  - `parsePiEdits` returns `null` when `path` missing.
+  - `parsePiEdits` returns `null` when `edits` missing.
+  - `parsePiEdits` returns parsed shape on well-formed input.
+  - `PiEditTool` renders the file basename in title.
 
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun dev &
+- [ ] **Step 4:** Type-check + tests.
+
+- [ ] **Step 5:** Commit.
+  ```bash
+  git add src/transcript/pi/PiEditTool.tsx src/transcript/pi/PiEditTool.test.tsx src/transcript/pi/Tool.tsx
+  git commit -m "feat(pi): structured edit rendering with EditDiff"
+  ```
+
+### 6b — buildPiItems + grouping
+
+- [ ] **Step 1:** Create `src/transcript/pi/buildPiItems.ts` with types:
+
+```ts
+import type { ToolResult } from "../../types"
+import type { ModelDisplay } from "../model"
+import type { ViewMode } from "../../settings"
+import type { ToolDiff } from "../grouping"
+import type { PiContent, PiMessageEntry, PiParsedSession, PiToolCallContent, PiTreeEntry } from "./types"
+
+export type PiResultWithDetails = ToolResult & { details?: unknown }
+
+export type PiToolGroupTool = {
+  name: string
+  status: "success" | "error"
+  diffs: ToolDiff[]
+  call: PiToolCallContent
+}
+
+export type RenderItem =
+  | { kind: "header"; chatStartIso: string; models: ModelDisplay[] }
+  | { kind: "entry"; entry: PiTreeEntry }
+  | { kind: "tool_group"; tools: PiToolGroupTool[] }
+  | { kind: "footnote"; hiddenBranchEntryCount: number; orphanedEntryCount: number }
+
+export type BuildPiResult = {
+  items: RenderItem[]
+  results: Map<string, PiResultWithDetails>
+  models: ModelDisplay[]
+  skipBlocks: Map<string, Set<number>>
+}
+
+export function buildPiItems(session: PiParsedSession, opts: { viewMode: ViewMode }): BuildPiResult { /* ... */ }
 ```
 
-Wait for the server to start, then use the `agent-browser` skill to verify:
+- [ ] **Step 2:** Lift pre-passes:
+  - Results map (current `PiTranscript.tsx` lines 41–47) — note that `extractPiToolResult` populates `isError` correctly.
+  - `buildPiHeaderModels` — move whole function from `PiTranscript.tsx` into `buildPiItems.ts`; export for testing.
 
-1. **Load a Claude fixture with multiple consecutive tools** — drag in a `.jsonl` file that has an assistant message with 2+ `tool_use` blocks in a row. Switch to Chat mode. Verify the DOM shows:
-   - A `.tool-group` element containing a `.tool-row.clickable` button
-   - Summary text: `"N tool calls — name · name · name"`
-   - The individual tool cards are NOT rendered (collapsed state)
-   - If an Edit is in the group, `.tool-group-diffs` contains the filename and diff content
+- [ ] **Step 3:** Add diff extractor:
 
-2. **Click the group row** — verify the DOM now shows individual tool cards inside `.tool-group-expanded`.
+```ts
+import { parsePiEdits } from "./PiEditTool"
 
-3. **Load a Codex fixture with consecutive function_call entries** — verify the same grouped behavior.
+function extractPiDiffs(call: PiToolCallContent): ToolDiff[] {
+  if (call.name !== "edit") return []
+  const parsed = parsePiEdits(call.arguments)
+  if (!parsed) return []
+  return parsed.edits.map((ed) => ({
+    kind: "edit" as const,
+    filePath: parsed.path,
+    oldString: ed.oldText,
+    newString: ed.newText,
+  }))
+}
+```
 
-4. **Toggle between Normal/Compact/Chat** — verify Normal and Compact modes are unchanged.
+- [ ] **Step 4:** Emit-loop with grouping:
 
-5. **Check console** — no errors or warnings.
+```ts
+const items: RenderItem[] = []
+const skipBlocks = new Map<string, Set<number>>()
 
-Fixture files to use:
-- Claude: `src/__fixtures__/` or `~/.claude/projects/<project>/*.jsonl`
-- Codex: `src/transcript/__fixtures__/` or `~/.codex/sessions/**/rollout-*.jsonl`
+if (session.header) {
+  items.push({ kind: "header", chatStartIso: session.header.timestamp, models })
+}
 
-If no fixture has 2+ consecutive tool calls, create a temporary one by concatenating tool_use lines from an existing fixture.
+for (const entry of session.activeEntries) {
+  if (entry.type !== "message") {
+    items.push({ kind: "entry", entry })
+    continue
+  }
+  const msg = entry.message
+  items.push({ kind: "entry", entry })
 
-- [ ] **Step 4: Commit any fixture or test adjustments**
+  if (opts.viewMode === "chat" && msg.role === "assistant" && Array.isArray(msg.content)) {
+    const blocks = msg.content
+    const skip = new Set<number>()
+    let j = 0
+    while (j < blocks.length) {
+      if (blocks[j].type !== "toolCall") { j++; continue }
+      const run: PiToolCallContent[] = []
+      let k = j
+      while (k < blocks.length && blocks[k].type === "toolCall") {
+        run.push(blocks[k] as PiToolCallContent)
+        k++
+      }
+      if (run.length >= 2) {
+        for (let m = j; m < k; m++) skip.add(m)
+        items.push({
+          kind: "tool_group",
+          tools: run.map((b) => {
+            const result = results.get(b.id)
+            return {
+              name: b.name,
+              status: result?.isError ? "error" : "success",
+              diffs: extractPiDiffs(b),
+              call: b,
+            }
+          }),
+        })
+      }
+      j = k
+    }
+    if (skip.size > 0) skipBlocks.set(entry.id, skip)
+  }
+}
 
-Only if tests or verification reveal issues that need fixing.
+if (session.hiddenBranchEntryCount > 0 || session.orphanedEntryCount > 0) {
+  items.push({
+    kind: "footnote",
+    hiddenBranchEntryCount: session.hiddenBranchEntryCount,
+    orphanedEntryCount: session.orphanedEntryCount,
+  })
+}
+
+return { items, results, models, skipBlocks }
+```
+
+- [ ] **Step 5:** Update `PiEntryView` to honor `skipBlocks`:
+  - Add `skipBlocks?: Map<string, Set<number>>` prop on `PiEntryView`.
+  - Thread `skip = skipBlocks?.get(entry.id)` through `MessageEntryView`.
+  - In `renderMessageContent` for assistant content (the `PiContent[]` branch), skip indices in `skip`.
+
+- [ ] **Step 6:** Create `src/transcript/pi/PiToolGroupRow.tsx`:
+
+```tsx
+import { ToolGroupRow } from "../grouping"
+import { PiTool } from "./Tool"
+import type { PiToolGroupTool, PiResultWithDetails } from "./buildPiItems"
+import type { PiToolCallContent } from "./types"
+
+type Props = {
+  tools: PiToolGroupTool[]
+  results: Map<string, PiResultWithDetails>
+}
+
+export function PiToolGroupRow({ tools, results }: Props) {
+  return (
+    <ToolGroupRow
+      tools={tools.map((t) => ({
+        name: t.name,
+        status: t.status,
+        diffs: t.diffs,
+        data: t.call,
+      }))}
+      renderCard={(call: PiToolCallContent) => {
+        const result = results.get(call.id)
+        return <PiTool call={call} output={result ?? { content: [], isError: false }} details={result?.details} />
+      }}
+    />
+  )
+}
+```
+
+- [ ] **Step 7:** Slim `PiTranscript.tsx`:
+
+```tsx
+import { useSettings } from "../../settings"
+import { buildPiItems } from "./buildPiItems"
+import { PiToolGroupRow } from "./PiToolGroupRow"
+
+export function PiTranscript({ session }: { session: PiParsedSession }) {
+  const { viewMode } = useSettings()
+  const { items, results, models, skipBlocks } = buildPiItems(session, { viewMode })
+
+  return (
+    <div className="transcript">
+      {items.map((it, idx) => {
+        switch (it.kind) {
+          case "header":
+            return <TranscriptHeader key={`hdr-${idx}`} startTimestamp={it.chatStartIso} models={models} />
+          case "entry":
+            return <PiEntryView key={`e-${idx}`} entry={it.entry} results={results} skipBlocks={skipBlocks} />
+          case "tool_group":
+            return <PiToolGroupRow key={`g-${idx}`} tools={it.tools} results={results} />
+          case "footnote":
+            return (
+              <div key={`fn-${idx}`} className="pi-branch-footnote">
+                {it.hiddenBranchEntryCount > 0 && (
+                  <span>{it.hiddenBranchEntryCount} entries on other branches are not shown.</span>
+                )}
+                {it.orphanedEntryCount > 0 && (
+                  <span>{it.orphanedEntryCount} missing parent link encountered.</span>
+                )}
+              </div>
+            )
+        }
+      })}
+    </div>
+  )
+}
+```
+
+- [ ] **Step 8:** Type-check + tests.
+
+- [ ] **Step 9:** Commit.
+  ```bash
+  git add src/transcript/pi/buildPiItems.ts src/transcript/pi/PiTranscript.tsx src/transcript/pi/EntryView.tsx src/transcript/pi/PiToolGroupRow.tsx
+  git commit -m "feat(pi): pure preprocessor with chat-mode tool grouping"
+  ```
 
 ---
 
-### Task 8: Final cleanup
+## Task 7 — Tests
 
-**Files:** none (verification only)
+**Files:** `src/transcript/grouping.test.ts` (new), `src/transcript/grouping.test.tsx` (new), `src/transcript/timing.test.ts` (modify), `src/transcript/codex/buildCodexItems.test.ts` (new), `src/transcript/pi/buildPiItems.test.ts` (new)
 
-- [ ] **Step 1: Run full test suite one final time**
+- [ ] **Step 1: Shared helper tests** — `src/transcript/grouping.test.tsx`:
+  - `aggregateStatus`: pure success / pure error / mixed cases.
+  - `renderToolDiff` for `kind: "edit"` produces an `EditDiff`-shaped output (assert characteristic class names in renderToString).
+  - `renderToolDiff` for `kind: "patch"` produces a `PatchDiff`-shaped output.
+  - `ToolGroupRow`:
+    - Renders summary label + pluralization + name list.
+    - Renders inline diffs (flatten of `tools[].diffs`) when collapsed.
+    - Hides inline diffs and renders `renderCard(data)` per tool when expanded (assert `data` flow via a recognizable `renderCard` output).
+    - Aggregate status: success / error / mixed → correct CSS class.
 
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun test
-```
+- [ ] **Step 2: Claude grouping tests** in `src/transcript/timing.test.ts`. Build minimal `Entry[]` fixtures inline (one assistant message with N tool_use blocks; lift the existing `EMPTY_RESULT`-style helpers if available). Assertions:
+  - 3 consecutive `tool_use` → exactly one `tool_group` item with `tools.length === 3`; `tools[0].block === blocks[0]`.
+  - `[text, tool_use, text, tool_use]` → no `tool_group`.
+  - `[tool_use, tool_use, text, tool_use, tool_use]` → two `tool_group` items.
+  - viewMode `"normal"` on the same input → zero `tool_group` items.
+  - Skill body absorption still hides the user-text block: `skipKeys` retains both prior absorptions and the grouped tool-use keys.
+  - `Edit` block in a chat-mode group → `tools[i].diffs[0]` matches `{ kind: "edit", filePath, oldString, newString }`.
+  - `MultiEdit` with 2 edits → `tools[i].diffs.length === 2`.
 
-- [ ] **Step 2: Confirm no uncommitted changes remain**
+- [ ] **Step 3: Codex grouping tests** in `src/transcript/codex/buildCodexItems.test.ts`:
+  - Fabricate `CodexEntry[]` with consecutive `function_call`/`custom_tool_call` items → one `tool_group` with correct `tools.length`.
+  - `apply_patch` (multi-file) → `tools[i].diffs.length === N` with each `kind: "patch"` and correct `filePath`.
+  - Single tool entries in chat mode → render as `entry`, not `tool_group`.
+  - Turn separator emitted at the index of the run's last entry when `durations` has it.
+  - viewMode `"normal"` → zero `tool_group` items.
 
-```bash
-cd /Users/andrew/Developer/Prefix/jsonl-fyi && git status
-```
+- [ ] **Step 4: Pi grouping tests** in `src/transcript/pi/buildPiItems.test.ts`:
+  - Fabricate `PiParsedSession` with assistant message containing 2+ `toolCall` blocks (mix of `edit`, `bash`, `read`).
+  - `tool_group` tools length matches.
+  - `edit` entry has `diffs.length === edits.length` with correct `filePath`/`oldString`/`newString`.
+  - `skipBlocks.get(entry.id)` contains exactly the indices the entry must skip.
+  - viewMode `"normal"` → zero `tool_group`.
 
-Expected: clean working tree, all changes committed.
+- [ ] **Step 5:** Run all tests.
+  ```bash
+  cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun test
+  ```
 
-- [ ] **Step 3: Verify dev server is running**
-
-Confirm `bun dev` is still running on the appropriate port so Andrew can do final manual spot-check.
+- [ ] **Step 6:** Commit.
+  ```bash
+  git add src/transcript/grouping.test.tsx src/transcript/timing.test.ts src/transcript/codex/buildCodexItems.test.ts src/transcript/pi/buildPiItems.test.ts
+  git commit -m "test: cover chat-mode grouping across formats"
+  ```
 
 ---
 
-## Out of scope (from spec)
+## Task 8 — Verification (agent-browser)
 
-- Chat-bubble / assistant layout changes — not implementing
-- Synthesizing natural-language summaries from tool results
-- Per-tool-card selective collapse in Chat mode (the group collapses as a unit)
-- Write tool inline diff (Write has full content, not old/new — Edit/MultiEdit handle diffs)
+- [ ] **Step 1:** Confirm dev server is running on port 3000 (per CLAUDE.md memory: track PID, don't pile up servers).
+
+- [ ] **Step 2: Regression — Claude & Codex Normal/Compact**
+
+For each format and the baseline fixture:
+1. Drag in fixture, set Normal mode.
+2. Capture `document.querySelector('.transcript').outerHTML`.
+3. Diff against `/tmp/baseline-{format}-normal.html`. Must be byte-identical.
+4. Repeat for Compact.
+
+If any DOM diff appears, stop and investigate.
+
+- [ ] **Step 3: Regression — Pi Normal/Compact (with documented exception)**
+
+Diff against pi baselines. Differences allowed only inside elements rendering pi `edit` calls (now `PiEditTool`/`EditDiff`). Document the change in PR description.
+
+- [ ] **Step 4: Chat mode — Claude**
+  - 2+ consecutive `tool_use` → one `.tool-group`.
+  - Summary text matches `N tool calls — name · name · ...`.
+  - `.tool-group-diffs` present iff the run contains an Edit/MultiEdit; `.tool-group-diff-file` shows path; `EditDiff` element below.
+  - Individual tool cards from the run are NOT in the DOM (collapsed).
+  - Click `.tool-group-row` → `.tool-group-expanded` contains individual cards; `.tool-group-diffs` hides.
+  - Switch to Normal: group disappears, individual cards reappear.
+  - Single-tool message in chat mode → renders as a normal `ToolCard` (no `.tool-group` wrapper).
+
+- [ ] **Step 5: Chat mode — Codex**
+  - `.tool-group` exists for runs.
+  - `apply_patch` (multi-file) → multiple `EditDiff`/`PatchDiff` rows in `.tool-group-diffs`, each with its own filename badge.
+  - Click expand → individual entries appear as cards.
+  - Turn separator appears at correct position when last entry of the group ends a turn.
+
+- [ ] **Step 6: Chat mode — Pi**
+  - `.tool-group` exists.
+  - `edit` row produces N `EditDiff`s in `.tool-group-diffs` (one per edit).
+  - Click expand → individual `PiTool` cards render (incl. `PiEditTool` for `edit`).
+
+- [ ] **Step 7: Mixed status visual**
+
+Find or contrive a fixture with a group containing both a successful and a failing tool. Verify `.tool-card-mixed` class is applied and computed style on the bullet `::before` is the linear-gradient.
+
+- [ ] **Step 8:** Console clean — zero errors and warnings on every interaction.
+
+- [ ] **Step 9:** Leave dev server running (per CLAUDE.md).
+
+---
+
+## Task 9 — Final cleanup
+
+- [ ] **Step 1:** Final type-check + tests.
+  ```bash
+  cd /Users/andrew/Developer/Prefix/jsonl-fyi && bun run tsc --noEmit && bun test
+  ```
+
+- [ ] **Step 2:** Working tree status.
+  ```bash
+  cd /Users/andrew/Developer/Prefix/jsonl-fyi && git status
+  ```
+  Expected: clean working tree.
+
+- [ ] **Step 3:** Confirm dev server is up on port 3000 (or worktree port if working in `.worktrees/`).
+
+---
+
+## Out of scope (per spec + clarifications)
+
+- Chat-bubble / messaging-style assistant layout.
+- Synthesizing natural-language summaries from tool results.
+- Per-tool-card selective collapse inside a group (group collapses as a unit).
+- Claude `Write` and Pi `write` inline diffs (`ToolDiff` is forward-compatible — a future variant can carry full file content once we decide how to render it).
+
+## Future work
+
+- Promote Claude/Pi `Write` to a structured "new file content as diff" rendering once we settle the variant.
+- Render Codex `apply_patch` deletes inline (filename + "(deleted)" badge — currently filtered).
+- Surface Codex `apply_patch` `movedTo` (rename) in the inline filename badge — see TODO.md.
+- Consider an N-way gradient bullet for groups whose mixed statuses span >2 distinct outcomes (currently 2-color split).
