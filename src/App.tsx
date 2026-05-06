@@ -366,24 +366,15 @@ export function App() {
           <ClaudeCodeTranscript entries={session.entries} />
         )}
         <footer className="app-footer">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M8 0.5C9.933 0.5 11.5 2.067 11.5 4V5.15332C12.0009 5.44267 12.4092 5.87031 12.6729 6.3877C12.9998 7.02941 13 7.86978 13 9.5498V9.9502C13 11.6302 12.9998 12.4706 12.6729 13.1123C12.3853 13.6765 11.9265 14.1353 11.3623 14.4229C10.7206 14.7498 9.88022 14.75 8.2002 14.75H7.7998C6.11978 14.75 5.27941 14.7498 4.6377 14.4229C4.07347 14.1353 3.61472 13.6765 3.32715 13.1123C3.00018 12.4706 3 11.6302 3 9.9502V9.5498C3 7.86978 3.00018 7.02941 3.32715 6.3877C3.59085 5.87031 3.99909 5.44267 4.5 5.15332V4C4.5 2.067 6.067 0.5 8 0.5ZM8 7.34766C7.0876 7.34766 6.34766 8.0876 6.34766 9C6.34766 9.63041 6.70148 10.1776 7.2207 10.4561L7.10156 11.5303C7.04245 12.0668 7.46312 12.5361 8.00293 12.5361C8.54343 12.536 8.9637 12.0654 8.90332 11.5283L8.78125 10.4551C9.29942 10.1763 9.65234 9.62963 9.65234 9C9.65234 8.0876 8.9124 7.34766 8 7.34766ZM8 2C6.89543 2 6 2.89543 6 4V4.78027C6.47139 4.75149 7.05244 4.75 7.7998 4.75H8.2002C8.94756 4.75 9.52861 4.75149 10 4.78027V4C10 2.89543 9.10457 2 8 2Z"
-              fill="currentColor"
-            />
-          </svg>
-          Your data is{" "}
+          <span>Sessions never leave your browser</span>
+          <span aria-hidden="true">•</span>
           <a href="https://github.com/darknoon/jsonl-fyi" target="_blank" rel="noopener noreferrer">
-            processed
-          </a>{" "}
-          locally in the browser
+            github
+          </a>
+          <span aria-hidden="true">•</span>
+          <a href="https://twitter.com/andpoul" target="_blank" rel="noopener noreferrer">
+            @andpoul
+          </a>
         </footer>
       </div>
       {AgentationDev && (
