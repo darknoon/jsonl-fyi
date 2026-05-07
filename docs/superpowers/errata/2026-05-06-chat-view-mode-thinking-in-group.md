@@ -51,17 +51,12 @@ Rules:
   (only when present).
 - Separator stays `· ` (middle dot + space).
 
-Per-format label for thinking entries:
+Per-format label for thinking entries — match the format's tool-name
+casing convention:
 
-- Claude → `Thinking` (matches Claude's PascalCase tool names like
-  `Read`/`Edit`).
-- Pi → `Thinking`. Pi tool names are lowercase (`edit`, `bash`), but
-  `Thinking` reads better as a category label than `thinking` and
-  visually distinguishes the absorbed reasoning from the tools. (Open
-  question: confirm or use lowercase to match.)
-- Codex → `Reasoning`. Codex's reasoning payloads are conventionally
-  called "reasoning". (Open question: lowercase `reasoning` vs
-  PascalCase `Reasoning`.)
+- Claude → `Thinking` (PascalCase, like `Read`/`Edit`).
+- Pi → `thinking` (lowercase, like `edit`/`bash`).
+- Codex → `reasoning` (lowercase, snake_case-ish like `apply_patch`).
 
 The aggregation function is shared and lives in
 `src/transcript/grouping.tsx` (or `ToolGroupRow.tsx`):
