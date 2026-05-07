@@ -1119,7 +1119,7 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--radius-2xl) - 6px);
   cursor: pointer;
   user-select: none;
 }
@@ -1156,7 +1156,7 @@ textarea {
   font: inherit;
   text-align: left;
   width: 100%;
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--radius-2xl) - 6px);
   cursor: pointer;
 }
 .settings-row-clickable:hover {
