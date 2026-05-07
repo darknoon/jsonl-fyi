@@ -10,8 +10,8 @@ import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import { PiTranscript } from "./transcript/pi/PiTranscript"
 import type { CodexEntry } from "./transcript/codex/types"
 import type { PiParsedSession } from "./transcript/pi/types"
-import { ArrowLeftIcon, CheckIcon, CopyIcon, GearIcon, XIcon } from "@phosphor-icons/react"
-import { SettingsPopover, SETTINGS_POPOVER_ID } from "./SettingsPopover"
+import { ArrowLeftIcon, CheckIcon, CopyIcon, XIcon } from "@phosphor-icons/react"
+import { SettingsButton, SettingsPopover } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
 import { FileIcon } from "./FileIcon"
 import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
@@ -241,14 +241,7 @@ export function App() {
 
           {session ? (
             <>
-              <button
-                className="icon-btn settings-btn"
-                aria-label="Settings"
-                title="Settings"
-                popoverTarget={SETTINGS_POPOVER_ID}
-              >
-                <GearIcon size={16} weight="fill" />
-              </button>
+              <SettingsButton />
               <SettingsPopover />
             </>
           ) : (

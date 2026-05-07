@@ -2,6 +2,25 @@ import { useSettings, type ViewMode } from "./settings"
 
 export const SETTINGS_POPOVER_ID = "settings-popover"
 
+const VIEW_MODE_LABEL: Record<ViewMode, string> = {
+  normal: "Default",
+  compact: "Compact",
+}
+
+export function SettingsButton() {
+  const { viewMode } = useSettings()
+  return (
+    <button
+      className="settings-btn"
+      aria-label="Settings"
+      title="Settings"
+      popoverTarget={SETTINGS_POPOVER_ID}
+    >
+      {viewMode === "compact" ? "Compact" : "View"}
+    </button>
+  )
+}
+
 export function SettingsPopover() {
   const { renderMarkdown, setRenderMarkdown, viewMode, setViewMode } = useSettings()
   return (
@@ -12,21 +31,42 @@ export function SettingsPopover() {
       role="dialog"
       aria-label="Settings"
     >
-      <label className="settings-row">
-        <span>View mode</span>
-        <select value={viewMode} onChange={(e) => setViewMode(e.currentTarget.value as ViewMode)}>
-          <option value="normal">Normal</option>
-          <option value="compact">Compact</option>
-        </select>
-      </label>
-      <label className="settings-row">
-        <input
-          type="checkbox"
-          checked={renderMarkdown}
-          onChange={(e) => setRenderMarkdown(e.target.checked)}
-        />
-        <span>Render markdown</span>
-      </label>
+      <div className="settings-section">
+        {(["compact", "normal"] as const).map((mode) => (
+          <button
+            key={mode}
+            className={`settings-item ${viewMode === mode ? "settings-item-active" : ""}`}
+            onClick={() => setViewMode(mode)}
+            role="menuitemradio"
+            aria-checked={viewMode === mode}
+          >
+            <span className="settings-item-check" aria-hidden="true">
+              {viewMode === mode ? "✓" : ""}
+            </span>
+            <span>{VIEW_MODE_LABEL[mode]}</span>
+          </button>
+        ))}
+      </div>
+      <div className="settings-divider" />
+      <button
+        type="button"
+        className="settings-row settings-row-clickable"
+        role="switch"
+        aria-checked={renderMarkdown}
+        aria-label="Render markdown"
+        onClick={() => setRenderMarkdown(!renderMarkdown)}
+      >
+        <SwitchVisual checked={renderMarkdown} />
+        <span>Markdown</span>
+      </button>
     </div>
+  )
+}
+
+function SwitchVisual({ checked }: { checked: boolean }) {
+  return (
+    <span className={`switch ${checked ? "switch-on" : ""}`} aria-hidden="true">
+      <span className="switch-thumb" />
+    </span>
   )
 }
