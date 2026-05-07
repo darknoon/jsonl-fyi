@@ -1159,8 +1159,11 @@ textarea {
   border-radius: calc(var(--radius-2xl) - 6px);
   cursor: pointer;
 }
-.settings-row-clickable:hover {
-  background: color-mix(in srgb, var(--color-border) 50%, transparent);
+.settings-row-clickable:hover .switch {
+  background: color-mix(in srgb, var(--color-muted) 70%, transparent);
+}
+.settings-row-clickable:hover .switch.switch-on {
+  background: color-mix(in srgb, var(--color-fg) 80%, black);
 }
 .switch {
   appearance: none;
