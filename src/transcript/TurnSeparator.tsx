@@ -19,9 +19,15 @@ export function TurnSeparator({ durationMs, usage, verb, model }: Props) {
       </span>
       {usage && (
         <span className="turn-separator-usage">
-          <span>↑ {formatTokens(usage.input)}</span>
-          <span>↓ {formatTokens(usage.output)}</span>
-          <span>↻ {formatTokens(usage.cacheRead)}</span>
+          <span title={`Input: ${usage.input.toLocaleString()} tokens`}>
+            ↑ {formatTokens(usage.input)}
+          </span>
+          <span title={`Output: ${usage.output.toLocaleString()} tokens`}>
+            ↓ {formatTokens(usage.output)}
+          </span>
+          <span title={`Cache read: ${usage.cacheRead.toLocaleString()} tokens`}>
+            ↻ {formatTokens(usage.cacheRead)}
+          </span>
         </span>
       )}
       {model && (
