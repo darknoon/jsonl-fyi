@@ -10,19 +10,19 @@ test("TurnSeparator: duration only — no 'Done' prefix, no usage span", () => {
   expect(html).not.toContain("↑")
 })
 
-test("TurnSeparator: with usage renders ↑input ↻cacheRead ↓output in order", () => {
+test("TurnSeparator: with usage renders ↑input ↓output ↻cacheRead in order", () => {
   const html = renderToStaticMarkup(
     <TurnSeparator durationMs={1234} usage={{ input: 6, output: 165, cacheRead: 29000 }} />,
   )
   expect(html).toContain("↑ 6")
-  expect(html).toContain("↻ 29.0k")
   expect(html).toContain("↓ 165")
-  // Order check — input before cacheRead before output
+  expect(html).toContain("↻ 29.0k")
+  // Order check — input before output before cacheRead
   const i = html.indexOf("↑ 6")
-  const c = html.indexOf("↻ 29.0k")
   const o = html.indexOf("↓ 165")
-  expect(i).toBeLessThan(c)
-  expect(c).toBeLessThan(o)
+  const c = html.indexOf("↻ 29.0k")
+  expect(i).toBeLessThan(o)
+  expect(o).toBeLessThan(c)
 })
 
 test("TurnSeparator: with usage where cacheRead is 0 still renders the ↻ slot", () => {
