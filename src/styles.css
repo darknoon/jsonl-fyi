@@ -547,6 +547,7 @@ textarea {
   padding: 0 12px 0 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  color: var(--color-fg);
   font: inherit;
   font-weight: 500;
 }
