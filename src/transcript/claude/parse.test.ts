@@ -2,7 +2,7 @@ import { test, expect } from "bun:test"
 import { parseJsonl } from "./parse"
 
 test("parseJsonl filters and counts entries from the real fixture", async () => {
-  const text = await Bun.file(new URL("../../__fixtures__/sample.jsonl", import.meta.url)).text()
+  const text = await Bun.file(new URL("../../__fixtures__/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl", import.meta.url)).text()
   const { entries, skipped } = parseJsonl(text)
 
   const typeCounts = new Map<string, number>()

@@ -3,8 +3,8 @@
 // the build output as a static asset and replace the import with the
 // asset's URL string. The asset is fetched only when the user clicks the
 // row.
-import sampleUrl from "./__fixtures__/sample.jsonl?url"
-import codexSampleUrl from "./__fixtures__/codex-sample.jsonl?url"
+import claudeSampleUrl from "./__fixtures__/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl?url"
+import codexSampleUrl from "./__fixtures__/rollout-2026-04-29T21-53-05-019ddc16-f5f2-7940-8892-8495d619b213.jsonl?url"
 import piSampleUrl from "./__fixtures__/019de00a-80cd-72e8-a9aa-47ac24e53f40.jsonl?url"
 
 export type Example = {
@@ -31,7 +31,7 @@ export const EXAMPLES: Example[] = [
     turns: 8,
     toolCalls: 45,
     sizeBytes: 437659,
-    load: () => fetchText(sampleUrl),
+    load: () => fetchText(claudeSampleUrl),
   },
   {
     name: "Implementing the header alignment fixes",

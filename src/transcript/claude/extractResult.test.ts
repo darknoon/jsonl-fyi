@@ -3,7 +3,7 @@ import { parseJsonl } from "./parse"
 import { extractResult, getBlocks } from "./extractResult"
 
 test("extractResult on every tool_result in the fixture", async () => {
-  const text = await Bun.file(new URL("../../__fixtures__/sample.jsonl", import.meta.url)).text()
+  const text = await Bun.file(new URL("../../__fixtures__/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl", import.meta.url)).text()
   const { entries } = parseJsonl(text)
 
   const lines: string[] = []

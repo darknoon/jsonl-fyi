@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 
 const SRC =
   "/Users/andrew/.claude/projects/-Users-andrew-Developer-Web-Dave/04819ab3-be01-4118-8196-5dfc2a411442.jsonl"
-const DST = new URL("../src/__fixtures__/sample.jsonl", import.meta.url).pathname
+const DST = new URL("../src/__fixtures__/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl", import.meta.url).pathname
 
 const raw = readFileSync(SRC, "utf8")
 const lines = raw.split("\n")
