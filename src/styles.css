@@ -67,6 +67,13 @@
   box-sizing: border-box;
 }
 
+hr {
+  border: none;
+  height: 1.5px;
+  background: var(--color-muted);
+  border-radius: var(--radius-pill);
+}
+
 html,
 body,
 #root {
