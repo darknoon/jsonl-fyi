@@ -37,7 +37,6 @@ export function EditDiff({
           diffIndicators: "classic",
           disableLineNumbers: true,
         }}
-        disableWorkerPool
       />
       <CopyButton text={() => diffCopyText(oldString, newString)} ariaLabel="Copy diff" />
     </div>

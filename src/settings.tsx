@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
-export type ViewMode = "compact" | "normal"
+export type ViewMode = "compact" | "normal" | "chat"
 export type Settings = { renderMarkdown: boolean; viewMode: ViewMode }
 
 type Ctx = Settings & {

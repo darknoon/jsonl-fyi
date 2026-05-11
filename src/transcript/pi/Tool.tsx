@@ -6,6 +6,7 @@ import { ToolCard } from "../ToolCard"
 import { UnknownTool } from "../UnknownTool"
 import { Field, Header, ToolResultContent, ToolTitle, hasOutput, toolResultText } from "../shared"
 import type { PiToolCallContent } from "./types"
+import { PiEditTool } from "./PiEditTool"
 
 function shortPath(path: string): string {
   const parts = path.split("/").filter(Boolean)
@@ -264,8 +265,9 @@ export function PiTool({
       return <ShellTool call={call} output={output} />
     case "read":
       return <ReadTool call={call} output={output} />
-    case "write":
     case "edit":
+      return <PiEditTool call={call} output={output} />
+    case "write":
     case "grep":
     case "find":
     case "ls":

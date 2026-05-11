@@ -301,10 +301,10 @@ textarea {
   justify-self: start;
   margin-top: 0.6em;
 }
-.tool-card-success .tool-row::before {
+.tool-card-success > .tool-row::before {
   background: var(--color-success);
 }
-.tool-card-error .tool-row::before {
+.tool-card-error > .tool-row::before {
   background: var(--color-error);
 }
 .thinking {
@@ -1404,4 +1404,83 @@ textarea {
   padding: 12px 0;
   color: var(--color-muted);
   font-size: var(--fs-sm);
+}
+
+/* ── Chat mode tool group ── */
+
+.tool-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-group-row {
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.tool-group-row:hover {
+  background: var(--color-card);
+}
+/* No status dot or expand caret on the group row in chat mode — failures
+   are surfaced inline in the prose summary instead, and the row layout
+   collapses the (now empty) bullet column. */
+.tool-group-row::before {
+  content: none;
+}
+.tool-group-row {
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
+  padding-left: 0;
+}
+
+.tool-group-expanded {
+  display: flex;
+  flex-direction: column;
+}
+
+/* In chat mode, plain assistant text and standalone thinking lose the bullet
+   column entirely. Tool groups keep theirs (the dot/caret carries meaning),
+   so the group's column visually anchors hierarchy against the now-flush
+   prose. Other view modes are unaffected. */
+.transcript-chat .assistant-text,
+.transcript-chat .thinking {
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
+  padding-left: 0;
+}
+.transcript-chat .assistant-text::before,
+.transcript-chat .thinking::before {
+  display: none;
+}
+
+/* Prose summary inside the chat-mode tool group row. Muted by default;
+   the expanded row reads as normal-color text. */
+.tool-title-prose {
+  color: var(--color-muted);
+}
+.tool-group-row[aria-expanded="true"] .tool-title-prose {
+  color: var(--color-fg);
+}
+
+/* Inside an expanded tool group, restore the bullet column for thinking
+   blocks so they visually match the standard non-chat rendering. */
+.transcript-chat .tool-group-expanded .thinking {
+  grid-template-columns: var(--bullet-size) minmax(0, 1fr);
+  column-gap: var(--bullet-gap);
+  padding-left: 6px;
+}
+.transcript-chat .tool-group-expanded .thinking::before {
+  display: block;
+}
+
+/* Mixed-status bullet: half success / half error */
+.tool-card-mixed > .tool-row::before {
+  background: linear-gradient(
+    90deg,
+    var(--color-success) 0 50%,
+    var(--color-error) 50% 100%
+  );
 }

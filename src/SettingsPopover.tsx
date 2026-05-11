@@ -5,6 +5,7 @@ export const SETTINGS_POPOVER_ID = "settings-popover"
 const VIEW_MODE_LABEL: Record<ViewMode, string> = {
   normal: "Default",
   compact: "Compact",
+  chat: "Chat",
 }
 
 export function SettingsButton() {
@@ -16,7 +17,7 @@ export function SettingsButton() {
       title="Settings"
       popoverTarget={SETTINGS_POPOVER_ID}
     >
-      {viewMode === "compact" ? "Compact" : "View"}
+      {viewMode === "normal" ? "View" : VIEW_MODE_LABEL[viewMode]}
     </button>
   )
 }
@@ -32,7 +33,7 @@ export function SettingsPopover() {
       aria-label="Settings"
     >
       <div className="settings-section">
-        {(["compact", "normal"] as const).map((mode) => (
+        {(["chat", "compact", "normal"] as const).map((mode) => (
           <button
             key={mode}
             className={`settings-item ${viewMode === mode ? "settings-item-active" : ""}`}

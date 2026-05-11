@@ -60,7 +60,6 @@ export function ApplyPatch({ patch, output }: { patch: string; output: ToolResul
                       disableFileHeader: true,
                       disableLineNumbers: true,
                     }}
-                    disableWorkerPool
                   />
                   <CopyButton text={f.unifiedDiff} ariaLabel="Copy patch" />
                 </div>

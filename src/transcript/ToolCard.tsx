@@ -53,7 +53,7 @@ function Root({
   // - compact collapsed: nothing
   let body: ReactNode = null
   if (expanded) body = content ?? preview
-  else if (viewMode === "normal") body = preview
+  else if (viewMode === "normal" || viewMode === "chat") body = preview
   else body = null
 
   // Trigger is clickable iff toggling 'expanded' would change rendering.

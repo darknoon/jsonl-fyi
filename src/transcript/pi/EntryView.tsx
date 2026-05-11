@@ -68,27 +68,38 @@ function renderMessageContent(
   content: string | PiContent[],
   role: string,
   results: Map<string, PiResultWithDetails>,
+  skip?: Set<number>,
 ) {
   if (typeof content === "string") return <TextBlock role={role} text={content} />
-  return <>{content.map((block, i) => renderContentBlock(block, i, role, results))}</>
+  return (
+    <>
+      {content.map((block, i) =>
+        skip?.has(i) ? null : renderContentBlock(block, i, role, results),
+      )}
+    </>
+  )
 }
 
 function MessageEntryView({
   entry,
   results,
+  skipBlocks,
 }: {
   entry: PiMessageEntry
   results: Map<string, PiResultWithDetails>
+  skipBlocks?: Map<string, Set<number>>
 }) {
   const { message } = entry
   if (message.role === "toolResult") return null
+
+  const skip = skipBlocks?.get(entry.id)
 
   if (message.role === "user") {
     return renderMessageContent(message.content, "user", results)
   }
 
   if (message.role === "assistant") {
-    return renderMessageContent(message.content, "assistant", results)
+    return renderMessageContent(message.content, "assistant", results, skip)
   }
 
   if (message.role === "bashExecution") {
@@ -109,11 +120,13 @@ function MessageEntryView({
 export function PiEntryView({
   entry,
   results,
+  skipBlocks,
 }: {
   entry: PiTreeEntry
   results: Map<string, PiResultWithDetails>
+  skipBlocks?: Map<string, Set<number>>
 }) {
-  if (entry.type === "message") return <MessageEntryView entry={entry} results={results} />
+  if (entry.type === "message") return <MessageEntryView entry={entry} results={results} skipBlocks={skipBlocks} />
   if (entry.type === "model_change" || entry.type === "thinking_level_change") return null
   if (entry.type === "branch_summary") return <TextBlock role="assistant" text={entry.summary} />
   if (entry.type === "compaction") return <TextBlock role="assistant" text={entry.summary} />
