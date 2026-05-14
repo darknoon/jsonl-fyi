@@ -149,6 +149,11 @@ _You be starting in a new session part way though this process_
    1. we always use sub-agent-driven development
    2. sometimes we use worktrees (ask me)
 
+### Brainstorming
+
+NO: "Some of what we're working on might be easier to explain if I can show it to you in a web browser"
+YES:"I want to show you this potential design for X, I have 2 options I can show you in a web browser"
+
 ### Quick design tweaks
 
 Don't need a whole spec/ plan/ process, but you should consider the approach and consult the user before editing the code.
