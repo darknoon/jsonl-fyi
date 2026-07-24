@@ -5,6 +5,7 @@ export type CodexInputText = { type: "input_text"; text: string }
 export type CodexOutputText = { type: "output_text"; text: string }
 export type CodexInputImage = { type: "input_image"; image_url: string }
 export type CodexContentItem = CodexInputText | CodexOutputText | CodexInputImage
+export type CodexToolOutput = string | CodexContentItem[]
 
 export type CodexReasoningSummary = { type: "summary_text"; text: string }
 
@@ -21,9 +22,9 @@ export type CodexResponseItemPayload =
       encrypted_content?: string
     }
   | { type: "function_call"; name: string; arguments: string; call_id: string }
-  | { type: "function_call_output"; call_id: string; output: string }
+  | { type: "function_call_output"; call_id: string; output: CodexToolOutput }
   | { type: "custom_tool_call"; name: string; input: string; call_id: string; status?: string }
-  | { type: "custom_tool_call_output"; call_id: string; output: string }
+  | { type: "custom_tool_call_output"; call_id: string; output: CodexToolOutput }
   | { type: "ghost_snapshot"; ghost_commit: { id: string; parent: string } }
   | {
       type: "web_search_call"

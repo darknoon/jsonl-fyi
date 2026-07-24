@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test"
 import { buildCodexItems } from "./buildCodexItems"
-import type { CodexEntry, CodexResponseItem } from "./types"
+import type { CodexEntry, CodexResponseItem, CodexToolOutput } from "./types"
 
 // Helpers to fabricate minimal CodexEntry values.
 function functionCall(id: string, name: string, ts?: string): CodexResponseItem {
@@ -11,7 +11,11 @@ function functionCall(id: string, name: string, ts?: string): CodexResponseItem 
   }
 }
 
-function functionCallOutput(id: string, output = "ok", ts?: string): CodexResponseItem {
+function functionCallOutput(
+  id: string,
+  output: CodexToolOutput = "ok",
+  ts?: string,
+): CodexResponseItem {
   return {
     type: "response_item",
     timestamp: ts,
@@ -27,7 +31,7 @@ function customToolCall(id: string, name: string, input: string, ts?: string): C
   }
 }
 
-function customToolCallOutput(id: string, output = "ok"): CodexResponseItem {
+function customToolCallOutput(id: string, output: CodexToolOutput = "ok"): CodexResponseItem {
   return {
     type: "response_item",
     payload: { type: "custom_tool_call_output", call_id: id, output },
@@ -102,6 +106,54 @@ function v4aMultiFilePatch(
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+test("buildCodexItems: normalizes structured function output blocks", () => {
+  const entries: CodexEntry[] = [
+    functionCallOutput("c1", [
+      { type: "input_text", text: "Exit code: 7\n" },
+      { type: "input_image", image_url: "data:image/png;base64,abc" },
+      { type: "output_text", text: "command failed" },
+    ]),
+  ]
+
+  const { results } = buildCodexItems(entries)
+
+  expect(results.get("c1")).toEqual({
+    content: [
+      { type: "text", text: "Exit code: 7\n" },
+      {
+        type: "image",
+        source: { type: "url", url: "data:image/png;base64,abc" },
+      },
+      { type: "text", text: "command failed" },
+    ],
+    isError: true,
+  })
+})
+
+test("buildCodexItems: normalizes recent structured custom output blocks", () => {
+  const entries: CodexEntry[] = [
+    customToolCallOutput("c1", [
+      { type: "input_text", text: "Script completed\nOutput:\n" },
+      { type: "input_text", text: '{"ok":true}' },
+    ]),
+    customToolCallOutput("c2", [
+      { type: "input_text", text: '{"metadata":' },
+      { type: "input_text", text: '{"exit_code":2}}' },
+    ]),
+  ]
+
+  const { results } = buildCodexItems(entries)
+
+  expect(results.get("c1")).toEqual({
+    content: [
+      { type: "text", text: "Script completed\nOutput:\n" },
+      { type: "text", text: '{"ok":true}' },
+    ],
+    isError: false,
+  })
+  expect(results.get("c2")?.isError).toBe(true)
+})
 
 test("buildCodexItems chat: 2+ consecutive function_calls → one tool_group", () => {
   const fc1 = functionCall("c1", "read_file")

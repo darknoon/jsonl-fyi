@@ -1,4 +1,4 @@
-import type { CodexEntry, CodexResponseItem } from "./types"
+import type { CodexEntry, CodexResponseItem, CodexToolOutput } from "./types"
 import type { ToolResult } from "../../types"
 import type { TurnUsage } from "../usage"
 import type { ModelDisplay } from "../model"
@@ -88,6 +88,28 @@ export function deriveIsError(output: string, kind: "function" | "custom"): bool
   return false
 }
 
+function normalizeToolOutput(output: CodexToolOutput, kind: "function" | "custom"): ToolResult {
+  const content: ToolResult["content"] =
+    typeof output === "string"
+      ? output
+        ? [{ type: "text", text: output }]
+        : []
+      : output.map((item) => {
+          if (item.type === "input_image") {
+            return {
+              type: "image" as const,
+              source: { type: "url" as const, url: item.image_url },
+            }
+          }
+          return { type: "text" as const, text: item.text }
+        })
+  const text = content
+    .filter((item) => item.type === "text")
+    .map((item) => item.text)
+    .join("")
+  return { content, isError: deriveIsError(text, kind) }
+}
+
 // Map per-turn usage to the index of the entry where the separator renders.
 // Strategy: for each separator end-index, the next `event_msg` of subtype
 // `token_count` at or after that index carries this turn's `last_token_usage`.
@@ -139,15 +161,9 @@ export function buildCodexItems(
     if (entry.type !== "response_item") continue
     const p = entry.payload
     if (p.type === "function_call_output") {
-      results.set(p.call_id, {
-        content: p.output ? [{ type: "text", text: p.output }] : [],
-        isError: deriveIsError(p.output, "function"),
-      })
+      results.set(p.call_id, normalizeToolOutput(p.output, "function"))
     } else if (p.type === "custom_tool_call_output") {
-      results.set(p.call_id, {
-        content: p.output ? [{ type: "text", text: p.output }] : [],
-        isError: deriveIsError(p.output, "custom"),
-      })
+      results.set(p.call_id, normalizeToolOutput(p.output, "custom"))
     }
   }
 
