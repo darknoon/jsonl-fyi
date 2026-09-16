@@ -1,54 +1,82 @@
-import { useEffect, useState } from "react"
+import { XIcon } from "@phosphor-icons/react"
+import { useEffect, useRef, useState } from "react"
 import type { ImageSource } from "../types"
 
-function dataUrl(source: ImageSource): string {
+function imageUrl(source: ImageSource): string {
   return source.type === "base64" ? `data:${source.media_type};base64,${source.data}` : source.url
 }
 
-/** Decode a base64 payload into a Blob; returns null if the payload is malformed. */
-export function base64ToBlob(data: string, mediaType: string): Blob | null {
-  try {
-    const bin = atob(data)
-    const bytes = new Uint8Array(bin.length)
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-    return new Blob([bytes], { type: mediaType })
-  } catch {
-    return null
-  }
+export function ImageBlock({ source, role }: { source: ImageSource; role?: string }) {
+  const src = imageUrl(source)
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="View image"
+        className={`image-block ${role === "user" ? "image-block-user" : ""}`}
+        onClick={() => setOpen(true)}
+      >
+        <img src={src} alt="" />
+      </button>
+      {open && <Lightbox src={src} onClose={() => setOpen(false)} />}
+    </>
+  )
 }
 
 /**
- * Resolve an image source to a URL usable as both an <img src> and a link
- * target. Base64 images start as a data: URL (works for SSR and first paint),
- * then swap to a blob: URL once mounted. Browsers block top-level navigation
- * to data: URLs, so a plain data: href opens a blank tab; blob: URLs open fine.
+ * The image as large as the viewport allows, then at its own pixels.
+ *
+ * Two states rather than a zoom control: fit shows the whole image, actual is
+ * one image pixel per screen pixel with the stage's own scrollbars doing the
+ * panning. A real <dialog> opened with showModal gives us the focus trap,
+ * Escape, inertness of the page behind, and the top layer for free.
  */
-export function useImageUrl(source: ImageSource): string {
-  const [url, setUrl] = useState(() => dataUrl(source))
-  useEffect(() => {
-    if (source.type !== "base64" || typeof URL.createObjectURL !== "function") return
-    const blob = base64ToBlob(source.data, source.media_type)
-    if (!blob) return
-    const blobUrl = URL.createObjectURL(blob)
-    setUrl(blobUrl)
-    return () => {
-      URL.revokeObjectURL(blobUrl)
-      setUrl(dataUrl(source))
-    }
-  }, [source])
-  return url
-}
+function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  const [actual, setActual] = useState(false)
+  const dialog = useRef<HTMLDialogElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
 
-export function ImageBlock({ source, role }: { source: ImageSource; role?: string }) {
-  const src = useImageUrl(source)
+  useEffect(() => {
+    const el = dialog.current
+    if (!el) return
+    el.showModal()
+    // showModal makes the page inert but not unscrollable.
+    document.documentElement.dataset["lightboxOpen"] = ""
+    // The backdrop reports the dialog as the click target; the empty room
+    // around a small image reports the stage. Both are ways out.
+    const onClick = (e: MouseEvent) => {
+      const t = e.target
+      if (t === el || (t instanceof HTMLElement && t.dataset["slot"] === "lightbox-stage")) {
+        close.current()
+      }
+    }
+    const onDialogClose = () => close.current()
+    el.addEventListener("click", onClick)
+    el.addEventListener("close", onDialogClose)
+    return () => {
+      el.removeEventListener("click", onClick)
+      el.removeEventListener("close", onDialogClose)
+      delete document.documentElement.dataset["lightboxOpen"]
+    }
+  }, [])
+
   return (
-    <a
-      href={src}
-      target="_blank"
-      rel="noreferrer"
-      className={`image-block ${role === "user" ? "image-block-user" : ""}`}
-    >
-      <img src={src} alt="" />
-    </a>
+    <dialog ref={dialog} className="lightbox" aria-label="Image">
+      <div className="lightbox-stage" data-slot="lightbox-stage" data-actual={actual || undefined}>
+        <button
+          type="button"
+          className="lightbox-image"
+          aria-label={actual ? "Fit to screen" : "View at actual size"}
+          onClick={() => setActual((a) => !a)}
+        >
+          <img src={src} alt="" />
+        </button>
+      </div>
+      <button type="button" className="lightbox-close" aria-label="Close" onClick={onClose}>
+        <XIcon size={20} weight="bold" aria-hidden="true" />
+      </button>
+    </dialog>
   )
 }
