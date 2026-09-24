@@ -1,10 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
-import { iterJsonlLines } from "./parse/iter"
-import { classifyJsonl } from "./parse/classify"
-import { loadSessionFile, type LoadedSession } from "./parse/loadSessionFile"
-import { parseJsonl } from "./transcript/claude/parse"
-import { parseCodexEntries } from "./transcript/codex/parse"
-import { parsePiEntries } from "./transcript/pi/parse"
+import { useSessionLoader } from "./useSessionLoader"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import { PiTranscript } from "./transcript/pi/PiTranscript"
@@ -12,7 +7,6 @@ import { ArrowLeftIcon, CheckIcon, CopyIcon, XIcon } from "@phosphor-icons/react
 import { SettingsButton, SettingsPopover } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
 import { FileIcon } from "./FileIcon"
-import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
 import type { Example } from "./examples"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
@@ -49,9 +43,6 @@ function TerminalCommand({ command }: { command: string }) {
   )
 }
 
-const STORAGE_KEY = "jsonl-fyi:last"
-const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
-
 const AGENT_FORMATS = ["claude", "codex", "pi"] as const satisfies readonly Example["format"][]
 const AGENT_LABELS: Record<Example["format"], string> = {
   claude: "Claude Code",
@@ -60,17 +51,20 @@ const AGENT_LABELS: Record<Example["format"], string> = {
 }
 
 export function App() {
-  const [session, setSession] = useState<LoadedSession | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
-  const [skipped, setSkipped] = useState(0)
+  const {
+    session,
+    fileName,
+    skipped,
+    dropError,
+    loadingFile,
+    loadFile,
+    loadExample,
+    reset: resetSession,
+  } = useSessionLoader()
   const [dragOver, setDragOver] = useState(false)
-  const [dropError, setDropError] = useState<string | null>(null)
-  const [loadingFile, setLoadingFile] = useState<{ name: string; percent: number } | null>(null)
   const [activeAgentIndex, setActiveAgentIndex] = useState(0)
   const [previewAgent, setPreviewAgent] = useState<Example["format"] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const fileLoadRef = useRef<AbortController | null>(null)
-  const loadRequestRef = useRef(0)
   const activeAgent = previewAgent ?? AGENT_FORMATS[activeAgentIndex]
 
   function previewFormat(format: Example["format"] | null) {
@@ -80,145 +74,10 @@ export function App() {
     setPreviewAgent(format)
   }
 
-  function loadText(text: string, name: string, persist = true) {
-    const allLines: unknown[] = []
-    const it = iterJsonlLines(text)
-    let result = it.next()
-    while (!result.done) {
-      allLines.push(result.value)
-      result = it.next()
-    }
-    const skippedCount = result.value.skipped
-
-    const format = classifyJsonl(allLines.slice(0, 10))
-    if (format === "codex") {
-      setSession({ format: "codex", entries: parseCodexEntries(allLines) })
-      setDropError(null)
-    } else if (format === "pi") {
-      setSession({ format: "pi", session: parsePiEntries(allLines) })
-      setDropError(null)
-    } else if (format === "claude") {
-      // parseJsonl re-parses the text; small overhead, fine for now.
-      const r = parseJsonl(text)
-      setSession({ format: "claude", entries: r.entries })
-      setDropError(null)
-    } else {
-      setSession(null)
-      setDropError(`Couldn't parse ${name} as a Claude Code, OpenAI Codex, or pi JSONL file`)
-    }
-    setFileName(name)
-    setSkipped(skippedCount)
-    if (persist) {
-      try {
-        if (text.length < STORAGE_LIMIT_BYTES) {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ name, text }))
-        } else {
-          sessionStorage.removeItem(STORAGE_KEY)
-        }
-      } catch {
-        // sessionStorage may throw (quota, disabled). Non-fatal.
-      }
-    }
-  }
-
-  async function loadFile(file: File) {
-    cancelFileLoad()
-    const request = loadRequestRef.current
-    const controller = new AbortController()
-    fileLoadRef.current = controller
-    setDropError(null)
-    setLoadingFile({ name: file.name, percent: 0 })
-    let lastPercent = 0
-    try {
-      const loaded = await loadSessionFile(file, {
-        signal: controller.signal,
-        onProgress(bytes) {
-          const percent = file.size === 0 ? 100 : Math.floor((bytes / file.size) * 100)
-          if (request === loadRequestRef.current && percent !== lastPercent) {
-            lastPercent = percent
-            setLoadingFile({ name: file.name, percent })
-          }
-        },
-      })
-      if (request !== loadRequestRef.current) return
-      // Push a history entry so the browser back button returns to the picker.
-      if (!session && window.location.pathname === "/") {
-        window.history.pushState({ jsonlFyiLoaded: true }, "", window.location.href)
-      }
-      setSession(loaded.session)
-      setFileName(file.name)
-      setSkipped(loaded.skipped)
-      setDropError(
-        loaded.session
-          ? null
-          : `Couldn't parse ${file.name} as a Claude Code, OpenAI Codex, or pi JSONL file`,
-      )
-      try {
-        if (loaded.text !== undefined) {
-          sessionStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({ name: file.name, text: loaded.text }),
-          )
-        } else {
-          sessionStorage.removeItem(STORAGE_KEY)
-        }
-      } catch {
-        // Storage is optional, and large files are never persisted.
-      }
-    } catch (error) {
-      if (request !== loadRequestRef.current) return
-      setSession(null)
-      const detail = error instanceof Error ? `: ${error.message}` : ". Please try again."
-      setDropError(`Couldn't read ${file.name}${detail}`)
-    } finally {
-      if (request === loadRequestRef.current) {
-        fileLoadRef.current = null
-        setLoadingFile(null)
-      }
-    }
-  }
-
-  function cancelFileLoad() {
-    loadRequestRef.current++
-    fileLoadRef.current?.abort()
-    fileLoadRef.current = null
-    setLoadingFile(null)
-  }
-
   function reset(clearUrl = false) {
-    cancelFileLoad()
-    setSession(null)
-    setFileName(null)
-    setSkipped(0)
+    resetSession(clearUrl)
     if (inputRef.current) inputRef.current.value = ""
-    if (clearUrl && window.location.pathname !== "/") {
-      window.history.pushState(null, "", "/")
-    }
-    try {
-      sessionStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // ignore
-    }
   }
-
-  async function loadExample(example: Example, updateHistory = true) {
-    cancelFileLoad()
-    const request = loadRequestRef.current
-    if (updateHistory) {
-      window.history.pushState(null, "", exampleHref(example))
-    }
-    const text = await example.load()
-    if (request !== loadRequestRef.current) return
-    loadText(text, example.fileName, false)
-  }
-
-  useEffect(
-    () => () => {
-      loadRequestRef.current++
-      fileLoadRef.current?.abort()
-    },
-    [],
-  )
 
   useEffect(() => {
     if (session) return
@@ -227,43 +86,6 @@ export function App() {
     }, 2400)
     return () => window.clearInterval(id)
   }, [session])
-
-  useEffect(() => {
-    async function loadCurrentLocation(restoreSession: boolean) {
-      const routeExample = findExampleByPath(window.location.pathname)
-      if (routeExample) {
-        await loadExample(routeExample, false)
-        return
-      }
-
-      if (!restoreSession) {
-        reset(false)
-        return
-      }
-
-      const params = new URLSearchParams(window.location.search)
-      if (params.has("demo") && EXAMPLES.length > 0) {
-        await loadExample(EXAMPLES[0], false)
-        return
-      }
-      try {
-        const raw = sessionStorage.getItem(STORAGE_KEY)
-        if (raw) {
-          const { name, text } = JSON.parse(raw) as { name: string; text: string }
-          loadText(text, name, false)
-        }
-      } catch {
-        // ignore parse/storage errors; user can re-drop the file
-      }
-    }
-
-    void loadCurrentLocation(true)
-    const handlePopState = () => {
-      void loadCurrentLocation(false)
-    }
-    window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
-  }, [])
 
   return (
     <>

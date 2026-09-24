@@ -6,10 +6,14 @@ import { App } from "./App"
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const STORAGE_KEY = "jsonl-fyi:last"
+const browser = window as unknown as { happyDOM: { setURL(url: string): void } }
 let container: HTMLDivElement
 let root: Root
+let originalUrl: string
 
 beforeEach(async () => {
+  originalUrl = window.location.href
+  browser.happyDOM.setURL("http://localhost/")
   sessionStorage.clear()
   window.history.replaceState(null, "", "/")
   container = document.createElement("div")
@@ -22,6 +26,7 @@ afterEach(async () => {
   await act(async () => root.unmount())
   container.remove()
   sessionStorage.clear()
+  browser.happyDOM.setURL(originalUrl)
 })
 
 function transcript(message: string): string {
@@ -141,6 +146,7 @@ test("a slow demo cannot replace a file selected while it downloads", async () =
     window.history.replaceState(null, "", "/?demo")
     root = createRoot(container)
     await act(async () => root.render(<App />))
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
     await selectFile(streamedFile("chosen.jsonl", transcript("Chosen file wins")))
     await act(async () => resolveDemo(new Response(transcript("Late demo"))))
     expect(container.querySelector(".filename")?.textContent).toBe("chosen.jsonl")
