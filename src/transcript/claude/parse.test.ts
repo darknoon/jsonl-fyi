@@ -1,8 +1,10 @@
 import { test, expect } from "bun:test"
-import { parseJsonl } from "./parse"
+import { parseClaudeEntries, parseJsonl } from "./parse"
 
 test("parseJsonl filters and counts entries from the real fixture", async () => {
-  const text = await Bun.file(new URL("../../__fixtures__/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl", import.meta.url)).text()
+  const text = await Bun.file(
+    new URL("../../__fixtures__/0dc40511-6d23-4460-9e5b-ecb10e418fe7.jsonl", import.meta.url),
+  ).text()
   const { entries, skipped } = parseJsonl(text)
 
   const typeCounts = new Map<string, number>()
@@ -31,4 +33,20 @@ test("malformed lines increment skipped, valid lines keep parsing", () => {
   const { entries, skipped } = parseJsonl(text)
   const summary = `entries=${entries.length} skipped=${skipped} kept=${entries.map((e) => e.type).join(",")}`
   expect(summary).toMatchInlineSnapshot(`"entries=2 skipped=1 kept=user,assistant"`)
+})
+
+test("parseClaudeEntries consumes parsed rows without changing filtering or their order", () => {
+  const user = { type: "user", message: { role: "user", content: "hello" } }
+  const future = { type: "future-entry", extra: true }
+  const assistant = { type: "assistant", message: { role: "assistant", content: [] } }
+  function* rows() {
+    yield null
+    yield "unrelated"
+    yield { type: "file-history-snapshot" }
+    yield user
+    yield future
+    yield { type: "queue-operation" }
+    yield assistant
+  }
+  expect<unknown>(parseClaudeEntries(rows())).toEqual([user, future, assistant])
 })

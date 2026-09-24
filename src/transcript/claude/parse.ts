@@ -1,4 +1,5 @@
 import type { Entry } from "../../types"
+import { iterJsonlLines } from "../../parse/iter"
 
 const SKIP_TYPES = new Set([
   "file-history-snapshot",
@@ -8,20 +9,24 @@ const SKIP_TYPES = new Set([
   "attachment",
 ])
 
-export function parseJsonl(text: string): { entries: Entry[]; skipped: number } {
+export function parseClaudeEntries(lines: Iterable<unknown>): Entry[] {
   const entries: Entry[] = []
-  let skipped = 0
-  for (const raw of text.split("\n")) {
-    const line = raw.trim()
-    if (!line) continue
-    try {
-      const obj = JSON.parse(line) as Entry
-      if (obj && typeof obj === "object" && obj.type && !SKIP_TYPES.has(obj.type)) {
-        entries.push(obj)
-      }
-    } catch {
-      skipped++
+  for (const line of lines) {
+    const obj = line as Entry
+    if (obj && typeof obj === "object" && obj.type && !SKIP_TYPES.has(obj.type)) {
+      entries.push(obj)
     }
   }
-  return { entries, skipped }
+  return entries
+}
+
+export function parseJsonl(text: string): { entries: Entry[]; skipped: number } {
+  const lines = iterJsonlLines(text)
+  const entries: Entry[] = []
+  let result = lines.next()
+  while (!result.done) {
+    entries.push(...parseClaudeEntries([result.value]))
+    result = lines.next()
+  }
+  return { entries, skipped: result.value.skipped }
 }

@@ -1,20 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
-import { iterJsonlLines } from "./parse/iter"
-import { classifyJsonl } from "./parse/classify"
-import { parseJsonl } from "./transcript/claude/parse"
-import { parseCodexEntries } from "./transcript/codex/parse"
-import { parsePiEntries } from "./transcript/pi/parse"
-import type { Entry } from "./types"
+import { useSessionLoader } from "./useSessionLoader"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import { PiTranscript } from "./transcript/pi/PiTranscript"
-import type { CodexEntry } from "./transcript/codex/types"
-import type { PiParsedSession } from "./transcript/pi/types"
 import { ArrowLeftIcon, CheckIcon, CopyIcon, XIcon } from "@phosphor-icons/react"
 import { SettingsButton, SettingsPopover } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
 import { FileIcon } from "./FileIcon"
-import { EXAMPLES, exampleHref, findExampleByPath } from "./examples"
 import type { Example } from "./examples"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
@@ -51,14 +43,6 @@ function TerminalCommand({ command }: { command: string }) {
   )
 }
 
-const STORAGE_KEY = "jsonl-fyi:last"
-const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
-
-type LoadedSession =
-  | { format: "claude"; entries: Entry[] }
-  | { format: "codex"; entries: CodexEntry[] }
-  | { format: "pi"; session: PiParsedSession }
-
 const AGENT_FORMATS = ["claude", "codex", "pi"] as const satisfies readonly Example["format"][]
 const AGENT_LABELS: Record<Example["format"], string> = {
   claude: "Claude Code",
@@ -67,11 +51,17 @@ const AGENT_LABELS: Record<Example["format"], string> = {
 }
 
 export function App() {
-  const [session, setSession] = useState<LoadedSession | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
-  const [skipped, setSkipped] = useState(0)
+  const {
+    session,
+    fileName,
+    skipped,
+    dropError,
+    loadingFile,
+    loadFile,
+    loadExample,
+    reset: resetSession,
+  } = useSessionLoader()
   const [dragOver, setDragOver] = useState(false)
-  const [dropError, setDropError] = useState<string | null>(null)
   const [activeAgentIndex, setActiveAgentIndex] = useState(0)
   const [previewAgent, setPreviewAgent] = useState<Example["format"] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -84,125 +74,18 @@ export function App() {
     setPreviewAgent(format)
   }
 
-  function loadText(text: string, name: string, persist = true) {
-    const allLines: unknown[] = []
-    const it = iterJsonlLines(text)
-    let result = it.next()
-    while (!result.done) {
-      allLines.push(result.value)
-      result = it.next()
-    }
-    const skippedCount = result.value.skipped
-
-    const format = classifyJsonl(allLines.slice(0, 10))
-    if (format === "codex") {
-      setSession({ format: "codex", entries: parseCodexEntries(allLines) })
-      setDropError(null)
-    } else if (format === "pi") {
-      setSession({ format: "pi", session: parsePiEntries(allLines) })
-      setDropError(null)
-    } else if (format === "claude") {
-      // parseJsonl re-parses the text; small overhead, fine for now.
-      const r = parseJsonl(text)
-      setSession({ format: "claude", entries: r.entries })
-      setDropError(null)
-    } else {
-      setSession(null)
-      setDropError(`Couldn't parse ${name} as a Claude Code, OpenAI Codex, or pi JSONL file`)
-    }
-    setFileName(name)
-    setSkipped(skippedCount)
-    if (persist) {
-      try {
-        if (text.length < STORAGE_LIMIT_BYTES) {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ name, text }))
-        } else {
-          sessionStorage.removeItem(STORAGE_KEY)
-        }
-      } catch {
-        // sessionStorage may throw (quota, disabled). Non-fatal.
-      }
-    }
-  }
-
-  async function loadFile(file: File) {
-    const text = await file.text()
-    // Push a history entry when transitioning into a loaded session so the
-    // browser back button returns to the file picker.
-    if (!session && window.location.pathname === "/") {
-      window.history.pushState({ jsonlFyiLoaded: true }, "", window.location.href)
-    }
-    loadText(text, file.name)
-  }
-
   function reset(clearUrl = false) {
-    setSession(null)
-    setFileName(null)
-    setSkipped(0)
+    resetSession(clearUrl)
     if (inputRef.current) inputRef.current.value = ""
-    if (clearUrl && window.location.pathname !== "/") {
-      window.history.pushState(null, "", "/")
-    }
-    try {
-      sessionStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // ignore
-    }
-  }
-
-  async function loadExample(example: Example, updateHistory = true) {
-    if (updateHistory) {
-      window.history.pushState(null, "", exampleHref(example))
-    }
-    const text = await example.load()
-    loadText(text, example.fileName, false)
   }
 
   useEffect(() => {
+    if (session) return
     const id = window.setInterval(() => {
       setActiveAgentIndex((i) => (i + 1) % AGENT_FORMATS.length)
     }, 2400)
     return () => window.clearInterval(id)
-  }, [])
-
-  useEffect(() => {
-    async function loadCurrentLocation(restoreSession: boolean) {
-      const routeExample = findExampleByPath(window.location.pathname)
-      if (routeExample) {
-        await loadExample(routeExample, false)
-        return
-      }
-
-      if (!restoreSession) {
-        reset(false)
-        return
-      }
-
-      const params = new URLSearchParams(window.location.search)
-      if (params.has("demo") && EXAMPLES.length > 0) {
-        const first = EXAMPLES[0]
-        const text = await first.load()
-        loadText(text, first.fileName, false)
-        return
-      }
-      try {
-        const raw = sessionStorage.getItem(STORAGE_KEY)
-        if (raw) {
-          const { name, text } = JSON.parse(raw) as { name: string; text: string }
-          loadText(text, name, false)
-        }
-      } catch {
-        // ignore parse/storage errors; user can re-drop the file
-      }
-    }
-
-    void loadCurrentLocation(true)
-    const handlePopState = () => {
-      void loadCurrentLocation(false)
-    }
-    window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
-  }, [])
+  }, [session])
 
   return (
     <>
@@ -283,8 +166,13 @@ export function App() {
               }}
               onClick={() => inputRef.current?.click()}
             >
-              <div className="drop-zone-text">
-                {dropError ? (
+              <div className="drop-zone-text" role="status" aria-live="polite">
+                {loadingFile ? (
+                  <>
+                    Loading {loadingFile.name}…
+                    <div className="drop-zone-sub">{loadingFile.percent}%</div>
+                  </>
+                ) : dropError ? (
                   <>
                     {dropError}
                     <div className="drop-zone-sub">
