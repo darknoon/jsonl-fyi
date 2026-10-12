@@ -1,0 +1,1 @@
+{"method": "_x.ai/session/update", "timestamp": 0, "params": {"sessionId": "synthetic-recipe-session", "update": {"sessionUpdate": "turn_completed"}, "_meta": {"eventId": "synthetic-event", "agentTimestampMs": 0}}}

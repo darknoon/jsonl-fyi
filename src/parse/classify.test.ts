@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { classifyJsonl } from "./classify"
+import { classifyJsonl, detectGrokCompanion } from "./classify"
 
 test("classifyJsonl: codex from session_meta", () => {
   const lines = [
@@ -117,4 +117,101 @@ test("classifyJsonl: prefers codex when both signals present (defensive)", () =>
       { type: "session_meta", payload: { id: "x" } },
     ]),
   ).toBe("codex")
+})
+
+test("classifyJsonl: Grok flat message and standalone result shapes", () => {
+  expect(classifyJsonl([{ type: "system", content: "Maintain recipes" }])).toBe("grok")
+  expect(
+    classifyJsonl([
+      { type: "user", content: [{ type: "text", text: "Make soup" }], prompt_index: 0 },
+    ]),
+  ).toBe("grok")
+  expect(
+    classifyJsonl([{ type: "assistant", content: "", model_id: "grok-test", tool_calls: [] }]),
+  ).toBe("grok")
+  expect(
+    classifyJsonl([{ type: "tool_result", tool_call_id: "recipe-call", content: "Soup" }]),
+  ).toBe("grok")
+})
+
+test("classifyJsonl: flat Claude system content keeps its Claude envelope", () => {
+  for (const envelope of [
+    { uuid: "synthetic" },
+    { subtype: "notice" },
+    { message: { content: "hello" } },
+  ]) {
+    expect(classifyJsonl([{ type: "system", content: "Notice", ...envelope }])).toBe("claude")
+  }
+})
+
+test("classifyJsonl: later Codex/Pi evidence takes precedence over Grok in the ten-line window", () => {
+  const grok = { type: "system", content: "Maintain recipes" }
+  expect(classifyJsonl([grok, ...Array(8).fill(null), { type: "session_meta" }])).toBe("codex")
+  expect(classifyJsonl([grok, { type: "model_change" }])).toBe("pi")
+  expect(
+    classifyJsonl([grok, { type: "session", version: 1, id: "synthetic", cwd: "/recipes" }]),
+  ).toBe("pi")
+  expect(classifyJsonl([grok, ...Array(9).fill(null), { type: "session_meta" }])).toBe("grok")
+})
+
+test("Grok companion detection requires xAI evidence inside an updates envelope", () => {
+  const generic = {
+    method: "session/update",
+    timestamp: 0,
+    params: { sessionId: "synthetic", update: { sessionUpdate: "tool_call" } },
+  }
+  expect(detectGrokCompanion([generic])).toBeNull()
+  expect(detectGrokCompanion([{ ...generic, method: "_x.ai/session/update" }])).toBe(
+    "updates.jsonl",
+  )
+  expect(
+    detectGrokCompanion([
+      {
+        ...generic,
+        params: {
+          ...generic.params,
+          update: { ...generic.params.update, _meta: { "x.ai/tool": { name: "read_file" } } },
+        },
+      },
+    ]),
+  ).toBe("updates.jsonl")
+  expect(detectGrokCompanion([{ method: "_x.ai/session/update" }])).toBeNull()
+})
+
+test("Grok companion detection requires the distinctive turn_started envelope", () => {
+  const event = {
+    type: "turn_started",
+    ts: "2000-01-01T00:00:00Z",
+    schema_version: "1.0",
+    session_id: "synthetic",
+    model_id: "grok-test",
+    turn_number: 1,
+    conversation_message_count: 4,
+    session_relationship: null,
+    yolo_mode: false,
+  }
+  expect(detectGrokCompanion([event])).toBe("events.jsonl")
+  expect(detectGrokCompanion([{ type: "turn_started", ts: event.ts }])).toBeNull()
+  expect(
+    detectGrokCompanion([{ type: "tool_completed", tool_call_id: "synthetic", duration_ms: 12 }]),
+  ).toBeNull()
+  expect(classifyJsonl([event])).toBe("unknown")
+})
+
+test("synthetic Grok fixtures classify history and detect both companions", async () => {
+  const load = async (name: string): Promise<unknown[]> => {
+    const text = await Bun.file(
+      new URL(`../__fixtures__/grok/recipe-planner/${name}`, import.meta.url),
+    ).text()
+    return text
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+  }
+  expect(classifyJsonl(await load("chat_history.jsonl"))).toBe("grok")
+  for (const name of ["events.jsonl", "updates.jsonl"] as const) {
+    const lines = await load(name)
+    expect(classifyJsonl(lines)).toBe("unknown")
+    expect(detectGrokCompanion(lines)).toBe(name)
+  }
 })

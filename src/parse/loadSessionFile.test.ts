@@ -189,3 +189,89 @@ test("loadSessionFile respects an already aborted load", async () => {
     }).catch((error: unknown) => error),
   ).toBe(reason)
 })
+
+test("loadSessionFile pairs Grok calls across the first ten lines and later stream chunks", async () => {
+  const lines = [
+    { type: "system", content: "Help with recipe notes." },
+    ...Array.from({ length: 8 }, () => ({
+      type: "user",
+      content: [{ type: "text", text: "Recipe context" }],
+    })),
+    {
+      type: "assistant",
+      content: "",
+      model_id: "grok-test",
+      tool_calls: [
+        { id: "soup", name: "read_file", arguments: '{"target_file":"soup.md"}' },
+        { id: "salad", name: "read_file", arguments: '{"target_file":"salad.md"}' },
+      ],
+    },
+    { type: "tool_result", tool_call_id: "salad", content: "Salad result" },
+    {
+      type: "tool_result",
+      tool_call_id: "soup",
+      content: "Soup result",
+      images: [{ type: "image", url: "data:image/png;base64,synthetic" }],
+    },
+    {
+      type: "assistant",
+      content: "Check the dessert too.",
+      tool_calls: [{ id: "dessert", name: "read_file", arguments: '{"target_file":"dessert.md"}' }],
+    },
+    { type: "tool_result", tool_call_id: "dessert", content: "Dessert result" },
+  ]
+  const text = lines.map((line) => JSON.stringify(line)).join("\n")
+  const result = await loadSessionFile(streamedFile(text, 7))
+  expect(result.session?.format).toBe("grok")
+  if (result.session?.format !== "grok") throw new Error("Expected Grok session")
+  const tools = result.session.session.entries.filter((entry) => entry.kind === "tool")
+  expect(
+    tools.map((tool) => [tool.input.target_file, tool.hasResult, tool.output.content[0]]),
+  ).toEqual([
+    ["soup.md", true, { type: "text", text: "Soup result" }],
+    ["salad.md", true, { type: "text", text: "Salad result" }],
+    ["dessert.md", true, { type: "text", text: "Dessert result" }],
+  ])
+  expect(tools[0].output.content[1]).toEqual({
+    type: "image",
+    source: { type: "url", url: "data:image/png;base64,synthetic" },
+  })
+  expect(result.session.session.models).toEqual(["grok-test"])
+  expect(result.text).toBe(text)
+})
+
+test("loadSessionFile detects Grok companions beyond the format sampling window", async () => {
+  const companions = [
+    [
+      "events.jsonl",
+      {
+        type: "turn_started",
+        ts: "2026-01-01T00:00:00Z",
+        schema_version: "1.0",
+        session_id: "recipe-example",
+        model_id: "grok-test",
+        turn_number: 1,
+        conversation_message_count: 0,
+        session_relationship: null,
+        yolo_mode: false,
+      },
+    ],
+    [
+      "updates.jsonl",
+      {
+        method: "_x.ai/session/update",
+        timestamp: 1,
+        params: { sessionId: "recipe-example", update: { sessionUpdate: "turn_completed" } },
+      },
+    ],
+  ] as const
+  for (const [name, marker] of companions) {
+    const text = [...Array.from({ length: 12 }, () => ({ unrelated: true })), marker]
+      .map((line) => JSON.stringify(line))
+      .join("\n")
+    const result = await loadSessionFile(streamedFile(text, 5, 4_000_000))
+    expect(result.session).toBeNull()
+    expect(result.grokCompanion).toBe(name)
+    expect(result.text).toBeUndefined()
+  }
+})

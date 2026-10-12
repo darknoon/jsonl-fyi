@@ -904,6 +904,26 @@ textarea {
 .file-icon-pi {
   color: var(--color-brand-pi);
 }
+.file-icon-grok {
+  color: var(--color-fg);
+}
+.prototype-example {
+  margin: 0 0 12px;
+  font-size: var(--fs-sm);
+}
+.prototype-example a {
+  color: var(--color-fg);
+  text-underline-offset: 3px;
+}
+.session-file-tree {
+  padding: 16px;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
 .example-row .file-icon {
   width: 24px;
   height: 24px;

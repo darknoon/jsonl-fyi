@@ -1,0 +1,1 @@
+{"type": "turn_started", "ts": "2000-01-01T00:00:00Z", "schema_version": "1.0", "session_id": "synthetic-recipe-session", "model_id": "grok-4.7", "turn_number": 1, "conversation_message_count": 4, "session_relationship": null, "yolo_mode": false}

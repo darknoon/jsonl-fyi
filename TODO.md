@@ -4,6 +4,8 @@
   - [ ] Research how subagents work here?
 - [x] Drag in pi agent traces
   - [ ] Render pi `custom_message` entries as distinct plugin/tool-style blocks
+- [x] Grok Build CLI `chat_history.jsonl` support
+  - [ ] Add optional timestamps and tool durations from the session's `events.jsonl` as a follow-up
 - [x] Connect skill message w/ Skill tool call
 - [x] Render Edit tool calls with [diffs](https://diffs.com/)
 - [x] Show timestamps

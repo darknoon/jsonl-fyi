@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
-import { useSessionLoader } from "./useSessionLoader"
+import { GROK_PROTOTYPE_PATH, useSessionLoader } from "./useSessionLoader"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import { PiTranscript } from "./transcript/pi/PiTranscript"
+import { GrokTranscript } from "./transcript/grok/GrokTranscript"
 import { ArrowLeftIcon, CheckIcon, CopyIcon, XIcon } from "@phosphor-icons/react"
 import { SettingsButton, SettingsPopover } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
-import { FileIcon } from "./FileIcon"
-import type { Example } from "./examples"
+import { FileIcon, type FileIconFormat } from "./FileIcon"
 
 // Dev-only: load the Agentation visual-feedback toolbar dynamically so it
 // gets tree-shaken out of production builds. `import.meta.env.DEV` is a
@@ -43,11 +43,12 @@ function TerminalCommand({ command }: { command: string }) {
   )
 }
 
-const AGENT_FORMATS = ["claude", "codex", "pi"] as const satisfies readonly Example["format"][]
-const AGENT_LABELS: Record<Example["format"], string> = {
+const AGENT_FORMATS = ["claude", "codex", "pi", "grok"] as const satisfies readonly FileIconFormat[]
+const AGENT_LABELS: Record<FileIconFormat, string> = {
   claude: "Claude Code",
   codex: "OpenAI Codex",
   pi: "Pi Coding Agent",
+  grok: "Grok Build CLI",
 }
 
 export function App() {
@@ -59,15 +60,16 @@ export function App() {
     loadingFile,
     loadFile,
     loadExample,
+    loadGrokPrototype,
     reset: resetSession,
   } = useSessionLoader()
   const [dragOver, setDragOver] = useState(false)
   const [activeAgentIndex, setActiveAgentIndex] = useState(0)
-  const [previewAgent, setPreviewAgent] = useState<Example["format"] | null>(null)
+  const [previewAgent, setPreviewAgent] = useState<FileIconFormat | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const activeAgent = previewAgent ?? AGENT_FORMATS[activeAgentIndex]
 
-  function previewFormat(format: Example["format"] | null) {
+  function previewFormat(format: FileIconFormat | null) {
     if (format) {
       setActiveAgentIndex(AGENT_FORMATS.indexOf(format))
     }
@@ -137,7 +139,9 @@ export function App() {
           <>
             <p className="description">
               View and debug your{" "}
-              <span className="sr-only">Claude Code, OpenAI Codex, or Pi Coding Agent</span>
+              <span className="sr-only">
+                Claude Code, OpenAI Codex, Pi Coding Agent, or Grok Build CLI
+              </span>
               <span className="agent-fader" aria-hidden="true">
                 {AGENT_FORMATS.map((format) => (
                   <span
@@ -215,6 +219,19 @@ export function App() {
               activeFormat={activeAgent}
               onPreviewFormat={previewFormat}
             />
+            {import.meta.env.DEV && (
+              <p className="prototype-example">
+                <a
+                  href={GROK_PROTOTYPE_PATH}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void loadGrokPrototype()
+                  }}
+                >
+                  Try Grok Build CLI — synthetic example
+                </a>
+              </p>
+            )}
             <details className="drop-zone-defined">
               <summary>How do I find the .jsonl on my computer?</summary>
               <h3>Claude Code</h3>
@@ -237,12 +254,34 @@ export function App() {
                 stores sessions in <code>~/.pi/agent/sessions/</code>:
               </p>
               <TerminalCommand command="open ~/.pi/agent/sessions/" />
+              <h3>Grok Build CLI</h3>
+              <p>
+                Open <code>~/.grok/sessions/</code>, then your project folder and a session folder.
+                Drop <code>chat_history.jsonl</code> to view the conversation, tool results and
+                images.
+              </p>
+              <TerminalCommand command="open ~/.grok/sessions/" />
+              <p>
+                In Finder, press <kbd>⌘⇧G</kbd> and paste <code>~/.grok/sessions/</code>. Project
+                folder names encode the path (<code>/</code> becomes <code>%2F</code>); each session
+                is a folder inside it.
+              </p>
+              <pre className="session-file-tree">
+                {
+                  "~/.grok/sessions/\n└── <project-folder>/\n    └── <session-id>/\n        ├── chat_history.jsonl  ← choose this file\n        ├── events.jsonl\n        └── updates.jsonl"
+                }
+              </pre>
+              <p>
+                Timestamps, durations and token usage are stored in other files and won’t appear in
+                this view.
+              </p>
             </details>
           </>
         )}
 
         {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
         {session && session.format === "pi" && <PiTranscript session={session.session} />}
+        {session && session.format === "grok" && <GrokTranscript session={session.session} />}
         {session && session.format === "claude" && (
           <ClaudeCodeTranscript entries={session.entries} />
         )}
