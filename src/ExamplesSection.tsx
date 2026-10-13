@@ -1,10 +1,10 @@
 import { EXAMPLES, exampleHref, formatBytes } from "./examples"
 import type { Example } from "./examples"
-import { FileIcon } from "./FileIcon"
+import { FileIcon, type FileIconFormat } from "./FileIcon"
 
 type Props = {
   onSelect: (example: Example) => void
-  activeFormat: Example["format"]
+  activeFormat: FileIconFormat
   onPreviewFormat: (format: Example["format"] | null) => void
 }
 

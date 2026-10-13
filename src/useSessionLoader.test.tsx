@@ -206,3 +206,93 @@ test("opening an example route loads it once without changing history or stored 
     loadSpy.mockRestore()
   }
 })
+
+function grokTranscript(message = "Show the soup recipe"): string {
+  return [
+    { type: "user", prompt_index: 0, content: [{ type: "text", text: message }] },
+    {
+      type: "assistant",
+      content: "Here is the recipe.",
+      model_id: "grok-test",
+      tool_calls: [{ id: "soup", name: "read_file", arguments: '{"target_file":"soup.png"}' }],
+    },
+    {
+      type: "tool_result",
+      tool_call_id: "soup",
+      content: "",
+      images: [{ type: "image", url: "data:image/png;base64,synthetic" }],
+    },
+  ]
+    .map((line) => JSON.stringify(line))
+    .join("\n")
+}
+
+test("restoring persisted Grok text parses messages, paired calls, and images", async () => {
+  const stored = JSON.stringify({ name: "chat_history.jsonl", text: grokTranscript() })
+  sessionStorage.setItem(STORAGE_KEY, stored)
+  await mount()
+  expect(loader.fileName).toBe("chat_history.jsonl")
+  expect(loader.dropError).toBeNull()
+  expect(loader.session?.format).toBe("grok")
+  if (loader.session?.format !== "grok") throw new Error("Expected Grok session")
+  expect(loader.session.session.entries[0]).toMatchObject({
+    kind: "message",
+    role: "user",
+    text: "Show the soup recipe",
+  })
+  expect(loader.session.session.entries.find((entry) => entry.kind === "tool")).toMatchObject({
+    hasResult: true,
+    output: {
+      content: [{ type: "image", source: { type: "url", url: "data:image/png;base64,synthetic" } }],
+    },
+  })
+  expect(sessionStorage.getItem(STORAGE_KEY)).toBe(stored)
+})
+
+test("persisted Grok companion text shows the same hint as dropped files", async () => {
+  sessionStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      name: "updates.jsonl",
+      text: JSON.stringify({
+        method: "_x.ai/session/update",
+        timestamp: 1,
+        params: { sessionId: "recipe-example", update: { sessionUpdate: "turn_completed" } },
+      }),
+    }),
+  )
+  await mount()
+  expect(loader.session).toBeNull()
+  expect(loader.dropError).toBe("Drop chat_history.jsonl from the same folder.")
+})
+
+test("a delayed Grok text source cannot overwrite a newly selected streamed file", async () => {
+  await mount()
+  let resolveText!: (text: string) => void
+  const pending = new Promise<string>((resolve) => {
+    resolveText = resolve
+  })
+  let textCompletion!: Promise<void>
+  await act(async () => {
+    textCompletion = loader.loadExample({
+      ...EXAMPLES[0],
+      fileName: "chat_history.jsonl",
+      load: () => pending,
+    })
+  })
+  const text = transcript("The latest selected file")
+  const current = controlledFile("current.jsonl", new TextEncoder().encode(text).length)
+  await act(async () => {
+    const completion = loader.loadFile(current.file)
+    current.enqueue(text)
+    current.close()
+    await completion
+  })
+  await act(async () => {
+    resolveText(grokTranscript("Late prototype text"))
+    await textCompletion
+  })
+  expect(loader.session?.format).toBe("codex")
+  expect(loader.fileName).toBe("current.jsonl")
+  expect(loader.loadingFile).toBeNull()
+})

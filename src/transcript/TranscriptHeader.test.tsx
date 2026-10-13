@@ -51,3 +51,11 @@ test("TranscriptHeader: empty models array behaves like no models", () => {
   )
   expect(html).not.toContain("•")
 })
+
+test("TranscriptHeader: model without a date has no dangling separator", () => {
+  const html = renderToStaticMarkup(<TranscriptHeader models={[{ label: "Grok", raw: "grok" }]} />)
+  expect(html).toContain("Grok")
+  expect(html).not.toContain("•")
+  expect(html).not.toContain("Invalid")
+  expect(renderToStaticMarkup(<TranscriptHeader />)).toBe("")
+})

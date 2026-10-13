@@ -156,3 +156,63 @@ test("a slow demo cannot replace a file selected while it downloads", async () =
     fetchSpy.mockRestore()
   }
 })
+
+test("Grok files use the streaming loader and display image results", async () => {
+  const text = [
+    { type: "user", prompt_index: 0, content: [{ type: "text", text: "Show my soup recipe." }] },
+    {
+      type: "assistant",
+      content: "Here is the image.",
+      model_id: "grok-test",
+      tool_calls: [{ id: "soup", name: "read_file", arguments: '{"target_file":"soup.png"}' }],
+    },
+    {
+      type: "tool_result",
+      tool_call_id: "soup",
+      content: "",
+      images: [{ type: "image", url: "data:image/png;base64,synthetic" }],
+    },
+  ]
+    .map((line) => JSON.stringify(line))
+    .join("\n")
+  await selectFile(streamedFile("chat_history.jsonl", text))
+  expect(container.querySelector(".filename")?.textContent).toBe("chat_history.jsonl")
+  expect(container.querySelector(".transcript")?.textContent).toContain("Show my soup recipe.")
+  expect(container.querySelector(".image-block img")?.getAttribute("src")).toBe(
+    "data:image/png;base64,synthetic",
+  )
+})
+
+test("dropped Grok companion streams show the chat_history hint", async () => {
+  const companions = [
+    [
+      "events.jsonl",
+      {
+        type: "turn_started",
+        ts: "2026-01-01T00:00:00Z",
+        schema_version: "1.0",
+        session_id: "recipe-example",
+        model_id: "grok-test",
+        turn_number: 1,
+        conversation_message_count: 0,
+        session_relationship: null,
+        yolo_mode: false,
+      },
+    ],
+    [
+      "updates.jsonl",
+      {
+        method: "_x.ai/session/update",
+        timestamp: 1,
+        params: { sessionId: "recipe-example", update: { sessionUpdate: "turn_completed" } },
+      },
+    ],
+  ] as const
+  for (const [name, marker] of companions) {
+    await selectFile(streamedFile(name, JSON.stringify(marker)))
+    expect(container.querySelector('[role="status"]')?.textContent).toContain(
+      "Drop chat_history.jsonl from the same folder.",
+    )
+    expect(container.querySelector(".transcript")).toBeNull()
+  }
+})

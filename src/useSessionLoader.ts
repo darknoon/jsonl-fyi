@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { EXAMPLES, exampleHref, findExampleByPath, type Example } from "./examples"
-import { classifyJsonl } from "./parse/classify"
+import { classifyJsonl, detectGrokCompanion } from "./parse/classify"
 import { iterJsonlLines } from "./parse/iter"
 import { loadSessionFile, type LoadedSession } from "./parse/loadSessionFile"
 import { parseJsonl } from "./transcript/claude/parse"
 import { parseCodexEntries } from "./transcript/codex/parse"
 import { parsePiEntries } from "./transcript/pi/parse"
+import { parseGrokEntries } from "./transcript/grok/parse"
 
 const STORAGE_KEY = "jsonl-fyi:last"
 const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
+export const GROK_PROTOTYPE_PATH = "/examples/grok-build-prototype"
+
+function unsupportedFileMessage(name: string, grokCompanion: string | null | undefined): string {
+  return grokCompanion
+    ? "Drop chat_history.jsonl from the same folder."
+    : `Couldn't parse ${name} as a Claude Code, OpenAI Codex, pi, or Grok Build CLI JSONL file`
+}
 
 export function useSessionLoader() {
   const [session, setSession] = useState<LoadedSession | null>(null)
@@ -36,6 +44,9 @@ export function useSessionLoader() {
     } else if (format === "pi") {
       setSession({ format: "pi", session: parsePiEntries(allLines) })
       setDropError(null)
+    } else if (format === "grok") {
+      setSession({ format: "grok", session: parseGrokEntries(allLines) })
+      setDropError(null)
     } else if (format === "claude") {
       // parseJsonl re-parses the text; small overhead, fine for now.
       const r = parseJsonl(text)
@@ -43,7 +54,7 @@ export function useSessionLoader() {
       setDropError(null)
     } else {
       setSession(null)
-      setDropError(`Couldn't parse ${name} as a Claude Code, OpenAI Codex, or pi JSONL file`)
+      setDropError(unsupportedFileMessage(name, detectGrokCompanion(allLines)))
     }
     setFileName(name)
     setSkipped(skippedCount)
@@ -96,9 +107,7 @@ export function useSessionLoader() {
         setFileName(file.name)
         setSkipped(loaded.skipped)
         setDropError(
-          loaded.session
-            ? null
-            : `Couldn't parse ${file.name} as a Claude Code, OpenAI Codex, or pi JSONL file`,
+          loaded.session ? null : unsupportedFileMessage(file.name, loaded.grokCompanion),
         )
         try {
           if (loaded.text !== undefined) {
@@ -145,18 +154,44 @@ export function useSessionLoader() {
     [cancelFileLoad],
   )
 
-  const loadExample = useCallback(
-    async (example: Example, updateHistory = true) => {
+  const loadTextSource = useCallback(
+    async (
+      source: Pick<Example, "fileName" | "load">,
+      pathname: string,
+      updateHistory: boolean,
+    ) => {
       cancelFileLoad()
       const request = loadRequestRef.current
       if (updateHistory) {
-        window.history.pushState(null, "", exampleHref(example))
+        window.history.pushState(null, "", pathname)
       }
-      const text = await example.load()
+      const text = await source.load()
       if (request !== loadRequestRef.current) return
-      loadText(text, example.fileName, false)
+      loadText(text, source.fileName, false)
     },
     [cancelFileLoad, loadText],
+  )
+
+  const loadExample = useCallback(
+    (example: Example, updateHistory = true) =>
+      loadTextSource(example, exampleHref(example), updateHistory),
+    [loadTextSource],
+  )
+
+  const loadGrokPrototype = useCallback(
+    async (updateHistory = true) => {
+      if (!import.meta.env.DEV) return
+      await loadTextSource(
+        {
+          fileName: "chat_history.jsonl",
+          load: async () =>
+            (await import("./__fixtures__/grok/recipe-planner/chat_history.jsonl?raw")).default,
+        },
+        GROK_PROTOTYPE_PATH,
+        updateHistory,
+      )
+    },
+    [loadTextSource],
   )
 
   useEffect(
@@ -169,6 +204,10 @@ export function useSessionLoader() {
 
   useEffect(() => {
     async function loadCurrentLocation(restoreSession: boolean) {
+      if (import.meta.env.DEV && window.location.pathname === GROK_PROTOTYPE_PATH) {
+        await loadGrokPrototype(false)
+        return
+      }
       const routeExample = findExampleByPath(window.location.pathname)
       if (routeExample) {
         await loadExample(routeExample, false)
@@ -202,7 +241,17 @@ export function useSessionLoader() {
     }
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
-  }, [loadExample, loadText, reset])
+  }, [loadExample, loadGrokPrototype, loadText, reset])
 
-  return { session, fileName, skipped, dropError, loadingFile, loadFile, loadExample, reset }
+  return {
+    session,
+    fileName,
+    skipped,
+    dropError,
+    loadingFile,
+    loadFile,
+    loadExample,
+    loadGrokPrototype,
+    reset,
+  }
 }
