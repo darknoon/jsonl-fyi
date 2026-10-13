@@ -296,3 +296,16 @@ test("a delayed Grok text source cannot overwrite a newly selected streamed file
   expect(loader.fileName).toBe("current.jsonl")
   expect(loader.loadingFile).toBeNull()
 })
+
+test("restores a Muse session with its run boundaries from browser storage", async () => {
+  const text = await Bun.file(
+    new URL("./__fixtures__/muse/muse-code.jsonl", import.meta.url),
+  ).text()
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ name: "muse-code.jsonl", text }))
+  await mount()
+  expect(loader.fileName).toBe("muse-code.jsonl")
+  expect(loader.session?.format).toBe("muse")
+  if (loader.session?.format !== "muse") throw new Error("Expected Muse session")
+  expect(loader.session.session.runs).toHaveLength(2)
+  expect(loader.dropError).toBeNull()
+})

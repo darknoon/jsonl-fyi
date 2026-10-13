@@ -904,7 +904,8 @@ textarea {
 .file-icon-pi {
   color: var(--color-brand-pi);
 }
-.file-icon-grok {
+.file-icon-grok,
+.file-icon-muse {
   color: var(--color-fg);
 }
 .prototype-example {

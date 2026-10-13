@@ -275,3 +275,17 @@ test("loadSessionFile detects Grok companions beyond the format sampling window"
     expect(result.text).toBeUndefined()
   }
 })
+
+test("streams the Muse fixture across chunk boundaries without duplicating turns or results", async () => {
+  const text = await Bun.file(
+    new URL("../__fixtures__/muse/muse-code.jsonl", import.meta.url),
+  ).text()
+  const result = await loadSessionFile(streamedFile(text + "\ninvalid\n", 11))
+  expect(result.session?.format).toBe("muse")
+  if (result.session?.format !== "muse") throw new Error("Expected Muse session")
+  expect(result.session.session.runs).toHaveLength(2)
+  expect(result.session.session.models.length).toBeGreaterThan(0)
+  expect(result.session.session.runs[0].entries.some((entry) => entry.kind === "tool")).toBe(true)
+  expect(result.skipped).toBe(1)
+  expect(result.text).toBe(text + "\ninvalid\n")
+})

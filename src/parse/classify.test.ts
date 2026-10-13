@@ -215,3 +215,21 @@ test("synthetic Grok fixtures classify history and detect both companions", asyn
     expect(detectGrokCompanion(lines)).toBe(name)
   }
 })
+
+test("Muse detection requires its session event envelope, not a filename or generic task", () => {
+  const record = {
+    schema_version: 1,
+    id: "synthetic-record",
+    stream: { kind: "session", id: "synthetic-session" },
+    sequence: 1,
+    recorded_at: 1_800_000_000_000_000,
+    record_type: "event",
+    payload_type: "run.model.configured",
+    payload: { model_id: "synthetic-model" },
+  }
+  expect(classifyJsonl([record])).toBe("muse")
+  expect(classifyJsonl([{ payload_type: "task.lifecycle.started", payload: {} }])).toBe("unknown")
+  expect(classifyJsonl([{ ...record, stream: { kind: "task", id: "task" } }])).toBe("unknown")
+  expect(classifyJsonl([{ ...record, payload_type: "unrelated.event" }])).toBe("unknown")
+  expect(classifyJsonl([record, { type: "session_meta" }])).toBe("codex")
+})

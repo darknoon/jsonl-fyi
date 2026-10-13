@@ -8,7 +8,7 @@ const CODEX_TYPES = new Set([
 const CLAUDE_TYPES = new Set(["user", "assistant", "system"])
 const PI_TYPES = new Set(["model_change", "thinking_level_change"])
 
-export type FormatLabel = "claude" | "codex" | "pi" | "grok" | "unknown"
+export type FormatLabel = "claude" | "codex" | "pi" | "grok" | "muse" | "unknown"
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -38,10 +38,27 @@ function isPiSessionHeader(line: Record<string, unknown>): boolean {
 export function classifyJsonl(lines: readonly unknown[]): FormatLabel {
   let sawClaude = false
   let sawGrok = false
+  let sawMuse = false
   for (let i = 0; i < lines.length && i < 10; i++) {
     const line = lines[i]
     if (!line || typeof line !== "object") continue
     const obj = line as Record<string, unknown>
+    if (
+      typeof obj.schema_version === "number" &&
+      typeof obj.id === "string" &&
+      isObject(obj.stream) &&
+      obj.stream.kind === "session" &&
+      typeof obj.stream.id === "string" &&
+      typeof obj.sequence === "number" &&
+      typeof obj.recorded_at === "number" &&
+      typeof obj.record_type === "string" &&
+      typeof obj.payload_type === "string" &&
+      /^(runtime\.command\.|session\.run\.|run\.|turn\.input\.|task\.|todo\.snapshot\.|tool\.result$)/.test(
+        obj.payload_type,
+      ) &&
+      isObject(obj.payload)
+    )
+      sawMuse = true
     const t = obj.type
     if (typeof t !== "string") continue
     if (CODEX_TYPES.has(t)) return "codex"
@@ -49,7 +66,7 @@ export function classifyJsonl(lines: readonly unknown[]): FormatLabel {
     if (isGrokRecord(obj)) sawGrok = true
     if (CLAUDE_TYPES.has(t)) sawClaude = true
   }
-  return sawGrok ? "grok" : sawClaude ? "claude" : "unknown"
+  return sawMuse ? "muse" : sawGrok ? "grok" : sawClaude ? "claude" : "unknown"
 }
 
 /** Hints for Grok companion streams; these are not supported transcript formats. */
