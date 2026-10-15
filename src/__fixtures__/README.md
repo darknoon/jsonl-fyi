@@ -6,3 +6,7 @@ from whichever harness produced them (Claude in
 exports, and so on), so it's clear where each one came from and which
 session it corresponds to. Don't rename them to `*-sample.jsonl` or
 other descriptive aliases.
+
+This repository is public. Before adding a fixture, read
+`docs/session-data.md`: prefer real sessions that are allowed there, and
+use synthetic ones only as a last resort.

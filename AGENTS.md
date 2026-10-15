@@ -67,6 +67,9 @@ When debugging or planning features, work from real sessions on disk rather than
 
 Project fixtures live in `src/__fixtures__/` and `src/transcript/__fixtures__/`.
 
+This repo is public. Before committing a fixture, or any doc, test or PR
+text informed by a real session, read `docs/session-data.md`.
+
 ## Specs and research
 
 - `docs/superpowers/specs/` — design docs per feature (numbered by date).
