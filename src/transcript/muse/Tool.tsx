@@ -166,10 +166,7 @@ export function MuseTool({
       <ToolCard.Content>
         {imagePath && !hasImages && <ImagePlaceholder path={imagePath} />}
         {input === undefined && (
-          <p className="muse-result-note">
-            Original tool arguments are not decoded for this call. See Source records for the
-            complete recorded fields.
-          </p>
+          <p className="muse-result-note">Tool arguments are not available in this view.</p>
         )}
         <dl className="tool-fields">
           {input !== undefined && <Field name="Arguments" value={valueText(input)} />}

@@ -72,8 +72,7 @@ test("empty shell text is explicit and its recorded envelope remains available",
   expect(container.textContent).toContain("No result text recorded")
   await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
   expect(container.textContent).toContain("No result text recorded")
-  expect(container.textContent).toContain("Original tool arguments are not decoded for this call")
-  expect(container.textContent).toContain("See Source records for the complete recorded fields")
+  expect(container.textContent).toContain("Tool arguments are not available in this view.")
   expect(container.textContent).toContain("Full recorded result")
   expect(container.textContent).toContain(output)
 })
@@ -91,7 +90,7 @@ test("recorded arguments preserve every field without fabricating an edit diff",
   await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
   expect(container.textContent).toContain("Arguments")
   expect(container.textContent).toContain(JSON.stringify(input, null, 2))
-  expect(container.textContent).not.toContain("Original tool arguments are not decoded")
+  expect(container.textContent).not.toContain("Tool arguments are not available")
   expect(container.querySelector(".edit-diff-wrap")).toBeNull()
 })
 
@@ -104,7 +103,7 @@ test("non-object arguments remain available rather than being treated as absent"
     expect(container.querySelector(".tool-field dd code")?.textContent).toBe(
       typeof input === "string" ? input : JSON.stringify(input, null, 2),
     )
-    expect(container.textContent).not.toContain("Original tool arguments are not decoded")
+    expect(container.textContent).not.toContain("Tool arguments are not available")
   }
 })
 

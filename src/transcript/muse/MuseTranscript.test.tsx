@@ -41,65 +41,73 @@ function render(value: MuseSession, viewMode: ViewMode = "normal") {
   )
 }
 
-test("labels an empty subsequent prompt as a follow-up without inventing its cause", () => {
+test("empty and missing prompts preserve assistant continuations without extra labels", () => {
+  const model = { raw: "muse-test", label: "Muse test model" }
   const html = render(
     session([
       run([{ kind: "message", id: "answer", text: "The recipe is ready." }], {
         terminal: "completed",
+        durationMs: 1000,
+        model,
       }),
-      run([], { id: "run-2", prompt: "" }),
+      run([{ kind: "message", id: "empty", text: "The quantities are checked." }], {
+        id: "run-2",
+        prompt: "",
+        model,
+      }),
+      run([{ kind: "message", id: "missing", text: "The recipe is saved." }], {
+        id: "run-3",
+        prompt: undefined,
+        model,
+      }),
     ]),
   )
-  expect(html).toContain("Muse test model")
   expect(html).toContain("The recipe is ready.")
-  expect(html).toContain('aria-label="Conversation (Run 1)"')
-  expect(html).toContain('aria-label="Follow-up (Run 2)"')
-  expect(html).toContain('title="Run ID: run-2"')
-  expect(html).toContain("No user prompt text recorded")
-  expect(html).not.toContain("background")
-  expect(html).toContain("No completion recorded")
+  expect(html).toContain("The quantities are checked.")
+  expect(html).toContain("The recipe is saved.")
+  expect(html.match(/Muse test model/g)?.length).toBe(1)
   expect(html.match(/class="user-bubble"/g)?.length).toBe(1)
-  expect(html).not.toContain("turn-separator")
-  expect(html).not.toContain("Invalid Date")
-})
-
-test("distinguishes a missing prompt from an explicitly empty prompt", () => {
-  const html = render(session([run([]), run([], { id: "run-2", prompt: undefined })]))
-  expect(html).toContain('aria-label="Recorded activity (Run 2)"')
-  expect(html).toContain("User prompt unavailable")
-  expect(html).not.toContain("No user prompt text recorded")
+  expect(html.match(/class="turn-separator"/g)?.length).toBe(1)
   expect(html).not.toContain("Follow-up")
+  expect(html).not.toContain("User prompt unavailable")
+  expect(html).not.toContain("No user prompt text recorded")
+  expect(html).not.toContain("No completion recorded")
+  expect(html).not.toContain("muse-run-heading")
 })
 
-test("a subsequent user prompt starts the next turn", () => {
+test("subsequent recorded user prompts use the standard user bubble", () => {
   const html = render(
     session([run([]), run([], { id: "run-2", prompt: "Make a shopping list too." })]),
   )
-  expect(html).toContain('aria-label="Next turn (Run 2)"')
   expect(html).toContain("Make a shopping list too.")
   expect(html.match(/class="user-bubble"/g)?.length).toBe(2)
-  expect(html).not.toContain("Follow-up")
+  expect(html).not.toContain("Next turn")
 })
 
-test("session metadata does not take a conversation turn or completion label", () => {
+test("session bookkeeping and raw run records do not add transcript rows", () => {
+  const raw = { id: "metadata", payload: { status: "recorded" } }
   const html = render(
     session([
-      run([], { id: "metadata-1", prompt: undefined, isContext: true }),
-      run([], { terminal: "completed" }),
-      run([], { id: "metadata-2", prompt: undefined, isContext: true }),
-      run([], { id: "run-2", prompt: "", terminal: "completed" }),
+      run([{ kind: "diagnostic", id: "runtime", label: "Runtime records", raw }], {
+        id: "metadata-1",
+        prompt: undefined,
+        isContext: true,
+        records: [raw],
+      }),
+      run([{ kind: "message", id: "answer", text: "The recipe is ready." }], {
+        terminal: "completed",
+        records: [raw],
+      }),
     ]),
   )
-  expect(html.match(/<summary>Session records<\/summary>/g)?.length).toBe(2)
-  expect(html).toContain('aria-label="Conversation (Run 1)"')
-  expect(html).toContain('aria-label="Follow-up (Run 2)"')
-  expect(html).not.toContain("Run 3")
-  expect(html).not.toContain("Next turn")
-  expect(html).not.toContain("User prompt unavailable")
-  expect(html).not.toContain("No completion recorded")
+  expect(html).toContain("The recipe is ready.")
+  expect(html).not.toContain("Session records")
+  expect(html).not.toContain("Source records")
+  expect(html).not.toContain("Runtime records")
+  expect(html).not.toContain("tool-card")
 })
 
-test("session record expansion preserves unknown metadata and original source", async () => {
+test("unsupported session content remains available in a shared fallback card", async () => {
   const container = document.createElement("div")
   const root = createRoot(container)
   const raw = { id: "metadata", payload: { unfamiliar: "Retained metadata value" } }
@@ -109,50 +117,13 @@ test("session record expansion preserves unknown metadata and original source", 
   )
   try {
     await act(async () => root.render(<MuseTranscript session={session([context])} />))
-    const disclosure = container.querySelector<HTMLDetailsElement>(".muse-session-records")!
-    expect(disclosure.open).toBe(false)
-    expect(container.textContent).not.toContain("Unrecognized metadata")
-    expect(container.querySelector(".muse-run-heading")).toBeNull()
-    expect(container.querySelector(".muse-run-ending")).toBeNull()
-    await act(async () => {
-      disclosure.open = true
-      disclosure.dispatchEvent(new Event("toggle"))
-    })
     expect(container.textContent).toContain("Unrecognized metadata")
-    expect(container.textContent).toContain("Source records")
+    expect(container.textContent).not.toContain("Retained metadata value")
+    expect(container.querySelector("details")).toBeNull()
+    expect(container.querySelector(".tool-card")).not.toBeNull()
     await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
     expect(container.textContent).toContain(JSON.stringify(raw, null, 2))
-    const source = disclosure.querySelector("details")!
-    await act(async () => {
-      source.open = true
-      source.dispatchEvent(new Event("toggle"))
-    })
-    expect(source.querySelector("pre")?.textContent).toBe(JSON.stringify([raw], null, 2))
-  } finally {
-    act(() => root.unmount())
-  }
-})
-
-test("source records render only while their disclosure is expanded", async () => {
-  const container = document.createElement("div")
-  const root = createRoot(container)
-  const records = [{ id: "source-1", payload: { unfamiliar: "Original recorded value" } }]
-  try {
-    await act(async () => root.render(<MuseTranscript session={session([run([], { records })])} />))
-    const disclosure = container.querySelector("details")
-    expect(disclosure?.querySelector("summary")?.textContent).toBe("Source records")
-    expect(disclosure?.open).toBe(false)
-    expect(disclosure?.querySelector("pre")).toBeNull()
-    await act(async () => {
-      disclosure!.open = true
-      disclosure!.dispatchEvent(new Event("toggle"))
-    })
-    expect(disclosure?.querySelector("pre")?.textContent).toBe(JSON.stringify(records, null, 2))
-    await act(async () => {
-      disclosure!.open = false
-      disclosure!.dispatchEvent(new Event("toggle"))
-    })
-    expect(disclosure?.querySelector("pre")).toBeNull()
+    expect(container.textContent).not.toContain("Source records")
   } finally {
     act(() => root.unmount())
   }
@@ -272,27 +243,37 @@ test("normal and Compact preserve individual tool cards", () => {
   }
 })
 
-test("runtime failures are collapsed diagnostics without failed tool styling", async () => {
+test("non-completed runs retain the recorded outcome without a success separator", async () => {
   const container = document.createElement("div")
   const root = createRoot(container)
   const value = session([
-    run([
-      {
-        kind: "diagnostic",
-        id: "runtime",
-        label: "Runtime events (1 rejected task)",
-        raw: { reason: "superseded model request" },
-      },
-    ]),
+    run([], { terminal: "cancelled", reason: "Recipe work stopped", durationMs: 1000 }),
   ])
   try {
     await act(async () => root.render(<MuseTranscript session={value} />))
-    expect(container.textContent).toContain("Runtime events (1 rejected task)")
-    expect(container.textContent).not.toContain("superseded model request")
-    expect(container.querySelector(".tool-card-error")).toBeNull()
+    expect(container.textContent).toContain("Run cancelled")
+    expect(container.textContent).not.toContain("Recipe work stopped")
+    expect(container.querySelector(".turn-separator")).toBeNull()
+    expect(container.querySelector(".tool-card-success")).toBeNull()
     await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
-    expect(container.textContent).toContain("superseded model request")
+    expect(container.textContent).toContain("Recipe work stopped")
   } finally {
     act(() => root.unmount())
   }
+})
+
+test("multiple models use the existing turn separator model field", () => {
+  const first = { raw: "model-a", label: "Model A" }
+  const second = { raw: "model-b", label: "Model B" }
+  const html = render(
+    session(
+      [
+        run([], { model: first, terminal: "completed", durationMs: 1000 }),
+        run([], { id: "run-2", model: second, terminal: "completed", durationMs: 2000 }),
+      ],
+      { models: [first, second] },
+    ),
+  )
+  expect(html).toContain('class="turn-separator-model" title="model-a">Model A')
+  expect(html).toContain('class="turn-separator-model" title="model-b">Model B')
 })

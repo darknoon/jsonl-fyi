@@ -11,9 +11,12 @@ independent from React and the application. Use the existing tool cards,
 markdown, reasoning blocks, image lightbox and view-mode controls.
 
 Render recorded prompts, assistant messages, arguments, tool results and
-embedded images. Keep empty-input follow-ups distinct from missing prompts.
-Pair calls/results by scoped identities, preserve conflicts, and show
-unknown or omitted content for inspection. Show durable dates only after
+embedded images. Keep empty-input runs distinct from missing prompts in
+parser output, without adding turn labels or empty user bubbles. Reuse the
+existing session header and turn separators; do not introduce format-specific
+headings or raw-record disclosures. Pair calls/results by scoped identities,
+preserve conflicts, and show unknown content in shared fallback cards.
+Keep omitted-content markers in parser output. Show durable dates only after
 clock validation; use explicit durations. Live-ledger timestamps remain raw.
 
 The field and joining rules are in
@@ -27,7 +30,7 @@ follow-up. The live-ledger fixture exercises the alternate shape.
 
 Verify classification, restored files, out-of-order and ambiguous pairing,
 reasoning deduplication, image visibility, follow-ups, unknown schemas and
-missing data in tests. Browser-check file loading, all view modes, source
+missing data in tests. Browser-check file loading, all view modes, unknown
 record expansion, image enlargement and mobile overflow. Keep the worktree
 preview running for review.
 

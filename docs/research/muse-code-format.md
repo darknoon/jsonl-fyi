@@ -14,8 +14,9 @@ Records use `schema_version`, `id`, `stream`, `sequence`, `recorded_at`,
 
 Record, task, run and tool-call identities are distinct. Status and ephemeral
 records can carry conversation content. Never filter them by durability alone.
-Unsupported schemas, unfamiliar records and original source records remain
-inspectable. Omitted content is never reconstructed.
+Unsupported schemas and unfamiliar records use the shared fallback cards.
+Original source records remain in parser output. Omitted content is never
+reconstructed.
 
 ## Durable session log
 
@@ -59,7 +60,7 @@ The call's separate `id` is not the result join key. Preserve ambiguous,
 duplicate and unmatched records. Decode arguments once; preserve invalid JSON
 as text. Assistant messages stay in their recorded positions between tools.
 Image bytes can render directly; paths and artifact references alone cannot.
-Unknown content parts remain available in source records.
+Unknown content parts remain in the original records in parser output.
 
 Durable `recorded_at` values are interpreted as epoch microseconds, divided
 by 1,000 for display. Validate safe integers, date range and sequence order;
@@ -82,27 +83,28 @@ Scheduled `event.idempotency_key: "tool:example-call"` joins to
 Keep unresolved commands separate; do not pair records by adjacency.
 
 Prefer canonical `tool.result.text` over duplicate lifecycle output chunks.
-Preserve differing chunks. Non-tool tasks remain collapsed runtime records.
+Preserve differing chunks and non-tool tasks in parser diagnostics.
 Failures, rejection, cancellation, running and unknown states stay distinct;
 a final output chunk does not prove a background process has stopped.
 Shell exit codes can establish failure despite successful task completion.
 
 The live ledger reader does not interpret `recorded_at` as a date or elapsed
 time: its wall-clock semantics are not established. Raw values remain in
-source records. No missing timestamps, usage, arguments or reasoning are
+parser output. No missing timestamps, usage, arguments or reasoning are
 reported as zero or fabricated.
 
 ## Viewer behavior and limits
 
 Reuse shared tool cards, text, reasoning, image lightbox and Chat groups.
 Keep image-bearing tools outside collapsed Chat groups. Compact mode shows
-images when the tool expands. Distinguish a follow-up with empty input from
-a missing prompt; neither creates an empty user bubble or proves why the
-run started.
+images when the tool expands. Empty and missing prompts remain distinct in
+parser output; neither creates a user bubble or a visible turn label.
+Use the existing session header and turn separators. Runtime bookkeeping
+and full source dumps do not add rows to the conversation.
 
 Single-file intake does not resolve companion artifacts, reconstruct edit
 diffs from counts, fetch local paths, authenticate checksums or decrypt
-reasoning. Usage records remain inspectable rather than being totaled. Live
+reasoning. Usage records remain in parser output rather than being totaled. Live
 ledger intermediate assistant-message boundaries are not fully modeled.
 Missing terminal records leave completion unknown.
 

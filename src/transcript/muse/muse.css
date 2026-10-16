@@ -15,22 +15,6 @@
   min-width: 0;
 }
 
-.muse-run-heading {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin: 18px 0 12px;
-  color: var(--color-muted);
-  font-size: var(--fs-xs);
-}
-
-.muse-run-ending {
-  margin: 22px 0;
-  color: var(--color-muted);
-  font-size: var(--fs-sm);
-  text-align: center;
-}
-
 .muse-tool-duration,
 .muse-tool-status {
   flex-shrink: 0;

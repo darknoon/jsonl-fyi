@@ -1,10 +1,8 @@
-import { useState } from "react"
 import { useSettings } from "../../settings"
 import { TextBlock } from "../claude/TextBlock"
 import type { SummaryCounts } from "../groupSummary"
 import { Header, ToolTitle } from "../shared"
 import { ThinkingBlock } from "../ThinkingBlock"
-import { formatDuration } from "../timing"
 import { ToolCard } from "../ToolCard"
 import { ToolGroupRow, type GroupItem } from "../ToolGroupRow"
 import { TranscriptHeader } from "../TranscriptHeader"
@@ -51,6 +49,9 @@ function buildItems(entries: MuseEntry[], groupTools: boolean): MuseItem[] {
   const items: MuseItem[] = []
   let group: Extract<MuseItem, { kind: "group" }> | undefined
   for (const entry of entries) {
+    // Lifecycle bookkeeping remains in the parsed session. Unsupported content
+    // has its own unknown entry and uses the shared fallback card below.
+    if (entry.kind === "diagnostic") continue
     if ((entry.kind === "message" || entry.kind === "thinking") && !entry.text.trim()) continue
     const category = entry.kind === "tool" ? museToolCategory(entry) : undefined
     // Shared groups model only successful/failed calls. Other outcomes remain
@@ -89,64 +90,39 @@ function buildItems(entries: MuseEntry[], groupTools: boolean): MuseItem[] {
   return items
 }
 
-function RunEnding({ run, hideTiming }: { run: MuseRun; hideTiming: boolean }) {
+function RunEnding({
+  run,
+  hideTiming,
+  showModel,
+}: {
+  run: MuseRun
+  hideTiming: boolean
+  showModel: boolean
+}) {
   if (run.terminal === "completed" && !hideTiming && run.durationMs != null) {
-    return <TurnSeparator durationMs={run.durationMs} />
+    return <TurnSeparator durationMs={run.durationMs} model={showModel ? run.model : undefined} />
   }
-  const label = run.terminal ? `Run ${run.terminal}` : "No completion recorded"
+  if (!run.terminal || run.terminal === "completed") return null
   return (
-    <div className="muse-run-ending">
-      {label}
-      {run.reason && `: ${run.reason}`}
-      {!hideTiming && run.durationMs != null && ` · ${formatDuration(run.durationMs)}`}
-    </div>
-  )
-}
-
-function runHeading(run: MuseRun, index: number): string {
-  if (index === 0) return "Conversation"
-  if (run.prompt === undefined) return "Recorded activity"
-  return run.prompt.trim() ? "Next turn" : "Follow-up"
-}
-
-function SourceRecords({ records }: { records: unknown[] }) {
-  const [expanded, setExpanded] = useState(false)
-  return (
-    <details
-      className="muse-recorded-result"
-      onToggle={(event) => setExpanded(event.currentTarget.open)}
-    >
-      <summary>Source records</summary>
-      {expanded && <pre className="output">{JSON.stringify(records, null, 2)}</pre>}
-    </details>
-  )
-}
-
-function SessionRecords({ run, hideTiming }: { run: MuseRun; hideTiming: boolean }) {
-  const [expanded, setExpanded] = useState(false)
-  return (
-    <details
-      className="muse-recorded-result muse-session-records"
-      onToggle={(event) => setExpanded(event.currentTarget.open)}
-    >
-      <summary>Session records</summary>
-      {expanded && (
-        <>
-          {run.entries.map((entry) => (
-            <MuseEntryView key={entry.id} entry={entry} hideTiming={hideTiming} />
-          ))}
-          {run.records && run.records.length > 0 && <SourceRecords records={run.records} />}
-        </>
+    <ToolCard.Root hasContent={Boolean(run.reason)}>
+      <ToolCard.Trigger>
+        <Header>
+          <ToolTitle name={`Run ${run.terminal}`} />
+        </Header>
+      </ToolCard.Trigger>
+      {run.reason && (
+        <ToolCard.Content>
+          <pre className="output">{run.reason}</pre>
+        </ToolCard.Content>
       )}
-    </details>
+    </ToolCard.Root>
   )
 }
 
 export function MuseTranscript({ session }: { session: MuseSession }) {
   const { viewMode } = useSettings()
   const hideTiming = Boolean(session.timingIssue)
-  const runCount = session.runs.filter((run) => !run.isContext).length
-  let runIndex = 0
+  const showModel = session.models.length > 1
   return (
     <div className={`transcript${viewMode === "chat" ? " transcript-chat" : ""}`}>
       <TranscriptHeader
@@ -160,25 +136,12 @@ export function MuseTranscript({ session }: { session: MuseSession }) {
       )}
       {session.runs.map((run) => {
         const key = `${run.sessionId}:${run.id}`
-        if (run.isContext) return <SessionRecords key={key} run={run} hideTiming={hideTiming} />
-        const index = runIndex++
+        const items = buildItems(run.entries, viewMode === "chat")
+        if (run.isContext && !items.length) return null
         return (
-          <section
-            className="muse-run"
-            key={key}
-            aria-label={`${runHeading(run, index)} (Run ${index + 1})`}
-          >
-            <div className="muse-run-heading">
-              <span title={`Run ID: ${run.id}`}>{runHeading(run, index)}</span>
-              {runCount > 1 && run.model && <span title={run.model.raw}>{run.model.label}</span>}
-              {run.prompt === undefined ? (
-                <span>User prompt unavailable</span>
-              ) : (
-                !run.prompt.trim() && <span>No user prompt text recorded</span>
-              )}
-            </div>
-            {run.prompt && <TextBlock role="user" text={run.prompt} />}
-            {buildItems(run.entries, viewMode === "chat").map((item) =>
+          <div className="muse-run" key={key}>
+            {run.prompt?.trim() && <TextBlock role="user" text={run.prompt} />}
+            {items.map((item) =>
               item.kind === "entry" ? (
                 <MuseEntryView key={item.entry.id} entry={item.entry} hideTiming={hideTiming} />
               ) : (
@@ -196,9 +159,10 @@ export function MuseTranscript({ session }: { session: MuseSession }) {
                 />
               ),
             )}
-            {run.records && run.records.length > 0 && <SourceRecords records={run.records} />}
-            <RunEnding run={run} hideTiming={hideTiming} />
-          </section>
+            {!run.isContext && (
+              <RunEnding run={run} hideTiming={hideTiming} showModel={showModel} />
+            )}
+          </div>
         )
       })}
     </div>
