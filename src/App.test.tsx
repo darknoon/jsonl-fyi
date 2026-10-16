@@ -216,3 +216,17 @@ test("dropped Grok companion streams show the chat_history hint", async () => {
     expect(container.querySelector(".transcript")).toBeNull()
   }
 })
+
+test("opens Muse files through the file picker and renders the recorded model and prompt", async () => {
+  const text = await Bun.file(
+    new URL("./__fixtures__/muse/muse-code.jsonl", import.meta.url),
+  ).text()
+  await selectFile(streamedFile("muse-code.jsonl", text))
+  expect(container.querySelector(".filename")?.textContent).toBe("muse-code.jsonl")
+  expect(container.querySelector(".file-icon-muse")).not.toBeNull()
+  expect(container.querySelector(".user-bubble")?.textContent?.length).toBeGreaterThan(0)
+  expect(container.querySelector(".transcript-header-models")?.textContent?.length).toBeGreaterThan(
+    0,
+  )
+  expect(container.querySelectorAll(".assistant-text").length).toBeGreaterThan(0)
+})

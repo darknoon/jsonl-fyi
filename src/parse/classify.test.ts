@@ -215,3 +215,45 @@ test("synthetic Grok fixtures classify history and detect both companions", asyn
     expect(detectGrokCompanion(lines)).toBe(name)
   }
 })
+
+test("Muse detection requires its session event envelope, not a filename or generic task", () => {
+  const record = {
+    schema_version: 1,
+    id: "synthetic-record",
+    stream: { kind: "session", id: "synthetic-session" },
+    sequence: 1,
+    recorded_at: 1_800_000_000_000_000,
+    record_type: "event",
+    payload_type: "run.model.configured",
+    payload: { model_id: "synthetic-model" },
+  }
+  expect(classifyJsonl([record])).toBe("muse")
+  expect(classifyJsonl([{ payload_type: "task.lifecycle.started", payload: {} }])).toBe("unknown")
+  expect(classifyJsonl([{ ...record, stream: { kind: "task", id: "task" } }])).toBe("unknown")
+  expect(classifyJsonl([{ ...record, payload_type: "unrelated.event" }])).toBe("unknown")
+  expect(classifyJsonl([record, { type: "session_meta" }])).toBe("codex")
+})
+
+test("detects a durable Muse frame and direct session records without guessing dates", () => {
+  const frame = {
+    retained_frame: "session_permission_transaction",
+    frame_schema_version: 1,
+    children: [],
+  }
+  expect(classifyJsonl([frame])).toBe("muse")
+  expect(classifyJsonl([{ ...frame, retained_frame: "unrelated" }])).toBe("unknown")
+  expect(
+    classifyJsonl([
+      {
+        schema_version: 1,
+        id: "example",
+        stream: { kind: "session", id: "example" },
+        sequence: 1,
+        record_type: "event",
+        payload_type: "runtime.session",
+        payload: {},
+      },
+    ]),
+  ).toBe("muse")
+  expect(classifyJsonl([frame, { type: "session_meta" }])).toBe("codex")
+})

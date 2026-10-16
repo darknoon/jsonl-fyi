@@ -7,15 +7,17 @@ import { parseJsonl } from "./transcript/claude/parse"
 import { parseCodexEntries } from "./transcript/codex/parse"
 import { parsePiEntries } from "./transcript/pi/parse"
 import { parseGrokEntries } from "./transcript/grok/parse"
+import { parseMuseEntries } from "./transcript/muse/parse"
 
 const STORAGE_KEY = "jsonl-fyi:last"
 const STORAGE_LIMIT_BYTES = 4_000_000 // ~4 MB; sessionStorage caps around 5 MB
 export const GROK_PROTOTYPE_PATH = "/examples/grok-build-prototype"
+export const MUSE_PROTOTYPE_PATH = "/examples/muse-code-prototype"
 
 function unsupportedFileMessage(name: string, grokCompanion: string | null | undefined): string {
   return grokCompanion
     ? "Drop chat_history.jsonl from the same folder."
-    : `Couldn't parse ${name} as a Claude Code, OpenAI Codex, pi, or Grok Build CLI JSONL file`
+    : `Couldn't parse ${name} as a Claude Code, OpenAI Codex, pi, Grok Build CLI, or Muse Code JSONL file`
 }
 
 export function useSessionLoader() {
@@ -46,6 +48,9 @@ export function useSessionLoader() {
       setDropError(null)
     } else if (format === "grok") {
       setSession({ format: "grok", session: parseGrokEntries(allLines) })
+      setDropError(null)
+    } else if (format === "muse") {
+      setSession({ format: "muse", session: parseMuseEntries(allLines) })
       setDropError(null)
     } else if (format === "claude") {
       // parseJsonl re-parses the text; small overhead, fine for now.
@@ -194,6 +199,21 @@ export function useSessionLoader() {
     [loadTextSource],
   )
 
+  const loadMusePrototype = useCallback(
+    async (updateHistory = true) => {
+      if (!import.meta.env.DEV) return
+      await loadTextSource(
+        {
+          fileName: "muse-session.jsonl",
+          load: async () => (await import("./__fixtures__/muse/muse-session.jsonl?raw")).default,
+        },
+        MUSE_PROTOTYPE_PATH,
+        updateHistory,
+      )
+    },
+    [loadTextSource],
+  )
+
   useEffect(
     () => () => {
       loadRequestRef.current++
@@ -204,6 +224,10 @@ export function useSessionLoader() {
 
   useEffect(() => {
     async function loadCurrentLocation(restoreSession: boolean) {
+      if (import.meta.env.DEV && window.location.pathname === MUSE_PROTOTYPE_PATH) {
+        await loadMusePrototype(false)
+        return
+      }
       if (import.meta.env.DEV && window.location.pathname === GROK_PROTOTYPE_PATH) {
         await loadGrokPrototype(false)
         return
@@ -241,7 +265,7 @@ export function useSessionLoader() {
     }
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
-  }, [loadExample, loadGrokPrototype, loadText, reset])
+  }, [loadExample, loadGrokPrototype, loadMusePrototype, loadText, reset])
 
   return {
     session,
@@ -252,6 +276,7 @@ export function useSessionLoader() {
     loadFile,
     loadExample,
     loadGrokPrototype,
+    loadMusePrototype,
     reset,
   }
 }

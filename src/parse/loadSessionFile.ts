@@ -2,10 +2,12 @@ import type { Entry } from "../types"
 import type { CodexEntry } from "../transcript/codex/types"
 import type { PiParsedSession } from "../transcript/pi/types"
 import type { GrokSession } from "../transcript/grok/types"
+import type { MuseSession } from "../transcript/muse/types"
 import { parseClaudeEntries } from "../transcript/claude/parse"
 import { parseCodexEntries } from "../transcript/codex/parse"
 import { parsePiEntries } from "../transcript/pi/parse"
 import { parseGrokEntries } from "../transcript/grok/parse"
+import { parseMuseEntries } from "../transcript/muse/parse"
 import { classifyJsonl, detectGrokCompanion, type FormatLabel } from "./classify"
 import { iterJsonlStream } from "./iter"
 
@@ -14,6 +16,7 @@ export type LoadedSession =
   | { format: "codex"; entries: CodexEntry[] }
   | { format: "pi"; session: PiParsedSession }
   | { format: "grok"; session: GrokSession }
+  | { format: "muse"; session: MuseSession }
 
 const STORAGE_LIMIT_BYTES = 4_000_000
 
@@ -33,6 +36,7 @@ export async function loadSessionFile(
   const claudeEntries: Entry[] = []
   const piLines: unknown[] = []
   const grokLines: unknown[] = []
+  const museLines: unknown[] = []
   let grokCompanion: ReturnType<typeof detectGrokCompanion> = null
 
   function collect(line: unknown) {
@@ -40,6 +44,7 @@ export async function loadSessionFile(
     else if (format === "claude") claudeEntries.push(...parseClaudeEntries([line]))
     else if (format === "pi") piLines.push(line)
     else if (format === "grok") grokLines.push(line)
+    else if (format === "muse") museLines.push(line)
     else if (!grokCompanion) grokCompanion = detectGrokCompanion([line])
   }
 
@@ -83,7 +88,9 @@ export async function loadSessionFile(
           ? { format, session: parsePiEntries(piLines) }
           : format === "grok"
             ? { format, session: parseGrokEntries(grokLines) }
-            : null
+            : format === "muse"
+              ? { format, session: parseMuseEntries(museLines) }
+              : null
   return {
     session,
     skipped: result.value.skipped,
