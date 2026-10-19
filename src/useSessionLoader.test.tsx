@@ -296,3 +296,33 @@ test("a delayed Grok text source cannot overwrite a newly selected streamed file
   expect(loader.fileName).toBe("current.jsonl")
   expect(loader.loadingFile).toBeNull()
 })
+
+test("restores a Muse session with its run boundaries from browser storage", async () => {
+  const text = await Bun.file(
+    new URL("./__fixtures__/muse/muse-code.jsonl", import.meta.url),
+  ).text()
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ name: "muse-code.jsonl", text }))
+  await mount()
+  expect(loader.fileName).toBe("muse-code.jsonl")
+  expect(loader.session?.format).toBe("muse")
+  if (loader.session?.format !== "muse") throw new Error("Expected Muse session")
+  expect(loader.session.session.runs).toHaveLength(2)
+  expect(loader.dropError).toBeNull()
+})
+
+test("restores a durable Muse session without losing its image or follow-up", async () => {
+  const text = await Bun.file(
+    new URL("./__fixtures__/muse/muse-session.jsonl", import.meta.url),
+  ).text()
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ name: "muse-session.jsonl", text }))
+  await mount()
+  expect(loader.session?.format).toBe("muse")
+  if (loader.session?.format !== "muse") throw new Error("Expected Muse session")
+  expect(loader.session.session.runs.some((run) => run.prompt === "")).toBe(true)
+  expect(
+    loader.session.session.runs
+      .flatMap((run) => run.entries)
+      .some((entry) => entry.kind === "tool" && entry.images?.length === 1),
+  ).toBe(true)
+  expect(loader.dropError).toBeNull()
+})

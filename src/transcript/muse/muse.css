@@ -1,0 +1,17 @@
+.muse-run {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .muse-run .tool-fields {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
+  }
+
+  .muse-run .tool-field dd {
+    margin-bottom: 8px;
+  }
+}

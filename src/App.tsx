@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
-import { GROK_PROTOTYPE_PATH, useSessionLoader } from "./useSessionLoader"
+import { GROK_PROTOTYPE_PATH, MUSE_PROTOTYPE_PATH, useSessionLoader } from "./useSessionLoader"
 import { ClaudeCodeTranscript } from "./transcript/claude/ClaudeCodeTranscript"
 import { CodexTranscript } from "./transcript/codex/CodexTranscript"
 import { PiTranscript } from "./transcript/pi/PiTranscript"
 import { GrokTranscript } from "./transcript/grok/GrokTranscript"
+import { MuseTranscript } from "./transcript/muse/MuseTranscript"
 import { ArrowLeftIcon, CheckIcon, CopyIcon, XIcon } from "@phosphor-icons/react"
 import { SettingsButton, SettingsPopover } from "./SettingsPopover"
 import { Examples } from "./ExamplesSection"
@@ -43,12 +44,19 @@ function TerminalCommand({ command }: { command: string }) {
   )
 }
 
-const AGENT_FORMATS = ["claude", "codex", "pi", "grok"] as const satisfies readonly FileIconFormat[]
+const AGENT_FORMATS = [
+  "claude",
+  "codex",
+  "pi",
+  "grok",
+  "muse",
+] as const satisfies readonly FileIconFormat[]
 const AGENT_LABELS: Record<FileIconFormat, string> = {
   claude: "Claude Code",
   codex: "OpenAI Codex",
   pi: "Pi Coding Agent",
   grok: "Grok Build CLI",
+  muse: "Muse Code",
 }
 
 export function App() {
@@ -61,6 +69,7 @@ export function App() {
     loadFile,
     loadExample,
     loadGrokPrototype,
+    loadMusePrototype,
     reset: resetSession,
   } = useSessionLoader()
   const [dragOver, setDragOver] = useState(false)
@@ -140,7 +149,7 @@ export function App() {
             <p className="description">
               View and debug your{" "}
               <span className="sr-only">
-                Claude Code, OpenAI Codex, Pi Coding Agent, or Grok Build CLI
+                Claude Code, OpenAI Codex, Pi Coding Agent, Grok Build CLI, or Muse Code
               </span>
               <span className="agent-fader" aria-hidden="true">
                 {AGENT_FORMATS.map((format) => (
@@ -222,6 +231,19 @@ export function App() {
             {import.meta.env.DEV && (
               <p className="prototype-example">
                 <a
+                  href={MUSE_PROTOTYPE_PATH}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void loadMusePrototype()
+                  }}
+                >
+                  Try Muse Code — synthetic example
+                </a>
+              </p>
+            )}
+            {import.meta.env.DEV && (
+              <p className="prototype-example">
+                <a
                   href={GROK_PROTOTYPE_PATH}
                   onClick={(event) => {
                     event.preventDefault()
@@ -275,6 +297,13 @@ export function App() {
                 Timestamps, durations and token usage are stored in other files and won’t appear in
                 this view.
               </p>
+              <h3>Muse Code</h3>
+              <p>
+                Drop a Muse Code durable session log or live event ledger, such as{" "}
+                <code>muse-session.jsonl</code> or <code>muse-code.jsonl</code>. Durable sessions
+                can include tool arguments, reasoning summaries and images; live ledgers may omit
+                them.
+              </p>
             </details>
           </>
         )}
@@ -282,6 +311,7 @@ export function App() {
         {session && session.format === "codex" && <CodexTranscript entries={session.entries} />}
         {session && session.format === "pi" && <PiTranscript session={session.session} />}
         {session && session.format === "grok" && <GrokTranscript session={session.session} />}
+        {session && session.format === "muse" && <MuseTranscript session={session.session} />}
         {session && session.format === "claude" && (
           <ClaudeCodeTranscript entries={session.entries} />
         )}
