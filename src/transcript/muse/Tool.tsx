@@ -2,10 +2,10 @@ import type { Category } from "../groupSummary"
 import { ImageBlock } from "../ImageBlock"
 import { MoreHint } from "../MoreHint"
 import { headLines, tailLines } from "../preview"
-import { assertExhaustive, Field, Header, ToolTitle } from "../shared"
+import { assertExhaustive, Field, Header, Output, ToolTitle } from "../shared"
 import { formatDuration } from "../timing"
 import { ToolCard } from "../ToolCard"
-import type { MuseToolEntry, MuseToolStatus } from "./types"
+import type { MuseToolEntry } from "./types"
 
 const CATEGORIES: Partial<Record<string, Category>> = {
   bash: "command",
@@ -44,15 +44,6 @@ export function museImagePath(entry: MuseToolEntry): string | undefined {
   return /^Read image file `([^`]+)` as model-visible image output\b/.exec(entry.output)?.[1]
 }
 
-const STATUS_LABEL: Record<MuseToolStatus, string> = {
-  success: "Completed",
-  error: "Failed",
-  cancelled: "Cancelled",
-  rejected: "Rejected",
-  running: "Still running when recorded",
-  unknown: "Outcome not recorded",
-}
-
 // Shell output is embedded in a JSON result envelope. Show its output field for
 // readability and retain the complete envelope in the expanded card.
 function resultText(entry: MuseToolEntry): string {
@@ -71,15 +62,6 @@ function resultText(entry: MuseToolEntry): string {
     // Plain text shell results are valid too.
   }
   return entry.output
-}
-
-function ImagePlaceholder({ path }: { path: string }) {
-  return (
-    <div className="muse-image-placeholder">
-      <span>Image not included in this log</span>
-      <code>{path}</code>
-    </div>
-  )
 }
 
 export function MuseTool({
@@ -130,87 +112,57 @@ export function MuseTool({
       : outcome === "error" || outcome === "rejected"
         ? "error"
         : undefined
+  const fields: Array<[string, string]> = []
+  if (input !== undefined) fields.push(["Arguments", valueText(input)])
+  if (command != null) fields.push(["Command recorded in result", command])
+  if (description != null) fields.push(["Description recorded in result", description])
+  if (editPath) fields.push(["Path recorded in result", editPath])
+  if (outcome === "cancelled" || outcome === "rejected" || outcome === "running") {
+    fields.push(["Status", outcome])
+  }
+  if (reason) fields.push(["Reason", reason])
+  if (!hideTiming && timestamp) fields.push(["Recorded at", timestamp])
+  if (!hideTiming && durationMs != null) fields.push(["Duration", formatDuration(durationMs)])
+  if (taskId) fields.push(["Task ID", taskId])
+  if (callId) fields.push(["Call ID", callId])
+  if (text !== output) fields.push(["Full recorded result", output])
+  if (editFacts) fields.push(["Edit details", valueText(editFacts)])
+  if (outputRefs && outputRefs.length > 0) {
+    fields.push(["Output references", valueText(outputRefs)])
+  }
   return (
-    <ToolCard.Root status={status}>
+    <ToolCard.Root status={status} hasContent={fields.length > 0 || !!text || hasImages}>
       <ToolCard.Trigger>
         <Header>
           <ToolTitle
             name={name}
             detail={inputDetail(input) ?? description ?? command ?? editPath ?? imagePath}
           />
-          {!hideTiming && durationMs != null && (
-            <span className="muse-tool-duration">{formatDuration(durationMs)}</span>
-          )}
-          {outcome !== "success" && (
-            <span className="muse-tool-status">{STATUS_LABEL[outcome]}</span>
-          )}
         </Header>
       </ToolCard.Trigger>
-      <ToolCard.Preview clickable={!hasImages}>
-        {imagePath && !hasImages ? (
-          <ImagePlaceholder path={imagePath} />
-        ) : (
-          preview.text && (
+      {(text || hasImages) && (
+        <ToolCard.Preview clickable={!hasImages}>
+          {preview.text && (
             <>
               <pre className={`tool-preview-snippet${status === "error" ? " snippet-error" : ""}`}>
                 {preview.text}
               </pre>
               <MoreHint count={preview.remaining} />
             </>
-          )
-        )}
-        {imageBlocks}
-        {reason && <div className="tool-preview-line">{reason}</div>}
-        {!text && <div className="tool-preview-line">No result text recorded</div>}
-      </ToolCard.Preview>
+          )}
+          {imageBlocks}
+        </ToolCard.Preview>
+      )}
       <ToolCard.Content>
-        {imagePath && !hasImages && <ImagePlaceholder path={imagePath} />}
-        {input === undefined && (
-          <p className="muse-result-note">Tool arguments are not available in this view.</p>
+        {fields.length > 0 && (
+          <dl className="tool-fields">
+            {fields.map(([name, value]) => (
+              <Field key={name} name={name} value={value} />
+            ))}
+          </dl>
         )}
-        <dl className="tool-fields">
-          {input !== undefined && <Field name="Arguments" value={valueText(input)} />}
-          {command != null && <Field name="Command recorded in result" value={command} />}
-          {description != null && (
-            <Field name="Description recorded in result" value={description} />
-          )}
-          {editPath && <Field name="Path recorded in result" value={editPath} />}
-          <Field name="Status" value={STATUS_LABEL[outcome]} />
-          {reason && <Field name="Reason" value={reason} />}
-          {!hideTiming && timestamp && <Field name="Recorded at" value={timestamp} />}
-          {!hideTiming && durationMs != null && (
-            <Field name="Duration" value={formatDuration(durationMs)} />
-          )}
-          {taskId && <Field name="Task ID" value={taskId} />}
-          {callId && <Field name="Call ID" value={callId} />}
-        </dl>
-        {text ? (
-          <pre className="output">{text}</pre>
-        ) : (
-          <p className="muse-result-note">No result text recorded</p>
-        )}
+        <Output output={{ content: [{ type: "text", text }], isError: status === "error" }} />
         {imageBlocks}
-        {text !== output && (
-          <details className="muse-recorded-result">
-            <summary>Full recorded result</summary>
-            <pre className="output">{output}</pre>
-          </details>
-        )}
-        {editFacts && (
-          <details className="muse-recorded-result">
-            <summary>Edit details</summary>
-            <pre className="output">{JSON.stringify(editFacts, null, 2)}</pre>
-          </details>
-        )}
-        {outputRefs && outputRefs.length > 0 && (
-          <details className="muse-recorded-result">
-            <summary>Output references</summary>
-            <p className="muse-result-note">
-              Referenced file contents are not embedded in this log.
-            </p>
-            <pre className="output">{JSON.stringify(outputRefs, null, 2)}</pre>
-          </details>
-        )}
       </ToolCard.Content>
     </ToolCard.Root>
   )

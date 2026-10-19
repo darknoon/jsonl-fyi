@@ -129,11 +129,6 @@ export function MuseTranscript({ session }: { session: MuseSession }) {
         startTimestamp={hideTiming ? undefined : session.startTimestamp}
         models={session.models}
       />
-      {session.timingIssue && (
-        <div className="muse-timing-notice" role="note">
-          {session.timingIssue}
-        </div>
-      )}
       {session.runs.map((run) => {
         const key = `${run.sessionId}:${run.id}`
         const items = buildItems(run.entries, viewMode === "chat")

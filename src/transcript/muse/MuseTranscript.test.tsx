@@ -129,7 +129,7 @@ test("unsupported session content remains available in a shared fallback card", 
   }
 })
 
-test("timing warning suppresses untrustworthy dates and durations", () => {
+test("untrustworthy timing stays absent without adding a transcript notice", () => {
   const value = session(
     [run([tool("read", { durationMs: 4200 })], { terminal: "completed", durationMs: 9000 })],
     {
@@ -138,7 +138,7 @@ test("timing warning suppresses untrustworthy dates and durations", () => {
     },
   )
   const html = render(value)
-  expect(html).toContain(value.timingIssue!)
+  expect(html).not.toContain(value.timingIssue!)
   expect(html).not.toContain("4.2s")
   expect(html).not.toContain("9.0s")
   expect(html).not.toContain("January 1")
@@ -155,7 +155,7 @@ test("trustworthy timing uses shared duration formatting without fabricated usag
       },
     ),
   )
-  expect(html).toContain("4.2s")
+  expect(html).not.toContain("4.2s")
   expect(html).toContain("9.0s")
   expect(html).toContain("turn-separator")
   expect(html).not.toContain("turn-separator-usage")
@@ -177,9 +177,11 @@ test("Chat keeps unknown outcomes and missing images outside groups", () => {
   )
   expect(html).toContain("Read 2 files")
   expect(html).toContain("Read 1 file (1 failure)")
-  expect(html).toContain("Still running when recorded")
-  expect(html).toContain("Cancelled")
-  expect(html).toContain("Image not included in this log")
+  expect(html).toContain("bash")
+  expect(html).toContain("bash_input")
+  expect(html).toContain("Read image file `preview.png` as model-visible image output.")
+  expect(html).not.toContain("Still running when recorded")
+  expect(html).not.toContain("Cancelled")
   expect(html).not.toContain("<img")
   expect(html).not.toContain("Recipe contents")
 })

@@ -19,6 +19,12 @@ preserve conflicts, and show unknown content in shared fallback cards.
 Keep omitted-content markers in parser output. Show durable dates only after
 clock validation; use explicit durations. Live-ledger timestamps remain raw.
 
+Tool headers use the shared status marker, without additional status badges.
+Missing status stays neutral; absent arguments or result text do not produce
+explanatory copy. Render text-only image references as recorded text. Keep
+clock diagnostics in parser output, without a separate notice in the transcript.
+Expanded recorded fields use the shared field layout.
+
 The field and joining rules are in
 [the format reference](../../research/muse-code-format.md).
 

@@ -101,6 +101,10 @@ images when the tool expands. Empty and missing prompts remain distinct in
 parser output; neither creates a user bubble or a visible turn label.
 Use the existing session header and turn separators. Runtime bookkeeping
 and full source dumps do not add rows to the conversation.
+Unknown tool status uses the neutral shared marker. Missing arguments,
+empty results and unavailable timestamps do not add explanatory labels.
+Text-only image references remain text; only supplied image bytes render
+as images.
 
 Single-file intake does not resolve companion artifacts, reconstruct edit
 diffs from counts, fetch local paths, authenticate checksums or decrypt

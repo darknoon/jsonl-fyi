@@ -56,6 +56,7 @@ test("shell cards show readable output and retain result metadata on expansion",
   expect(container.textContent).toContain("result-ref")
   expect(container.textContent).toContain("task-1")
   expect(container.textContent).toContain("call-1")
+  expect(container.querySelector("details")).toBeNull()
 })
 
 test("incomplete and cancelled calls are never styled as successful", () => {
@@ -66,13 +67,14 @@ test("incomplete and cancelled calls are never styled as successful", () => {
   }
 })
 
-test("empty shell text is explicit and its recorded envelope remains available", async () => {
+test("empty shell text adds no prose and its recorded envelope remains available", async () => {
   const output = JSON.stringify({ output: "", exit_code: 0, unfamiliar: "retained" })
   await act(async () => root.render(<MuseTool entry={entry({ output })} />))
-  expect(container.textContent).toContain("No result text recorded")
+  expect(container.textContent).toBe("bash")
   await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
-  expect(container.textContent).toContain("No result text recorded")
-  expect(container.textContent).toContain("Tool arguments are not available in this view.")
+  expect(container.textContent).not.toContain("No result text recorded")
+  expect(container.textContent).not.toContain("Tool arguments are not available")
+  expect(container.querySelector(".output")).toBeNull()
   expect(container.textContent).toContain("Full recorded result")
   expect(container.textContent).toContain(output)
 })
@@ -107,13 +109,36 @@ test("non-object arguments remain available rather than being treated as absent"
   }
 })
 
-test("missing output stays explicit after expanding an unfinished call", async () => {
+test("an unfinished call with no output or metadata remains a neutral empty card", async () => {
   await act(async () => root.render(<MuseTool entry={entry({ status: "unknown" })} />))
-  expect(container.textContent).toContain("Outcome not recorded")
-  expect(container.textContent).toContain("No result text recorded")
-  await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
-  expect(container.textContent).toContain("Outcome not recorded")
-  expect(container.textContent).toContain("No result text recorded")
+  expect(container.textContent).toBe("bash")
+  expect(container.querySelector(".tool-row.clickable")).toBeNull()
+  expect(container.querySelector(".tool-card-success, .tool-card-error")).toBeNull()
+  expect(container.querySelector(".tool-fields, .tool-preview, .output")).toBeNull()
+})
+
+test("recorded cancellation and failure details remain in the expanded shared fields", async () => {
+  for (const status of ["cancelled", "rejected", "running"] satisfies MuseToolStatus[]) {
+    await act(async () =>
+      root.render(
+        <MuseTool
+          key={status}
+          entry={entry({ status, reason: "Recorded task reason", durationMs: 4200 })}
+        />,
+      ),
+    )
+    expect(container.querySelector(".tool-row")?.textContent).toBe("bash")
+    expect(container.textContent).not.toContain("Recorded task reason")
+    expect(container.textContent).not.toContain("4.2s")
+    await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
+    const fields = [...container.querySelectorAll(".tool-field")].map((field) => [
+      field.querySelector("dt")?.textContent,
+      field.querySelector("dd code")?.textContent,
+    ])
+    expect(fields).toContainEqual(["Status", status])
+    expect(fields).toContainEqual(["Reason", "Recorded task reason"])
+    expect(fields).toContainEqual(["Duration", "4.2s"])
+  }
 })
 
 test("edit result metadata supplies a title path and retains every field", async () => {
@@ -140,7 +165,7 @@ test("image references stay visible without trying to load files; Compact expand
     output: "Read image file `/tmp/preview.png` as model-visible image output.",
   })
   const html = renderToStaticMarkup(<MuseTool entry={image} />)
-  expect(html).toContain("Image not included in this log")
+  expect(html).toContain(image.output)
   expect(html).toContain("/tmp/preview.png")
   expect(html).not.toContain("<img")
   await act(async () =>
@@ -150,19 +175,20 @@ test("image references stay visible without trying to load files; Compact expand
       </SettingsProvider>,
     ),
   )
-  expect(container.textContent).not.toContain("Image not included")
+  expect(container.textContent).not.toContain(image.output)
   await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
-  expect(container.textContent).toContain("Image not included in this log")
+  expect(container.querySelector(".output")?.textContent).toBe(image.output)
   expect(container.querySelector("img")).toBeNull()
 })
 
-test("embedded images use the shared preview and remain available in Compact", async () => {
+test("unknown outcomes keep embedded images visible without status prose or success styling", async () => {
   const data =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/hhkAAAAASUVORK5CYII="
   const image = entry({
     name: "read_file",
     input: { path: "preview.png" },
     output: "Read image file `preview.png` as model-visible image output.",
+    status: "unknown",
     images: [{ mediaType: "image/png", data }],
   })
   await act(async () => root.render(<MuseTool entry={image} />))
@@ -170,7 +196,8 @@ test("embedded images use the shared preview and remain available in Compact", a
     `data:image/png;base64,${data}`,
   )
   expect(container.querySelector(".tool-preview-clickable")).toBeNull()
-  expect(container.textContent).not.toContain("Image not included")
+  expect(container.querySelector(".tool-card-success, .tool-card-error")).toBeNull()
+  expect(container.querySelector(".tool-row")?.textContent).toBe("read_file(preview.png)")
   await act(async () =>
     root.render(
       <SettingsProvider initial={{ viewMode: "compact" }}>
@@ -184,7 +211,11 @@ test("embedded images use the shared preview and remain available in Compact", a
   expect(container.querySelector(".image-block img")?.getAttribute("src")).toBe(
     `data:image/png;base64,${data}`,
   )
-  expect(container.textContent).not.toContain("Image not included")
+  expect(container.querySelector(".tool-card-success, .tool-card-error")).toBeNull()
+  expect([...container.querySelectorAll("dt")].map((field) => field.textContent)).not.toContain(
+    "Status",
+  )
+  expect(container.textContent).not.toContain("Outcome not recorded")
 })
 
 test("tool result HTML and SVG are always escaped text", async () => {
@@ -193,14 +224,14 @@ test("tool result HTML and SVG are always escaped text", async () => {
   expect(container.textContent).toContain(output)
   expect(
     container.querySelector(
-      ".output svg, .output script, .tool-preview-snippet svg, .tool-preview-snippet script",
+      ".output > svg, .output script, .tool-preview-snippet > svg, .tool-preview-snippet script",
     ),
   ).toBeNull()
   await act(async () => container.querySelector<HTMLButtonElement>(".tool-row")!.click())
   expect(container.textContent).toContain(output)
   expect(
     container.querySelector(
-      ".output svg, .output script, .tool-preview-snippet svg, .tool-preview-snippet script",
+      ".output > svg, .output script, .tool-preview-snippet > svg, .tool-preview-snippet script",
     ),
   ).toBeNull()
 })
