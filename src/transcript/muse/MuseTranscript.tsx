@@ -12,7 +12,7 @@ import type { MuseEntry, MuseRun, MuseSession } from "./types"
 import "./muse.css"
 
 function MuseEntryView({ entry, hideTiming }: { entry: MuseEntry; hideTiming: boolean }) {
-  if (entry.kind === "tool") return <MuseTool entry={entry} hideTiming={hideTiming} />
+  if (entry.kind === "tool") return <MuseTool entry={entry} />
   if (entry.kind === "thinking") return <ThinkingBlock text={entry.text} />
   if (entry.kind === "message") {
     return (

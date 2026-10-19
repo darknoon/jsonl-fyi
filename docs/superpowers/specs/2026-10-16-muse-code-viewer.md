@@ -23,7 +23,10 @@ Tool headers use the shared status marker, without additional status badges.
 Missing status stays neutral; absent arguments or result text do not produce
 explanatory copy. Render text-only image references as recorded text. Keep
 clock diagnostics in parser output, without a separate notice in the transcript.
-Expanded recorded fields use the shared field layout.
+Expanded arguments use the shared field layout with their original keys.
+Commands and written file contents use the existing code blocks. Internal
+record IDs and timestamps stay in parser output. Shell result text appears
+once, with other result fields preserved separately.
 
 The field and joining rules are in
 [the format reference](../../research/muse-code-format.md).

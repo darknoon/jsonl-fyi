@@ -1,9 +1,9 @@
 import type { Category } from "../groupSummary"
+import { CopyButton } from "../CopyButton"
 import { ImageBlock } from "../ImageBlock"
 import { MoreHint } from "../MoreHint"
 import { headLines, tailLines } from "../preview"
 import { assertExhaustive, Field, Header, Output, ToolTitle } from "../shared"
-import { formatDuration } from "../timing"
 import { ToolCard } from "../ToolCard"
 import type { MuseToolEntry } from "./types"
 
@@ -26,10 +26,17 @@ export function museToolHasImages(entry: MuseToolEntry): boolean {
   return (entry.images?.length ?? 0) > 0
 }
 
+function objectValue(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined
+}
+
 function inputDetail(input: unknown): string | undefined {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined
+  const fields = objectValue(input)
+  if (!fields) return undefined
   for (const key of ["command", "path", "file_path", "target_file"]) {
-    const value = (input as Record<string, unknown>)[key]
+    const value = fields[key]
     if (typeof value === "string" && value.trim()) return value
   }
   return undefined
@@ -44,33 +51,18 @@ export function museImagePath(entry: MuseToolEntry): string | undefined {
   return /^Read image file `([^`]+)` as model-visible image output\b/.exec(entry.output)?.[1]
 }
 
-// Shell output is embedded in a JSON result envelope. Show its output field for
-// readability and retain the complete envelope in the expanded card.
-function resultText(entry: MuseToolEntry): string {
-  if (entry.name !== "bash" && entry.name !== "bash_input") return entry.output
+// A shell envelope contributes one text output and its remaining recorded fields.
+function shellResult(output: string): Record<string, unknown> | undefined {
   try {
-    const result: unknown = JSON.parse(entry.output)
-    if (
-      result &&
-      typeof result === "object" &&
-      "output" in result &&
-      typeof result.output === "string"
-    ) {
-      return result.output
-    }
+    const result = objectValue(JSON.parse(output))
+    if (typeof result?.output === "string") return result
   } catch {
     // Plain text shell results are valid too.
   }
-  return entry.output
+  return undefined
 }
 
-export function MuseTool({
-  entry,
-  hideTiming = false,
-}: {
-  entry: MuseToolEntry
-  hideTiming?: boolean
-}) {
+export function MuseTool({ entry }: { entry: MuseToolEntry }) {
   const {
     kind,
     id,
@@ -91,13 +83,17 @@ export function MuseTool({
     ...rest
   } = entry
   assertExhaustive(rest)
-  // Internal display identity is consumed by the parent list, not source data.
+  // These remain on the parsed entry; tool cards show arguments and results.
   void kind
   void id
-  const text = resultText(entry)
+  void taskId
+  void callId
+  void durationMs
+  void timestamp
   const shell = name === "bash" || name === "bash_input"
+  const result = shell ? shellResult(output) : undefined
+  const text = result ? (result.output as string) : output
   const preview = shell ? tailLines(text, 3) : headLines(text, 3)
-  const imagePath = museImagePath(entry)
   const hasImages = museToolHasImages(entry)
   const imageBlocks = images.map((image, index) => (
     <ImageBlock
@@ -105,7 +101,6 @@ export function MuseTool({
       source={{ type: "base64", media_type: image.mediaType, data: image.data }}
     />
   ))
-  const editPath = typeof editFacts?.path === "string" ? editFacts.path : undefined
   const status =
     outcome === "success"
       ? "success"
@@ -113,31 +108,79 @@ export function MuseTool({
         ? "error"
         : undefined
   const fields: Array<[string, string]> = []
-  if (input !== undefined) fields.push(["Arguments", valueText(input)])
-  if (command != null) fields.push(["Command recorded in result", command])
-  if (description != null) fields.push(["Description recorded in result", description])
-  if (editPath) fields.push(["Path recorded in result", editPath])
+  const args = objectValue(input)
+  const commandText = shell && typeof args?.command === "string" ? args.command : undefined
+  const fileContent =
+    name === "write_file" && typeof args?.content === "string" ? args.content : undefined
+  if (args) {
+    for (const [key, value] of Object.entries(args)) {
+      if (key === "command" && commandText !== undefined) continue
+      if (key === "content" && fileContent !== undefined) continue
+      fields.push([key, valueText(value)])
+    }
+  } else if (input !== undefined) {
+    fields.push(["Arguments", valueText(input)])
+  }
+  if (result) {
+    for (const [key, value] of Object.entries(result)) {
+      if (key === "output") continue
+      if (
+        args &&
+        Object.hasOwn(args, key) &&
+        typeof args[key] === typeof value &&
+        valueText(args[key]) === valueText(value)
+      )
+        continue
+      const echoedArgument = [
+        "command",
+        "description",
+        "path",
+        "file_path",
+        "target_file",
+        "content",
+      ].includes(key)
+      fields.push([
+        echoedArgument || (args && Object.hasOwn(args, key)) ? `result.${key}` : key,
+        valueText(value),
+      ])
+    }
+  }
+  if (
+    command != null &&
+    command !== args?.command &&
+    !(result && Object.hasOwn(result, "command"))
+  ) {
+    fields.push(["result.command", command])
+  }
+  if (
+    description != null &&
+    description !== args?.description &&
+    !(result && Object.hasOwn(result, "description"))
+  ) {
+    fields.push(["result.description", description])
+  }
   if (outcome === "cancelled" || outcome === "rejected" || outcome === "running") {
     fields.push(["Status", outcome])
   }
   if (reason) fields.push(["Reason", reason])
-  if (!hideTiming && timestamp) fields.push(["Recorded at", timestamp])
-  if (!hideTiming && durationMs != null) fields.push(["Duration", formatDuration(durationMs)])
-  if (taskId) fields.push(["Task ID", taskId])
-  if (callId) fields.push(["Call ID", callId])
-  if (text !== output) fields.push(["Full recorded result", output])
   if (editFacts) fields.push(["Edit details", valueText(editFacts)])
   if (outputRefs && outputRefs.length > 0) {
     fields.push(["Output references", valueText(outputRefs)])
   }
   return (
-    <ToolCard.Root status={status} hasContent={fields.length > 0 || !!text || hasImages}>
+    <ToolCard.Root
+      status={status}
+      hasContent={
+        commandText !== undefined ||
+        fileContent !== undefined ||
+        fields.length > 0 ||
+        !!text ||
+        hasImages
+      }
+    >
       <ToolCard.Trigger>
         <Header>
-          <ToolTitle
-            name={name}
-            detail={inputDetail(input) ?? description ?? command ?? editPath ?? imagePath}
-          />
+          <ToolTitle name={name} detail={inputDetail(input)} />
         </Header>
       </ToolCard.Trigger>
       {(text || hasImages) && (
@@ -154,12 +197,24 @@ export function MuseTool({
         </ToolCard.Preview>
       )}
       <ToolCard.Content>
+        {commandText !== undefined && (
+          <pre className="output cmd copy-host">
+            {commandText}
+            <CopyButton text={commandText} ariaLabel="Copy command" />
+          </pre>
+        )}
         {fields.length > 0 && (
           <dl className="tool-fields">
-            {fields.map(([name, value]) => (
-              <Field key={name} name={name} value={value} />
+            {fields.map(([name, value], index) => (
+              <Field key={index} name={name} value={value} />
             ))}
           </dl>
+        )}
+        {fileContent !== undefined && (
+          <pre className="output copy-host">
+            {fileContent}
+            <CopyButton text={fileContent} ariaLabel="Copy content" />
+          </pre>
         )}
         <Output output={{ content: [{ type: "text", text }], isError: status === "error" }} />
         {imageBlocks}
